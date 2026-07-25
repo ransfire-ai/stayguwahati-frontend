@@ -71,6 +71,8 @@
     </footer>
 
     <script>
+        const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+
         document.getElementById("registerForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             
@@ -86,7 +88,7 @@
             msgBanner.className = "hidden text-xs p-3 rounded-xl mb-4 font-medium";
 
             try {
-                const response = await fetch('http://localhost:5000/api/auth/register', {
+                const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password })
