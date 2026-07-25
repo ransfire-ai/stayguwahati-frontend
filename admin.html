@@ -9,7 +9,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
 
-    <!-- Admin Navigation with Mobile Responsiveness Fix -->
+    <!-- Admin Navigation -->
     <nav class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex justify-between items-center">
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -101,26 +101,34 @@
         let currentFilter = 'pending';
         let loadedPropertyImages = {}; 
 
-        // --- AUTHENTICATION & ROLE VALIDATION GUARD ---
+        // --- ROBUST AUTHENTICATION & ROLE VALIDATION GUARD ---
         function checkAdminAccess() {
             const token = localStorage.getItem("token") || localStorage.getItem("authToken");
             const userProfileStr = localStorage.getItem("userProfile");
 
             if (!token || !userProfileStr) {
-                // Not logged in, redirect to login page
                 window.location.href = "login.html";
                 return false;
             }
 
             try {
                 const user = JSON.parse(userProfileStr);
-                // Check if user role is explicitly admin
-                if (!user || user.role !== "admin") {
-                    alert("Access Denied: Administrator privileges required.");
+                console.log("Validating User Profile for Admin Access:", user);
+
+                // Flexible check covering multiple database conventions
+                const isAdmin = 
+                    user.role === "admin" || 
+                    user.role === "ADMIN" || 
+                    user.isAdmin === true || 
+                    user.type === "admin";
+
+                if (!isAdmin) {
+                    console.warn("Access denied. User role found:", user.role || user.type || "none");
                     window.location.href = "dashboard.html";
                     return false;
                 }
             } catch (e) {
+                console.error("Error parsing user profile:", e);
                 localStorage.clear();
                 window.location.href = "login.html";
                 return false;
@@ -352,7 +360,6 @@
             document.getElementById('photoModal').classList.add('hidden');
         }
 
-        // Run validation immediately on script load before rendering contents
         document.addEventListener("DOMContentLoaded", () => {
             if (checkAdminAccess()) {
                 fetchAdminHomestays();
