@@ -151,7 +151,10 @@
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("authToken", data.token);
                 localStorage.setItem("userProfile", JSON.stringify(data.user));
-                localStorage.setItem("activeDashboardRole", "traveler"); 
+                
+                // Dynamically assign role based on backend user data
+                const userRole = (data.user && data.user.role === "admin") ? "admin" : "traveler";
+                localStorage.setItem("activeDashboardRole", userRole); 
 
                 window.location.href = "dashboard.html";
             } catch (err) {
