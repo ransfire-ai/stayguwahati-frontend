@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Property Details - StayGuwahati</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .hover-zoom:hover img {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+                <i class="fa-solid fa-house-chimney-window text-2xl text-teal-600"></i>
+                <span class="text-xl font-black text-slate-900 tracking-tight">Stay<span class="text-teal-600">Guwahati</span></span>
+            </div>
+            <div class="flex gap-6 items-center">
+                <a href="index.html" class="font-medium text-slate-600 hover:text-teal-600 transition">Home</a>
+                <a href="map.html" class="bg-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-700 transition shadow-sm">
+                    Explore Map View
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-6 py-8">
+        <div class="w-full mb-6">
+            <a href="index.html" class="text-sm font-bold text-teal-600 hover:text-teal-700 inline-flex items-center gap-2 group transition">
+                <i class="fa-solid fa-arrow-left transition-transform group-hover:-translate-x-1"></i> Back to Exploration Stream
+            </a>
+        </div>
+
+        <!-- Property Title & Top Actions -->
+        <div class="w-full mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+                <h1 id="propTitle" class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Loading Title...</h1>
+                <p id="propLocation" class="text-slate-500 mt-2 flex items-center gap-2 font-medium">
+                    <i class="fa-solid fa-location-dot text-teal-600"></i> Guwahati
+                </p>
+            </div>
+            
+            <div class="flex items-center gap-4 text-sm font-semibold text-slate-600">
+                <button onclick="handleShareProperty()" class="flex items-center gap-2 hover:text-teal-600 transition bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                    <i class="fa-solid fa-share-nodes"></i> Share
+                </button>
+                <button id="wishlistBtn" onclick="handleToggleWishlist()" class="flex items-center gap-2 hover:text-rose-600 transition bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm text-slate-600">
+                    <i id="wishlistIcon" class="fa-regular fa-heart"></i> <span id="wishlistText">Save</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dynamic Image Gallery Grid Container -->
+        <div class="w-full mb-10">
+            <div id="imageGalleryGrid" class="grid grid-cols-1 md:grid-cols-4 gap-3 h-[350px] md:h-[450px]">
+                <!-- Injected dynamically via script -->
+            </div>
+        </div>
+
+        <!-- Content & Sidebar Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start w-full"> 
+            
+            <div class="lg:col-span-2 space-y-6">
+                <!-- About Space Box -->
+                <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-teal-600"></i> About This Space
+                    </h2>
+                    <p id="propDescription" class="text-slate-600 leading-relaxed text-base">Loading description...</p>
+                    
+                    <div class="border-t border-slate-100 mt-6 pt-6">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Amenities & Highlights</h3>
+                        <div id="amenitiesContainer" class="flex flex-wrap gap-2">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Host Details Box -->
+                <div id="hostDetailsCard" class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hidden">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Hosted by</h3>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div>
+                            <h4 id="hostName" class="font-bold text-slate-900 text-sm">Host Name</h4>
+                            <p id="hostPhone" class="text-xs text-slate-500 font-medium">Phone number</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reviews Section -->
+                <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-comments text-teal-600"></i> Verified Guest Reviews
+                    </h2>
+                    <div id="reviewsStack" class="space-y-4">
+                        <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-bold text-slate-900 text-sm">Ananya Bora</span>
+                                <span class="text-xs text-slate-400 font-medium">June 2026</span>
+                            </div>
+                            <div class="text-amber-400 text-xs mb-2">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                            <p class="text-sm text-slate-600 leading-relaxed">Incredibly clean space and highly authentic neighborhood vibe. Responsive hosting structure!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Sidebar Sticky Card -->
+            <div class="lg:sticky lg:top-24 z-10 w-full">
+                <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xl shadow-slate-100 space-y-6 w-full">
+                    <div class="flex justify-between items-center border-b border-slate-50 pb-4">
+                        <div>
+                            <span id="propPrice" class="text-3xl font-black text-slate-900 tracking-tight">₹0</span>
+                            <span class="text-xs font-semibold text-slate-400 block mt-0.5">/ night value</span>
+                        </div>
+                        <div class="bg-emerald-50 text-emerald-700 font-bold px-3 py-1.5 rounded-xl text-xs border border-emerald-100 flex items-center gap-1">
+                            <i class="fa-solid fa-shield-check"></i> Verified Stay
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 flex justify-between items-center text-xs font-semibold text-slate-500">
+                            <span>Cancellation Policy</span>
+                            <span class="text-slate-800">Free cancellation</span>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 flex justify-between items-center text-xs font-semibold text-slate-500">
+                            <span>Check-in Status</span>
+                            <span class="text-slate-800">Self Check-in</span>
+                        </div>
+                    </div>
+
+                    <button id="reserveBtn" class="w-full bg-slate-900 hover:bg-teal-600 text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2 group">
+                        Proceed to Reservation <i class="fa-solid fa-arrow-right text-sm transition-transform group-hover:translate-x-1"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        let isSaved = false;
+
+        function handleShareProperty() {
+            const shareData = {
+                title: document.title || 'StayGuwahati Homestay',
+                text: 'Check out this amazing local stay on StayGuwahati!',
+                url: window.location.href
+            };
+
+            if (navigator.share) {
+                navigator.share(shareData).catch((err) => console.log('Error sharing:', err));
+            } else {
+                navigator.clipboard.writeText(window.location.href)
+                    .then(() => alert('Property link copied to your clipboard!'))
+                    .catch(() => alert('Could not copy link automatically. Please manually copy the URL.'));
+            }
+        }
+
+        function handleToggleWishlist() {
+            const btn = document.getElementById('wishlistBtn');
+            const icon = document.getElementById('wishlistIcon');
+            const text = document.getElementById('wishlistText');
+
+            isSaved = !isSaved;
+
+            if (isSaved) {
+                btn.classList.remove('text-slate-600', 'hover:text-rose-600');
+                btn.classList.add('text-rose-600', 'border-rose-200', 'bg-rose-50');
+                icon.classList.remove('fa-regular');
+                icon.classList.add('fa-solid');
+                text.textContent = 'Saved';
+            } else {
+                btn.classList.remove('text-rose-600', 'border-rose-200', 'bg-rose-50');
+                btn.classList.add('text-slate-600', 'hover:text-rose-600');
+                icon.classList.remove('fa-solid');
+                icon.classList.add('fa-regular');
+                text.textContent = 'Save';
+            }
+        }
+
+        // Safe Session-Storage Booking Redirect to avoid long URLs
+        function handleReserveSpace(property) {
+            const mainImage = (property.images && property.images.length > 0) ? property.images[0] : '';
+            const bookingData = {
+                id: property.id || property._id || '',
+                title: property.title || '',
+                price: property.pricePerNight || property.price || 1500,
+                locality: property.locality || 'Guwahati',
+                image: mainImage
+            };
+            sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+            window.location.href = 'book-stay.html';
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+            const urlParams = new URLSearchParams(window.location.search);
+            const propertyId = urlParams.get('id');
+            const titleParam = urlParams.get('title');
+
+            let property = null;
+
+            // 1. Try fetching from Database API if ID is available
+            if (propertyId && propertyId !== 'default') {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/homestays/${propertyId}`);
+                    if (response.ok) {
+                        const json = await response.json();
+                        property = json.data || json;
+                    }
+                } catch (err) {
+                    console.warn("Could not fetch property from API, checking local stores...", err);
+                }
+            }
+
+            // 2. Fallback to LocalStorage if API data wasn't found
+            if (!property) {
+                const localProps = JSON.parse(localStorage.getItem("userProperties")) || [];
+                property = localProps.find(p => p.id === propertyId || p._id === propertyId || p.title === titleParam);
+            }
+
+            // 3. Fallback to default object populated from URL parameters
+            if (!property) {
+                property = {
+                    id: propertyId || 'default',
+                    title: titleParam || "Paltan House",
+                    pricePerNight: urlParams.get('price') || "1500",
+                    locality: urlParams.get('locality') || "Paltan Bazar",
+                    description: "Experience premier hospitality in Guwahati. This verified local homestay features handpicked interior accents, responsive management, and comprehensive amenities.",
+                    images: [],
+                    features: ['Premium Linens', 'Free Wi-Fi', 'Great Location', 'Air Conditioning']
+                };
+
+                const singleImg = urlParams.get('image');
+                if (singleImg && singleImg !== "null" && singleImg !== "") {
+                    let cleanImg = decodeURIComponent(singleImg);
+                    if (cleanImg.startsWith('/uploads')) cleanImg = `${BACKEND_URL}${cleanImg}`;
+                    property.images.push(cleanImg);
+                }
+            }
+
+            // Format image absolute URLs if they use relative paths
+            if (property.images && property.images.length > 0) {
+                property.images = property.images.map(img => 
+                    img.startsWith('/uploads') ? `${BACKEND_URL}${img}` : img
+                );
+            }
+
+            // Fallback image pool if none exist
+            if (!property.images || property.images.length === 0) {
+                property.images = [
+                    "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
+                    "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=600",
+                    "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=600",
+                    "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600"
+                ];
+            }
+
+            // Populate text elements
+            document.getElementById('pageTitle').textContent = `StayGuwahati | ${property.title}`;
+            document.getElementById('propTitle').textContent = property.title;
+            document.getElementById('propLocation').innerHTML = `<i class="fa-solid fa-location-dot text-teal-600 animate-pulse"></i> ${property.locality || 'Guwahati'}, Guwahati`;
+            document.getElementById('propPrice').textContent = `₹${parseInt(property.pricePerNight || property.price || 1500).toLocaleString('en-IN')}`;
+            document.getElementById('propDescription').textContent = property.description || "No description provided by host.";
+
+            // Render Host details if present
+            if (property.host && property.host.name) {
+                const hostCard = document.getElementById('hostDetailsCard');
+                hostCard.classList.remove('hidden');
+                document.getElementById('hostName').textContent = property.host.name;
+                document.getElementById('hostPhone').textContent = property.host.phone || 'Verified Host';
+            }
+
+            // Render Amenities badges dynamically
+            const amenitiesContainer = document.getElementById('amenitiesContainer');
+            const featuresList = property.features || property.amenities || ['Premium Linens', 'Free Wi-Fi', 'Great Location'];
+            if (featuresList && featuresList.length > 0) {
+                amenitiesContainer.innerHTML = featuresList.map(feat => `
+                    <span class="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-teal-100/50 flex items-center gap-1.5">
+                        <i class="fa-solid fa-check"></i> ${feat}
+                    </span>
+                `).join('');
+            }
+
+            // Render Image Gallery Grid Layout dynamically based on total images count
+            const imgGrid = document.getElementById('imageGalleryGrid');
+            const totalImages = property.images.length;
+            const mainImg = property.images[0];
+            
+            let galleryHTML = `
+                <div class="md:col-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group hover-zoom">
+                    <img id="mainGalleryImg" src="${mainImg}" class="w-full h-full object-cover transition-transform duration-500 ease-out" alt="Main Property View">
+                </div>
+            `;
+
+            if (totalImages === 1) {
+                galleryHTML += `
+                    <div class="hidden md:grid md:col-span-1 grid-rows-2 gap-3 h-full">
+                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom"><img src="${mainImg}" class="w-full h-full object-cover"></div>
+                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom"><img src="${mainImg}" class="w-full h-full object-cover"></div>
+                    </div>
+                    <div class="hidden md:block md:col-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom">
+                        <img src="${mainImg}" class="w-full h-full object-cover">
+                    </div>
+                `;
+            } else if (totalImages === 2) {
+                galleryHTML += `
+                    <div class="hidden md:grid md:col-span-1 grid-rows-2 gap-3 h-full">
+                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom"><img src="${property.images[1]}" class="w-full h-full object-cover"></div>
+                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom"><img src="${property.images[1]}" class="w-full h-full object-cover"></div>
+                    </div>
+                    <div class="hidden md:block md:col-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom">
+                        <img src="${property.images[1]}" class="w-full h-full object-cover">
+                    </div>
+                `;
+            } else {
+                const img2 = property.images[1] || mainImg;
+                const img3 = property.images[2] || mainImg;
+                const img4 = property.images[3] || mainImg;
+
+                galleryHTML += `
+                    <div class="hidden md:grid md:col-span-1 grid-rows-2 gap-3 h-full">
+                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img2}'">
+                            <img src="${img2}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
+                        </div>
+                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img3}'">
+                            <img src="${img3}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
+                        </div>
+                    </div>
+                    <div class="hidden md:block md:col-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img4}'">
+                        <img src="${img4}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
+                        <div class="absolute bottom-4 right-4 bg-white/95 backdrop-blur text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-md border border-slate-200/50 pointer-events-none">
+                            <i class="fa-solid fa-images mr-1.5 text-teal-600"></i> <span id="photoCountBadge">${totalImages}</span> Photos
+                        </div>
+                    </div>
+                `;
+            }
+
+            imgGrid.innerHTML = galleryHTML;
+
+            // Reserve / Checkout routing action
+            const reserveBtn = document.getElementById('reserveBtn');
+            if (reserveBtn) {
+                reserveBtn.onclick = () => {
+                    handleReserveSpace(property);
+                };
+            }
+        });
+    </script>
+    <script src="lang-manager.js"></script>
+</body>
+</html>

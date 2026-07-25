@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayGuwahati | Create Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link class="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col justify-between font-sans">
+
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                
+                <i class="fa-solid fa-house-chimney text-teal-600 text-2xl"></i>
+                <span class="text-xl font-bold text-teal-800">StayGuwahati</span>
+            </div>
+            <nav class="flex items-center gap-6 text-sm font-medium text-gray-600">
+                <a href="index.html" class="hover:text-teal-600 transition">Home</a>
+                <a href="login.html" class="hover:text-teal-600 transition">Login</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-md border border-gray-100 max-w-md w-full">
+            <div class="text-center mb-6">
+                <div class="bg-teal-50 text-teal-600 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-xl mb-3 shadow-inner">
+                    <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Join Platform</h1>
+                <p class="text-gray-400 text-sm mt-1">Register an individual profile to get verified</p>
+            </div>
+
+            <div id="msgBanner" class="hidden text-xs p-3 rounded-xl mb-4 font-medium"></div>
+
+            <form id="registerForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">Full Name</label>
+                    <input type="text" id="regName" required placeholder="Your full name"
+                           class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">Email Address</label>
+                    <input type="email" id="regEmail" required placeholder="name@example.com"
+                           class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">Password</label>
+                    <input type="password" id="regPassword" required placeholder="Minimum 6 characters" minlength="6"
+                           class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 transition">
+                </div>
+
+                <button type="submit" id="regSubmitBtn"
+                        class="w-full bg-slate-900 hover:bg-teal-600 text-white font-semibold py-2.5 rounded-xl text-sm transition mt-2 flex items-center justify-center gap-2 shadow-sm">
+                    <span>Create Free Account</span>
+                    <i class="fa-solid fa-check text-xs"></i>
+                </button>
+            </form>
+
+            <div class="mt-6 text-center text-xs text-gray-500">
+                Already have a traveler profile? <a href="login.html" class="text-teal-600 font-semibold hover:underline">Log In</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-4 text-xs text-gray-400 border-t border-gray-100 bg-white">
+        &copy; 2026 StayGuwahati Platform System Core.
+    </footer>
+
+    <script>
+        document.getElementById("registerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById("regName").value;
+            const email = document.getElementById("regEmail").value;
+            const password = document.getElementById("regPassword").value;
+            const msgBanner = document.getElementById("msgBanner");
+            const submitBtn = document.getElementById("regSubmitBtn");
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-sm"></i> Generating Profile...`;
+            
+            msgBanner.className = "hidden text-xs p-3 rounded-xl mb-4 font-medium";
+
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Registration pipe dropped.");
+                }
+
+                // Show Success Message
+                msgBanner.innerHTML = `<i class="fa-solid fa-circle-check mr-1.5"></i> Registration Successful! Redirecting to login...`;
+                msgBanner.classList.remove("hidden");
+                msgBanner.classList.add("bg-teal-50", "text-teal-600", "border", "border-teal-100");
+
+                setTimeout(() => {
+                    window.location.href = "login.html";
+                }, 2000);
+
+            } catch (err) {
+                msgBanner.innerHTML = `<i class="fa-solid fa-circle-exclamation mr-1.5"></i> ${err.message}`;
+                msgBanner.classList.remove("hidden");
+                msgBanner.classList.add("bg-rose-50", "text-rose-600", "border", "border-rose-100");
+                
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>Create Free Account</span> <i class="fa-solid fa-check text-xs"></i>`;
+            }
+        });
+    </script>
+<script src="lang-manager.js"></script>
+</body>
+</html>

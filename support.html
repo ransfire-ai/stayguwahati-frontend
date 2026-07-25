@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle" data-i18n="nav_support_title">Trust & Support - StayGuwahati</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <nav class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-house-chimney-window text-2xl text-teal-600"></i>
+                <span class="text-xl font-black text-slate-900 tracking-tight">Stay<span class="text-teal-600">Guwahati</span></span>
+            </div>
+            
+            <div class="flex items-center gap-6 text-sm font-medium text-slate-600">
+                <a href="index.html" class="hover:text-teal-600 transition" id="navHome" data-i18n="nav_home">Home</a>
+                <a href="login.html" data-i18n="nav_dashboard" class="hover:text-teal-600 transition">Dashboard</a>
+                
+                <select id="langSelector" class="bg-slate-50 border border-slate-200 text-xs rounded-lg p-1.5 focus:outline-none focus:border-teal-500 font-semibold text-slate-700 cursor-pointer transition">
+                    <option value="en">English</option>
+                    <option value="as">অসমীয়া (Assamese)</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                </select>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-6 py-12">
+        
+        <div class="text-center max-w-2xl mx-auto mb-16">
+            <span data-i18n="hub_badge" class="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-1 rounded-full border border-teal-100">Trust & Security Hub</span>
+            <h1 data-i18n="hub_heading" class="text-4xl font-black text-slate-900 tracking-tight mt-3 mb-4">How can we help you stay safe and comfortable?</h1>
+            <p data-i18n="hub_subheading" class="text-slate-500 font-medium">Explore local property dynamics, safety guardrails, self check-in systems, or get in touch with our local site administrators.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+            
+            <div class="md:col-span-2 space-y-8">
+                
+                <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-xs">
+                    <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-question text-teal-600"></i> <span data-i18n="faq_title">Frequently Asked Questions</span>
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div class="border-b border-slate-100 pb-4">
+                            <button onclick="toggleAccordion('faq1')" class="w-full flex justify-between items-center text-left font-bold text-slate-800 hover:text-teal-600 transition py-2">
+                                <span data-i18n="faq1_q">How does the self check-in system work?</span>
+                                <i id="faq1-icon" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
+                            </button>
+                            <div id="faq1" data-i18n="faq1_a" class="hidden mt-2 text-sm text-slate-600 leading-relaxed">
+                                Once your reservation is confirmed, your host will send a unique smart-lock code or key-box instructions directly to your email tracker 24 hours before your check-in time.
+                            </div>
+                        </div>
+
+                        <div class="border-b border-slate-100 pb-4">
+                            <button onclick="toggleAccordion('faq2')" class="w-full flex justify-between items-center text-left font-bold text-slate-800 hover:text-teal-600 transition py-2">
+                                <span data-i18n="faq2_q">What is the platform's cancellation policy?</span>
+                                <i id="faq2-icon" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
+                            </button>
+                            <div id="faq2" data-i18n="faq2_a" class="hidden mt-2 text-sm text-slate-600 leading-relaxed">
+                                We offer free cancellation up to 48 hours before your scheduled check-in time. Cancellations made inside the 48-hour window will incur a service fee equal to the first night's value.
+                            </div>
+                        </div>
+
+                        <div class="border-b border-slate-100 pb-4">
+                            <button onclick="toggleAccordion('faq3')" class="w-full flex justify-between items-center text-left font-bold text-slate-800 hover:text-teal-600 transition py-2">
+                                <span data-i18n="faq3_q">Are all homestays verified?</span>
+                                <i id="faq3-icon" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform"></i>
+                            </button>
+                            <div id="faq3" data-i18n="faq3_a" class="hidden mt-2 text-sm text-slate-600 leading-relaxed">
+                                Yes. Every active listing on StayGuwahati goes through an individual profile and on-site physical credentials evaluation by our verification pipeline team before going live.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-100/50 flex gap-3 items-start">
+                        <i class="fa-solid fa-shield-halved text-xl text-teal-600 mt-1"></i>
+                        <div>
+                            <h4 data-i18n="feat_secure_title" class="font-bold text-sm text-slate-900">Secure Architecture</h4>
+                            <p data-i18n="feat_secure_desc" class="text-xs text-slate-500 mt-1">Encrypted matching network protects passwords, active profiles, and invoice history pipelines.</p>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-100/50 flex gap-3 items-start">
+                        <i class="fa-solid fa-user-check text-xl text-teal-600 mt-1"></i>
+                        <div>
+                            <h4 data-i18n="feat_reviews_title" class="font-bold text-sm text-slate-900">Verified Reviews</h4>
+                            <p data-i18n="feat_reviews_desc" class="text-xs text-slate-500 mt-1">Guest feedback can only be written after checking out from a valid transaction receipt stay.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xl shadow-slate-100/50 w-full">
+                <h3 data-i18n="form_title" class="text-lg font-black text-slate-900 tracking-tight mb-1">Contact Support</h3>
+                <p data-i18n="form_subtitle" class="text-xs font-semibold text-slate-400 mb-5">Can't find an answer? Shoot us a message.</p>
+                
+                <form id="supportForm" class="space-y-4">
+                    <div>
+                        <label data-i18n="lbl_subject" class="block text-xs font-bold text-slate-500 mb-1 tracking-wide uppercase">Issue Subject</label>
+                        <select id="supportSubject" class="w-full bg-slate-50 border border-slate-200 focus:border-teal-500 focus:bg-white rounded-xl px-4 py-2.5 text-sm font-medium transition outline-none">
+                            <option value="booking" data-i18n="opt_booking">Booking Query</option>
+                            <option value="verification" data-i18n="opt_verification">Host Verification Match</option>
+                            <option value="payment" data-i18n="opt_payment">Invoice or Payment Failures</option>
+                            <option value="other" data-i18n="opt_other">Other technical issue</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label data-i18n="lbl_description" class="block text-xs font-bold text-slate-500 mb-1 tracking-wide uppercase">Description</label>
+                        <textarea id="supportMessage" rows="4" placeholder="Explain your situation..." class="w-full bg-slate-50 border border-slate-200 focus:border-teal-500 focus:bg-white rounded-xl px-4 py-2.5 text-sm font-medium transition outline-none resize-none" required></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-slate-900 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2">
+                        <span data-i18n="btn_submit">Submit Ticket</span> <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Inline Local Translation Engine 
+        const translations = {
+            en: {
+                nav_support_title: "Trust & Support - StayGuwahati",
+                nav_home: "Home",
+                nav_dashboard: "Dashboard",
+                hub_badge: "Trust & Security Hub",
+                hub_heading: "How can we help you stay safe and comfortable?",
+                hub_subheading: "Explore local property dynamics, safety guardrails, self check-in systems, or get in touch with our local site administrators.",
+                faq_title: "Frequently Asked Questions",
+                faq1_q: "How does the self check-in system work?",
+                faq1_a: "Once your reservation is confirmed, your host will send a unique smart-lock code or key-box instructions directly to your email tracker 24 hours before your check-in time.",
+                faq2_q: "What is the platform's cancellation policy?",
+                faq2_a: "We offer free cancellation up to 48 hours before your scheduled check-in time. Cancellations made inside the 48-hour window will incur a service fee equal to the first night's value.",
+                faq3_q: "Are all homestays verified?",
+                faq3_a: "Yes. Every active listing on StayGuwahati goes through an individual profile and on-site physical credentials evaluation by our verification pipeline team before going live.",
+                feat_secure_title: "Secure Architecture",
+                feat_secure_desc: "Encrypted matching network protects passwords, active profiles, and invoice history pipelines.",
+                feat_reviews_title: "Verified Reviews",
+                feat_reviews_desc: "Guest feedback can only be written after checking out from a valid transaction receipt stay.",
+                form_title: "Contact Support",
+                form_subtitle: "Can't find an answer? Shoot us a message.",
+                lbl_subject: "Issue Subject",
+                opt_booking: "Booking Query",
+                opt_verification: "Host Verification Match",
+                opt_payment: "Invoice or Payment Failures",
+                opt_other: "Other technical issue",
+                lbl_description: "Description",
+                btn_submit: "Submit Ticket"
+            },
+            as: {
+                nav_support_title: "বিশ্বাস আৰু সহায় - StayGuwahati",
+                nav_home: "হোম",
+                nav_dashboard: "ড্যাশবৰ্ড",
+                hub_badge: "বিশ্বাস আৰু সুৰক্ষা কেন্দ্ৰ",
+                hub_heading: "আপোনাক কেনেকৈ সুৰক্ষিত আৰু আৰামদায়ক কৰি ৰাখিব পাৰি?",
+                hub_subheading: "স্থানীয় সম্পত্তিৰ গতিশীলতা, সুৰক্ষা ব্যৱস্থা, নিজে চেক-ইন কৰা প্ৰণালী অন্বেষণ কৰক বা আমাৰ স্থানীয় ছাইট প্ৰশাসকৰ সৈতে যোগাযোগ কৰক।",
+                faq_title: " pine সঘনাই সোধা প্ৰশ্নসমূহ",
+                faq1_q: "নিজে চেক-ইন কৰা প্ৰণালীটোৱে কেনেকৈ কাম কৰে?",
+                faq1_a: "আপোনাৰ বুকিং নিশ্চিত হোৱাৰ পিছত, আপোনাৰ চেক-ইন সময়ৰ ২৪ ঘণ্টা আগতে আপোনাৰ হোষ্টে পোনপটীয়াকৈ এটা অনন্য স্মাৰ্ট-লক ক'ড বা কি-বক্সৰ নিৰ্দেশনা প্ৰেৰণ কৰিব।",
+                faq2_q: "প্লেটফৰ্মৰ বাতিলকৰণ নীতি কি?",
+                faq2_a: "আমি নিৰ্ধাৰিত চেক-ইন সময়ৰ ৪৮ ঘণ্টা আগলৈকে বিনামূলীয়া বাতিলকৰণৰ সুবিধা প্ৰদান কৰো। ৪৮ ঘণ্টাৰ ভিতৰত কৰা বাতিলৰ বাবে প্ৰথম ৰাতিৰ মূল্যৰ সমান সেৱা মাচুল ল’ব।",
+                faq3_q: "সকলো হোমষ্টে পৰীক্ষামূলকভাৱে প্ৰমাণিতনে?",
+                faq3_a: "হয়। StayGuwahati ত থকা প্ৰতিটো সক্ৰিয় লিস্টিং লাইভ হোৱাৰ আগতে আমাৰ প্ৰমাণীকৰণ দলৰ দ্বাৰা শাৰীৰিক পৰীক্ষণ প্ৰক্ৰিয়াৰ মাজেৰে পাৰ হয়।",
+                feat_secure_title: "সুৰক্ষিত স্থাপত্য",
+                feat_secure_desc: "ইনক্ৰিপ্টেড নেটৱৰ্কে পাছৱৰ্ড, সক্ৰিয় প্ৰফাইল আৰু ইনভইচ ইতিহাস সুৰক্ষিত কৰে।",
+                feat_reviews_title: "প্ৰমাণিত সমীক্ষাসমূহ",
+                feat_reviews_desc: "কেৱল এটা বৈধ লেনদেনৰ পিছতহে অতিথিৰ মতামত বা ৰেটিং লিখিব পৰা যাব।",
+                form_title: "সহায়তাৰ বাবে যোগাযোগ কৰক",
+                form_subtitle: "উত্তৰ বিচাৰি পোৱা নাই? আমালৈ এটা বাৰ্তা পঠিয়াওক।",
+                lbl_subject: "বিষয়",
+                opt_booking: "বুকিং সম্পৰ্কীয় প্ৰশ্ন",
+                opt_verification: "হোষ্ট প্ৰমাণীকৰণ মিল",
+                opt_payment: "ইনভইচ বা পৰিশোধৰ ব্যৰ্থতা",
+                opt_other: "অন্যান্য কাৰিকৰী সমস্যা",
+                lbl_description: "বিৱৰণ",
+                btn_submit: "টিকট জমা কৰক"
+            },
+            hi: {
+                nav_support_title: "विश्वास और सहायता - StayGuwahati",
+                nav_home: "होम",
+                nav_dashboard: "डैशबोर्ड",
+                hub_badge: "विश्वास और सुरक्षा केंद्र",
+                hub_heading: "हम आपको सुरक्षित और आरामदायक रखने में कैसे मदद कर सकते हैं?",
+                hub_subheading: "स्थानीय संपत्ति गतिकी, सुरक्षा दिशानिर्देश, स्वयं चेक-इन सिस्टम का पता लगाएं, या हमारे स्थानीय साइट प्रबंधकों से संपर्क करें।",
+                faq_title: "अक्सर पूछे जाने वाले प्रश्न",
+                faq1_q: "स्वयं चेक-इन सिस्टम कैसे काम करता है?",
+                faq1_a: "एक बार आपकी बुकिंग सुरक्षित हो जाने पर, आपका होस्ट आपके चेक-इन समय से 24 घंटे पहले एक विशिष्ट स्मार्ट-लॉक कोड या की-बॉक्स निर्देश सीधे आपके ईमेल पर भेजेगा।",
+                faq2_q: "प्लेटफ़ॉर्म की रद्दीकरण नीति क्या है?",
+                faq2_a: "हम आपके निर्धारित चेक-इन समय से 48 घंटे पहले तक मुफ्त रद्दीकरण की पेशकश करते हैं। 48 घंटे के भीतर रद्दीकरण करने पर पहली रात के मूल्य के बराबर सेवा शुल्क लगेगा।",
+                faq3_q: "क्या सभी होमस्टे सत्यापित हैं?",
+                faq3_a: "हाँ। StayGuwahati पर हर सक्रिय प्रविष्टि लाइव होने से पहले हमारी सत्यापन टीम द्वारा ऑन-साइट भौतिक क्रेडेंशियल मूल्यांकन से गुजरती है।",
+                feat_secure_title: "सुरक्षित आर्किटेक्चर",
+                feat_secure_desc: "एन्क्रिप्टेड मिलान नेटवर्क पासवर्ड, सक्रिय प्रोफाइल और चालान इतिहास पाइपलाइनों की सुरक्षा करता है।",
+                feat_reviews_title: "सत्यापित समीक्षाएं",
+                feat_reviews_desc: "अतिथि प्रतिक्रिया केवल एक वैध लेनदेन रसीद प्रवास से चेक आउट करने के बाद ही लिखी जा सकती है।",
+                form_title: "सहायता से संपर्क करें",
+                form_subtitle: "जवाब नहीं मिल रहा है? हमें एक संदेश भेजें।",
+                lbl_subject: "समस्या का विषय",
+                opt_booking: "बुकिंग पूछताछ",
+                opt_verification: "होस्ट सत्यापन मिलान",
+                opt_payment: "चालान या भुगतान विफलताएं",
+                opt_other: "अन्य तकनीकी समस्या",
+                lbl_description: "विवरण",
+                btn_submit: "टिकट सबमिट करें"
+            }
+        };
+
+        function applyTranslations(lang) {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                        el.placeholder = translations[lang][key];
+                    } else if (el.tagName === 'TITLE') {
+                        document.title = translations[lang][key];
+                    } else {
+                        // Keeps inner elements like icons intact where needed
+                        const icon = el.querySelector('i');
+                        if (icon) {
+                            el.innerHTML = '';
+                            el.appendChild(icon);
+                            el.append(' ' + translations[lang][key]);
+                        } else {
+                            el.textContent = translations[lang][key];
+                        }
+                    }
+                }
+            });
+            document.documentElement.lang = lang;
+        }
+
+        // Event listener for dropdown change
+        document.getElementById('langSelector').addEventListener('change', (e) => {
+            const selectedLang = e.target.value;
+            applyTranslations(selectedLang);
+            localStorage.setItem('preferredLang', selectedLang);
+        });
+
+        // Load saved language or fallback to default configuration settings
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('preferredLang') || 'en';
+            document.getElementById('langSelector').value = savedLang;
+            applyTranslations(savedLang);
+        });
+
+        // Interactive FAQ Accordion Trigger
+        function toggleAccordion(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById(`${id}-icon`);
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        document.getElementById('supportForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Gather data
+    const ticketData = {
+        subject: document.getElementById('supportSubject').value,
+        description: document.getElementById('supportMessage').value,
+        category: 'Support Hub Ticket' // or you can make this dynamic
+    };
+
+    try {
+        const response = await fetch('http://localhost:5000/api/tickets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ticketData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert('Success! Your ticket has been submitted.');
+            document.getElementById('supportForm').reset();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (err) {
+        console.error('Submission failed:', err);
+        alert('Could not connect to the server. Please check if the backend is running.');
+    }
+});
+    </script>
+<script src="lang-manager.js"></script>
+</body>
+</html>

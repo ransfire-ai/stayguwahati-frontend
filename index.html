@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page_title">StayGuwahati | Find Your Perfect Homestay</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-house-chimney-window text-2xl text-teal-600"></i>
+                <span data-i18n="nav_brand" class="text-xl font-black text-slate-900 tracking-tight">Stay<span class="text-teal-600">Guwahati</span></span>
+            </div>
+            <div class="flex gap-6 items-center">
+                <a href="index.html" class="font-medium text-teal-600 border-b-2 border-teal-600 pb-1" id="navHome" data-i18n="nav_home">Home</a>
+                
+                <a href="add-property.html" onclick="requireLoginToList(event)" class="text-slate-600 hover:text-teal-600 font-medium transition">
+                    <i class="fa-solid fa-circle-plus mr-1"></i><span id="navProperty" data-i18n="nav_list_property">List Property</span>
+                </a>
+
+                <a href="map.html" class="bg-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-700 transition shadow-sm">
+                    <i class="fa-solid fa-map-location-dot mr-2"></i><span id="navMap" data-i18n="nav_explore_map">Explore Map View</span>
+                </a>
+                
+                <a href="support.html" class="font-medium text-slate-600 hover:text-teal-600 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-headset text-sm"></i> <span id="navSupport" data-i18n="nav_support">Support</span>
+                </a>
+
+                <select id="langSelector" class="bg-gray-50 border border-gray-200 text-xs rounded-lg p-1.5 focus:outline-none focus:border-teal-500 font-semibold text-gray-700 cursor-pointer shadow-sm">
+                    <option value="en">English</option>
+                    <option value="as">অসমীয়া (Assamese)</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                </select>
+                
+                <div id="navAuthContainer" class="flex items-center">
+                    <a href="login.html" id="authSignInBtn" class="bg-slate-950 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-600 transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket text-xs"></i>
+                        <span id="navSignIn" data-i18n="nav_sign_in">Sign In</span>
+                    </a>
+
+                    <a href="dashboard.html" id="authDashboardBtn" class="hidden flex items-center gap-2 border border-gray-200 hover:border-teal-500 bg-gray-50 px-3 py-1.5 rounded-xl transition shadow-sm">
+                        <div id="userAvatarCircle" class="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-sm"></div>
+                        <span id="navDashboardText" data-i18n="nav_dashboard" class="text-xs font-bold text-gray-700 hidden sm:inline">My Dashboard</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="relative bg-slate-900 text-white py-24 px-6 overflow-hidden">
+        <div class="absolute inset-0 opacity-40 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200');"></div>
+        <div class="relative max-w-4xl mx-auto text-center">
+            <span class="bg-teal-500/20 text-teal-300 font-bold text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-teal-500/30" id="heroTag" data-i18n="hero_tag">Premium Local Verifications</span>
+            <h1 class="text-4xl md:text-5xl font-black tracking-tight mt-4 mb-6 leading-tight" id="heroTitle" data-i18n="hero_title">Find Handpicked Homestays Across Guwahati</h1>
+            <p class="text-lg text-slate-300 max-w-2xl mx-auto mb-8" id="heroSubtitle" data-i18n="hero_subtitle">Skip the clinical hotels. Stay in authentic neighborhoods with trusted local hosts around Uzan Bazar, Paltan Bazar, and beyond.</p>
+            
+            <a href="explore.html" class="inline-flex items-center justify-center bg-teal-500 text-slate-950 font-bold px-8 py-4 rounded-xl text-lg hover:bg-teal-400 transition transform hover:-translate-y-0.5 shadow-lg shadow-teal-500/20 group">
+                <span data-i18n="hero_btn">Search Properties Live</span>
+                <i class="fa-solid fa-arrow-right ml-3 transition group-hover:translate-x-1"></i>
+            </a>
+        </div>
+    </header>
+
+    <section class="max-w-7xl mx-auto px-6 pt-16 pb-8">
+        <div class="mb-10 text-center sm:text-left">
+            <h2 class="text-2xl font-black text-slate-900" data-i18n="sec1_title">Popular Neighborhoods</h2>
+            <p class="text-slate-500 mt-1" data-i18n="sec1_subtitle">Discover strategic locations to stay around the city.</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
+                <div class="h-48 overflow-hidden relative">
+                    <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                </div>
+                <div class="p-5">
+                    <h3 class="font-bold text-lg text-slate-900" data-i18n="loc1_title">Uzan Bazar</h3>
+                    <p class="text-sm text-slate-500 mt-1" data-i18n="loc1_desc">Historic Riverside charm, culture hubs, and quiet leafy cafes.</p>
+                    <a href="index.html?location=Uzan Bazar" class="inline-block text-sm font-bold text-teal-600 mt-4 hover:text-teal-700" data-i18n="explore_link">Explore listings &rarr;</a>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
+                <div class="h-48 overflow-hidden relative">
+                    <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                </div>
+                <div class="p-5">
+                    <h3 class="font-bold text-lg text-slate-900" data-i18n="loc2_title">Paltan Bazar</h3>
+                    <p class="text-sm text-slate-500 mt-1" data-i18n="loc2_desc">Centrally located near transit links and active marketplaces.</p>
+                    <a href="index.html?location=Paltan Bazar" class="inline-block text-sm font-bold text-teal-600 mt-4 hover:text-teal-700" data-i18n="explore_link">Explore listings &rarr;</a>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
+                <div class="h-48 overflow-hidden relative">
+                    <img src="https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                </div>
+                <div class="p-5">
+                    <h3 class="font-bold text-lg text-slate-900" data-i18n="loc3_title">Ganeshguri</h3>
+                    <p class="text-sm text-slate-500 mt-1" data-i18n="loc3_desc">Vibrant commercial hub filled with food courts and boutique shopping.</p>
+                    <a href="index.html?location=Ganeshguri" class="inline-block text-sm font-bold text-teal-600 mt-4 hover:text-teal-700" data-i18n="explore_link">Explore listings &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="max-w-7xl mx-auto px-6 pb-24 pt-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 border-b border-slate-200 pb-5">
+            <div>
+                <h2 class="text-2xl font-black text-slate-900" data-i18n="sec2_title">Verified Local Homestays</h2>
+                <p class="text-slate-500 mt-1" data-i18n="sec2_subtitle">Handpicked properties verified for hygiene, security, and warmth.</p>
+            </div>
+            <div class="bg-teal-50 text-teal-700 px-4 py-2 rounded-full text-sm font-semibold border border-teal-100 self-start md:self-auto">
+                <span data-i18n="showing_text">Showing</span> <span id="propertyCount">0</span> <span data-i18n="active_options_text">active property options</span>
+            </div>
+        </div>
+
+        <div id="homestayGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="col-span-full text-center py-12 text-slate-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3 text-teal-500"></i>
+                <p class="text-sm" data-i18n="pipeline_loading">Connecting to database pipeline...</p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function requireLoginToList(event) {
+            event.preventDefault();
+            const userSession = localStorage.getItem("userProfile"); 
+
+            if (!userSession) {
+                alert("🔒 Please log in first to list a property on StayGuwahati.");
+                window.location.href = "login.html";
+            } else {
+                window.location.href = "add-property.html"; 
+            }
+        }
+
+        // Safe Session-Storage Booking Redirect to avoid long URLs
+        function handleReserveSpace(id, title, price, locality, image) {
+            const bookingData = {
+                id: id,
+                title: title,
+                price: price,
+                locality: locality,
+                image: image
+            };
+            sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+            window.location.href = 'book-stay.html';
+        }
+
+        const translations = {
+            en: {
+                page_title: "StayGuwahati | Find Your Perfect Homestay",
+                nav_brand: "StayGuwahati",
+                nav_home: "Home",
+                nav_list_property: "List Property",
+                nav_explore_map: "Explore Map View",
+                nav_support: "Support",
+                nav_sign_in: "Sign In",
+                nav_dashboard: "My Dashboard",
+                hero_tag: "Premium Local Verifications",
+                hero_title: "Find Handpicked Homestays Across Guwahati",
+                hero_subtitle: "Skip the clinical hotels. Stay in authentic neighborhoods with trusted local hosts around Uzan Bazar, Paltan Bazar, and beyond.",
+                hero_btn: "Search Properties Live",
+                sec1_title: "Popular Neighborhoods",
+                sec1_subtitle: "Discover strategic locations to stay around the city.",
+                loc1_title: "Uzan Bazar",
+                loc1_desc: "Historic Riverside charm, culture hubs, and quiet leafy cafes.",
+                loc2_title: "Paltan Bazar",
+                loc2_desc: "Centrally located near transit links and active marketplaces.",
+                loc3_title: "Ganeshguri",
+                loc3_desc: "Vibrant commercial hub filled with food courts and boutique shopping.",
+                explore_link: "Explore listings \u2192",
+                sec2_title: "Verified Local Homestays",
+                sec2_subtitle: "Handpicked properties verified for hygiene, security, and warmth.",
+                showing_text: "Showing",
+                active_options_text: "active property options",
+                pipeline_loading: "Connecting to database pipeline..."
+            },
+            as: {
+                page_title: "StayGuwahati | আপোনাৰ নিখুঁত হোমষ্টে বিচাৰক",
+                nav_brand: "StayGuwahati",
+                nav_home: "হোম",
+                nav_list_property: "সম্পত্তি তালিকাভুক্ত কৰক",
+                nav_explore_map: "মানচিত্ৰ দৰ্শন কৰক",
+                nav_support: "সহায়তা",
+                nav_sign_in: "ছাইন ইন কৰক",
+                nav_dashboard: "মোৰ ড্যাশবৰ্ড",
+                hero_tag: "প্ৰিমিয়াম স্থানীয় প্ৰমাণীকৰণ",
+                hero_title: "গুৱাহাটীৰ বাচনি কৰা সুন্দৰ হোমষ্টেসমূহ বিচাৰক",
+                hero_subtitle: "গতানুগতিক হোটেল বাদ দিয়ক। উজান বজাৰ, পল্টন বজাৰ আদিৰ দৰে ঠাইত থকা বিশ্বাসী স্থানীয় হোষ্টৰ সৈতে থকাৰ অভিজ্ঞতা লওক।",
+                hero_btn: "প্ৰপাৰ্টি সন্ধান কৰক",
+                sec1_title: "জনপ্ৰিয় অঞ্চলসমূহ",
+                sec1_subtitle: "চহৰখনৰ গুৰুত্বপূৰ্ণ স্থানসমূহ অন্বেষণ কৰক।",
+                loc1_title: "উজান বজাৰ",
+                loc1_desc: "ঐতিহাসিক নদীৰ পাৰৰ আকৰ্ষণ, সাংস্কৃতিক কেন্দ্ৰ আৰু শান্ত কেফে।",
+                loc2_title: "পল্টন বজাৰ",
+                loc2_desc: "যাতায়ত ব্যৱস্থা আৰু সক্ৰিয় বজাৰসমূহৰ কেন্দ্ৰবিন্দু।",
+                loc3_title: "গণেশগুৰি",
+                loc3_desc: "খাদ্য আৰু বজাৰ কৰাৰ বাবে এক সক্ৰিয় ব্যৱসায়িক কেন্দ্ৰ।",
+                explore_link: "তালিকা অন্বেষণ কৰক \u2192",
+                sec2_title: "প্ৰমাণিত স্থানীয় হোমষ্টেসমূহ",
+                sec2_subtitle: "পৰিষ্কাৰ-পৰিচ্ছন্নতা, সুৰক্ষা আৰু আতিথ্যৰ বাবে নিৰ্বাচিত সম্পত্তি।",
+                showing_text: "বৰ্তমান",
+                active_options_text: "টা সক্ৰিয় সম্পত্তি উপলব্ধ আছে",
+                pipeline_loading: "ডাটাবেচ পাইপলাইনৰ সৈতে সংযোগ কৰা হৈছে..."
+            },
+            hi: {
+                page_title: "StayGuwahati | अपना आदर्श होमस्टे खोजें",
+                nav_brand: "StayGuwahati",
+                nav_home: "होम",
+                nav_list_property: "प्रॉपर्टी लिस्ट करें",
+                nav_explore_map: "मैप व्यू देखें",
+                nav_support: "सहायता",
+                nav_sign_in: "साइन इन करें",
+                nav_dashboard: "मेरा डैशबोर्ड",
+                hero_tag: "प्रीमियम स्थानीय सत्यापन",
+                hero_title: "गुवाहाटी भर में चुनिंदा शानदार होमस्टे खोजें",
+                hero_subtitle: "अस्पताल जैसे ठंडे होटलों को छोड़ें। उजान बाजार, पलटन बाजार जैसे प्रामाणिक इलाकों में भरोसेमंद स्थानीय मेजबानों के साथ रहें।",
+                hero_btn: "लाइव प्रॉपर्टीज खोजें",
+                sec1_title: "लोकप्रिय इलाके",
+                sec1_subtitle: "शहर के आसपास रहने के लिए रणनीतिक स्थानों की खोज करें।",
+                loc1_title: "उजान बाजार",
+                loc1_desc: "ऐतिहासिक नदी किनारे का आकर्षण, सांस्कृतिक केंद्र और शांत कैफे।",
+                loc2_title: "पलटन बाजार",
+                loc2_desc: "पारगमन लिंक और सक्रिय बाजारों के पास केंद्रीय रूप से स्थित।",
+                loc3_title: "गणेशगुरी",
+                loc3_desc: "फूड कोर्ट और बुटीक शॉपिंग से भरा जीवंत व्यावसायिक केंद्र।",
+                explore_link: "प्रविष्टियां देखें \u2192",
+                sec2_title: "सत्यापित स्थानीय होमस्टे",
+                sec2_subtitle: "स्वच्छता, सुरक्षा और गर्मजोशी के लिए चुने गए सत्यापित होमस्टे।",
+                showing_text: "कुल",
+                active_options_text: "सक्रिय प्रॉपर्टी विकल्प उपलब्ध हैं",
+                pipeline_loading: "डेटाबेस पाइपलाइन से कनेक्ट किया जा रहा है..."
+            }
+        };
+
+        function applyTranslations(lang) {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    const icon = el.querySelector('i');
+                    if (icon) {
+                        el.innerHTML = '';
+                        el.appendChild(icon);
+                        el.append(' ' + translations[lang][key]);
+                    } else {
+                        el.textContent = translations[lang][key];
+                    }
+                }
+            });
+            document.documentElement.lang = lang;
+        }
+
+        document.getElementById('langSelector').addEventListener('change', (e) => {
+            const selectedLang = e.target.value;
+            applyTranslations(selectedLang);
+            localStorage.setItem('preferredLang', selectedLang);
+        });
+
+        async function loadVerifiedHomestays() {
+            const grid = document.getElementById("homestayGrid");
+            const countLabel = document.getElementById("propertyCount");
+            const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedLocation = urlParams.get('location');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/homestays`);
+                let properties = await response.json();
+
+                if (properties && properties.data) {
+                    properties = properties.data;
+                }
+
+                if (selectedLocation) {
+                    properties = properties.filter(stay => 
+                        stay.locality && stay.locality.toLowerCase().trim() === selectedLocation.toLowerCase().trim()
+                    );
+                }
+
+                countLabel.textContent = properties.length;
+
+                if (!properties || properties.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full text-center py-16 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                            <i class="fa-solid fa-hotel text-4xl text-slate-300 mb-3"></i>
+                            <p class="font-semibold text-slate-700">No properties available in this neighborhood</p>
+                            <p class="text-slate-400 text-sm mt-1">Check back later or view our alternative neighborhood choices.</p>
+                            <a href="index.html" class="inline-block mt-4 text-sm font-bold text-teal-600 hover:underline">&larr; Show All Listings</a>
+                        </div>`;
+                    return;
+                }
+
+                grid.innerHTML = "";
+                properties.forEach(stay => {
+                    let img = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600";
+                    if (stay.images && stay.images.length > 0) {
+                        img = stay.images[0].startsWith('/uploads') ? `${BACKEND_URL}${stay.images[0]}` : stay.images[0];
+                    }
+
+                    const rating = stay.rating || (4.3 + Math.random() * 0.6).toFixed(1);
+                    const reviews = stay.reviewsCount || Math.floor(15 + Math.random() * 80);
+                    
+                    const tags = stay.tags || ["Premium Linens", "Wi-Fi", "Great Location"];
+                    const tagsHTML = tags.map(tag => 
+                        `<span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-md font-medium">${tag}</span>`
+                    ).join('');
+
+                    const propertyId = stay._id || stay.id || '';
+                    const detailUrl = `property-details.html?id=${propertyId}&title=${encodeURIComponent(stay.title)}`;
+
+                    // Safe escaping for strings passed to JS function click handler
+                    const safeTitle = (stay.title || '').replace(/'/g, "\\'");
+                    const safeLocality = (stay.locality || 'Guwahati').replace(/'/g, "\\'");
+                    const safeImage = (img || '').replace(/'/g, "\\'");
+
+                    grid.innerHTML += `
+                    <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between group">
+                        <a href="${detailUrl}" class="relative overflow-hidden aspect-[4/3] bg-slate-100 block cursor-pointer">
+                            <img src="${img}" alt="${stay.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-gray-900 shadow-sm flex items-center gap-1">
+                                <i class="fa-solid fa-star text-amber-500"></i> ${rating} (${reviews})
+                            </div>
+                        </a>
+                        <div class="p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-1.5 text-xs font-bold text-teal-600 tracking-wide uppercase">
+                                    <i class="fa-solid fa-location-dot"></i> ${stay.locality || 'Guwahati'}, GUWAHATI
+                                </div>
+                                <h3 class="font-bold text-lg text-slate-900 mt-1 group-hover:text-teal-600 transition truncate">
+                                    <a href="${detailUrl}">${stay.title}</a>
+                                </h3>
+                                <div class="flex flex-wrap gap-1.5 mt-3">
+                                    ${tagsHTML}
+                                </div>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <span class="text-xl font-extrabold text-slate-900">₹${stay.pricePerNight}</span>
+                                    <span class="text-xs text-slate-400 block -mt-0.5">/ night value</span>
+                                </div>
+                                <button onclick="handleReserveSpace('${propertyId}', '${safeTitle}', ${stay.pricePerNight}, '${safeLocality}', '${safeImage}')" class="bg-slate-900 hover:bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow-sm">
+                                    Reserve Space
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+
+            } catch (error) {
+                console.error("Failed to sync listing data grid pipeline:", error);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadVerifiedHomestays();
+
+            const savedLang = localStorage.getItem('preferredLang') || 'en';
+            document.getElementById('langSelector').value = savedLang;
+            applyTranslations(savedLang);
+
+            const currentUser = JSON.parse(localStorage.getItem("userProfile"));
+            const signInBtn = document.getElementById("authSignInBtn");
+            const dashboardBtn = document.getElementById("authDashboardBtn");
+            const avatarCircle = document.getElementById("userAvatarCircle");
+
+            if (currentUser && signInBtn && dashboardBtn) {
+                signInBtn.classList.add("hidden");
+                dashboardBtn.classList.remove("hidden");
+                if (currentUser?.name && avatarCircle) {
+                    avatarCircle.textContent = currentUser.name.charAt(0).toUpperCase();
+                }
+            }
+        });
+    </script>
+    <script src="lang-manager.js"></script>
+</body>
+</html>

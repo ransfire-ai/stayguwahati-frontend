@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayGuwahati | Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+
+    <!-- Admin Navigation -->
+    <nav class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-2xl text-teal-400"></i>
+                <span class="text-xl font-black tracking-tight">Stay<span class="text-teal-400">Guwahati</span> <span class="text-xs bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded ml-1 font-bold">Admin</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="text-sm font-semibold text-slate-300 hover:text-white transition">Home</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Admin Container -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900">Property Verification Pipeline</h1>
+                <p class="text-slate-500 text-sm mt-0.5">Review, approve, or reject incoming host property listings securely.</p>
+            </div>
+            <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-200 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Live Tracking Active
+            </span>
+        </div>
+
+        <!-- STATUS FILTER TABS -->
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button id="tab-pending" onclick="setFilter('pending')" class="filter-tab bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-clock-rotate-left"></i> Pending Review
+            </button>
+            <button id="tab-approved" onclick="setFilter('approved')" class="filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-circle-check text-emerald-600"></i> Approved Listings
+            </button>
+            <button id="tab-rejected" onclick="setFilter('rejected')" class="filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-circle-xmark text-rose-600"></i> Rejected
+            </button>
+            <button id="tab-all" onclick="setFilter('all')" class="filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-layer-group text-teal-600"></i> All Properties
+            </button>
+        </div>
+
+        <!-- Table Container -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                            <th class="py-4 px-6">Property Details</th>
+                            <th class="py-4 px-6">Locality</th>
+                            <th class="py-4 px-6">Pricing</th>
+                            <th class="py-4 px-6">Host Contact</th>
+                            <th class="py-4 px-6">Current Status</th>
+                            <th class="py-4 px-6 text-right">Moderation Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody" class="divide-y divide-slate-100 text-sm">
+                        <tr>
+                            <td colspan="6" class="text-center py-12 text-slate-400">
+                                <i class="fa-solid fa-circle-notch fa-spin text-2xl text-teal-500 mb-2"></i>
+                                <p>Loading property moderation queue...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Photo Modal Preview -->
+    <div id="photoModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <button onclick="closePhotoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-xl font-bold p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-images text-teal-600"></i> Uploaded Property Photos
+            </h3>
+            <div id="modalGallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto p-2 border border-slate-100 rounded-xl bg-slate-50 min-h-[200px]">
+                <!-- Dynamic images injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+        let currentFilter = 'pending';
+        
+        // NEW: Global object to store property images in memory instead of the HTML DOM
+        let loadedPropertyImages = {}; 
+
+        function setFilter(status) {
+            currentFilter = status;
+
+            // Reset Tab UI Styles
+            document.querySelectorAll('.filter-tab').forEach(btn => {
+                btn.className = 'filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm';
+            });
+
+            const activeBtn = document.getElementById(`tab-${status}`);
+            if (activeBtn) {
+                activeBtn.className = 'filter-tab bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm';
+            }
+
+            fetchAdminHomestays();
+        }
+
+        async function fetchAdminHomestays() {
+            const tableBody = document.getElementById("adminTableBody");
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-12 text-slate-400">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl text-teal-500 mb-2"></i>
+                        <p>Updating view...</p>
+                    </td>
+                </tr>`;
+
+            try {
+                let listings = [];
+
+                if (currentFilter === 'all') {
+                    // Fetch pending, approved, and rejected listings concurrently
+                    const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+                        fetch(`${BACKEND_URL}/api/homestays?status=pending`).then(r => r.json()),
+                        fetch(`${BACKEND_URL}/api/homestays?status=approved`).then(r => r.json()),
+                        fetch(`${BACKEND_URL}/api/homestays?status=rejected`).then(r => r.json())
+                    ]);
+
+                    listings = [
+                        ...(pendingRes.data || []),
+                        ...(approvedRes.data || []),
+                        ...(rejectedRes.data || [])
+                    ];
+                } else {
+                    const response = await fetch(`${BACKEND_URL}/api/homestays?status=${currentFilter}`);
+                    const result = await response.json();
+                    listings = result.data || result;
+                }
+
+                if (!listings || listings.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center py-12 text-slate-400 font-medium">
+                                <i class="fa-solid fa-folder-open text-slate-300 text-3xl mb-2 block"></i>
+                                No ${currentFilter} property submissions found.
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                tableBody.innerHTML = "";
+                // Clear the cache before loading new items
+                loadedPropertyImages = {}; 
+
+                listings.forEach(stay => {
+                    // Store images in memory via ID to prevent bloated HTML
+                    loadedPropertyImages[stay._id] = stay.images || [];
+
+                    // Image URL Resolution
+                    let mainImg = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300";
+                    if (stay.images && stay.images.length > 0) {
+                        const rawImg = stay.images[0];
+                        mainImg = rawImg.startsWith('/') ? `${BACKEND_URL}${rawImg}` : rawImg;
+                    }
+
+                    // Host Contact Details
+                    const hostName = stay.host?.name || stay.owner || "Host";
+                    const hostEmail = stay.host?.email || stay.email || "No Email Provided";
+                    const hostPhone = stay.host?.phone || stay.phone || "No Phone Provided";
+
+                    // Status Badge Mapping
+                    let statusBadgeHTML = '';
+                    const statusVal = (stay.status || 'pending').toLowerCase();
+
+                    if (statusVal === 'approved') {
+                        statusBadgeHTML = `<span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-200"><i class="fa-solid fa-circle-check text-xs mr-1"></i> Approved</span>`;
+                    } else if (statusVal === 'rejected') {
+                        statusBadgeHTML = `<span class="bg-rose-50 text-rose-700 text-xs font-bold px-2.5 py-1 rounded-full border border-rose-200"><i class="fa-solid fa-circle-xmark text-xs mr-1"></i> Rejected</span>`;
+                    } else {
+                        statusBadgeHTML = `<span class="bg-amber-50 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-200"><i class="fa-solid fa-clock text-xs mr-1"></i> Pending Verification</span>`;
+                    }
+
+                    // Dynamic Action Buttons Based on Status
+                    let actionsHTML = '';
+                    if (statusVal === 'pending') {
+                        actionsHTML = `
+                            <button onclick="updateStatus('${stay._id}', 'approved')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">
+                                Approve
+                            </button>
+                            <button onclick="updateStatus('${stay._id}', 'rejected')" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">
+                                Reject
+                            </button>`;
+                    } else if (statusVal === 'approved') {
+                        actionsHTML = `
+                            <button onclick="updateStatus('${stay._id}', 'rejected')" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">
+                                Revoke / Reject
+                            </button>`;
+                    } else {
+                        actionsHTML = `
+                            <button onclick="updateStatus('${stay._id}', 'approved')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">
+                                Re-Approve
+                            </button>`;
+                    }
+
+                    // We now pass ONLY the stay._id into openPhotoModal, vastly shrinking the generated HTML
+                    tableBody.innerHTML += `
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <!-- PROPERTY DETAILS -->
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div onclick="openPhotoModal('${stay._id}')" 
+                                         class="w-14 h-14 rounded-xl overflow-hidden bg-slate-200 shrink-0 cursor-pointer border border-slate-200 relative group"
+                                         title="Click to view host photos">
+                                        <img src="${mainImg}" alt="${stay.title}" class="w-full h-full object-cover group-hover:scale-110 transition duration-300">
+                                        <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-900 hover:text-teal-600 transition cursor-pointer" onclick="openPhotoModal('${stay._id}')">${stay.title}</h4>
+                                        <p class="text-xs text-slate-400 font-mono mt-0.5">ID: ${stay._id}</p>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- LOCALITY -->
+                            <td class="py-4 px-6 font-medium text-slate-700">
+                                ${stay.locality || 'Guwahati'}
+                            </td>
+
+                            <!-- PRICING -->
+                            <td class="py-4 px-6 font-bold text-slate-900">
+                                ₹${stay.pricePerNight}<span class="text-xs font-normal text-slate-400">/night</span>
+                            </td>
+
+                            <!-- HOST CONTACT -->
+                            <td class="py-4 px-6">
+                                <div class="text-xs font-semibold text-slate-900">${hostName}</div>
+                                <div class="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-envelope text-slate-400"></i> ${hostEmail}
+                                </div>
+                                <div class="text-xs text-teal-600 font-semibold mt-1 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-phone"></i> ${hostPhone}
+                                </div>
+                            </td>
+
+                            <!-- STATUS -->
+                            <td class="py-4 px-6">
+                                ${statusBadgeHTML}
+                            </td>
+
+                            <!-- ACTIONS -->
+                            <td class="py-4 px-6 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    ${actionsHTML}
+                                </div>
+                            </td>
+                        </tr>`;
+                });
+
+            } catch (err) {
+                console.error("Failed to load admin property pipeline:", err);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-12 text-rose-500 font-medium">
+                            <i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i>
+                            Failed to load moderation pipeline. Check server connection.
+                        </td>
+                    </tr>`;
+            }
+        }
+
+        async function updateStatus(id, newStatus) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/homestays/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    fetchAdminHomestays();
+                } else {
+                    alert("Status update failed: " + data.message);
+                }
+            } catch (err) {
+                alert("Server communication error.");
+            }
+        }
+
+        // Modal Photo Viewer Controls updated to use ID to fetch from memory cache
+        function openPhotoModal(propertyId) {
+            const modal = document.getElementById('photoModal');
+            const gallery = document.getElementById('modalGallery');
+            
+            // Retrieve images from our memory object using the ID
+            const images = loadedPropertyImages[propertyId] || [];
+
+            gallery.innerHTML = "";
+
+            if (!images || images.length === 0) {
+                gallery.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">No images uploaded for this listing.</div>`;
+            } else {
+                images.forEach(img => {
+                    const fullUrl = img.startsWith('/') ? `${BACKEND_URL}${img}` : img;
+                    gallery.innerHTML += `
+                        <div class="h-48 rounded-xl overflow-hidden bg-slate-200 border border-slate-200">
+                            <a href="${fullUrl}" target="_blank">
+                                <img src="${fullUrl}" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+                            </a>
+                        </div>`;
+                });
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photoModal').classList.add('hidden');
+        }
+
+        document.addEventListener("DOMContentLoaded", fetchAdminHomestays);
+    </script>
+</body>
+</html>

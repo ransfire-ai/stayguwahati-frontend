@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayGuwahati | Discovery Map</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>.custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }</style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans h-screen flex flex-col overflow-hidden">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo (Now clickable to return Home) -->
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+                <i class="fa-solid fa-house-chimney text-teal-600 text-2xl"></i>
+                <span class="text-xl font-bold text-teal-800">StayGuwahati</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex items-center gap-6 text-sm font-medium h-full">
+                <a href="index.html" class="text-gray-500 hover:text-teal-600 transition flex items-center h-full">
+                    Home
+                </a>
+                <a href="dashboard.html" class="text-gray-500 hover:text-teal-600 transition flex items-center h-full">
+                    Dashboard
+                </a>
+                <!-- Active Tab styling -->
+                <a href="map.html" class="text-teal-600 border-b-2 border-teal-600 transition flex items-center h-full">
+                    Live Map
+                </a>
+            </nav>
+
+            <!-- Right Button Spacer -->
+            <div></div>
+            
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <div class="w-full lg:w-1/3 flex flex-col border-r border-gray-200 bg-white">
+            <div class="p-6 border-b border-gray-100">
+                <h1 class="text-2xl font-black text-gray-900">Explore Stays</h1>
+                <p id="resultCount" class="text-gray-500 text-sm mt-1">Loading availability...</p>
+            </div>
+            <div id="homestayGrid" class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar"></div>
+        </div>
+        <div class="hidden lg:block lg:w-2/3 relative bg-gray-200">
+            <div id="map" class="h-full w-full"></div>
+        </div>
+    </main>
+
+    <script>
+        let map;
+        let markerGroup;
+        const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+
+        function initializeMap() {
+            map = L.map('map', { zoomControl: false }).setView([26.1445, 91.7362], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+            markerGroup = L.layerGroup().addTo(map);
+        }
+
+        window.focusOnProperty = function(lat, lng, id) { 
+            map.flyTo([lat, lng], 16, { duration: 1.5 }); 
+        };
+
+        window.viewPropertyDetails = function(id, title, price, locality, image) {
+            const params = new URLSearchParams({
+                id: id,
+                title: title,
+                price: price,
+                locality: locality,
+                image: image
+            });
+            window.location.href = `property-details.html?${params.toString()}`;
+        };
+
+        function renderCards(properties) {
+            const grid = document.getElementById("homestayGrid");
+            const countLabel = document.getElementById("resultCount");
+            countLabel.textContent = `Showing ${properties.length} verified stays in Guwahati`;
+            if (properties.length === 0) { 
+                grid.innerHTML = `<div class="text-center py-20 text-gray-400 font-medium">No stays found.</div>`; 
+                return; 
+            }
+            grid.innerHTML = properties.map(stay => {
+                let img = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400";
+                if (stay.images && stay.images.length > 0) {
+                    img = stay.images[0].startsWith('/uploads') ? `${BACKEND_URL}${stay.images[0]}` : stay.images[0];
+                }
+                const propId = stay.id || stay._id || '';
+                const encodedImg = encodeURIComponent(img);
+
+                return `
+                    <div class="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg transition-all cursor-pointer hover:border-teal-200">
+                        <div class="h-40 overflow-hidden" onclick="window.focusOnProperty(${stay.lat}, ${stay.lng}, '${propId}')">
+                            <img src="${img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                        </div>
+                        <div class="p-4" onclick="window.viewPropertyDetails('${propId}', '${encodeURIComponent(stay.title)}', '${stay.pricePerNight}', '${encodeURIComponent(stay.locality || 'Guwahati')}', '${encodedImg}')">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] font-bold text-teal-600 uppercase tracking-widest">${stay.locality || 'Guwahati'}</span>
+                                    <h3 class="font-bold text-gray-900 mt-0.5">${stay.title}</h3>
+                                </div>
+                                <span class="bg-teal-50 text-teal-700 text-[10px] px-2 py-0.5 rounded font-bold">VERIFIED</span>
+                            </div>
+                            <div class="mt-4 flex items-center justify-between">
+                                <span class="text-lg font-black text-gray-900">₹${stay.pricePerNight} <span class="text-xs font-normal text-gray-400">/ night</span></span>
+                                <span class="text-xs font-bold text-teal-600 group-hover:underline">View Details &rarr;</span>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function plotMapMarkers(properties) {
+            markerGroup.clearLayers();
+            properties.forEach(stay => {
+                const marker = L.circleMarker([stay.lat, stay.lng], { radius: 8, fillColor: "#0d9488", color: "#fff", weight: 2, fillOpacity: 1 });
+                const propId = stay.id || stay._id || '';
+                let img = (stay.images && stay.images.length > 0) ? (stay.images[0].startsWith('/uploads') ? `${BACKEND_URL}${stay.images[0]}` : stay.images[0]) : '';
+                
+                marker.bindPopup(`
+                    <div style="text-align: center;">
+                        <b>${stay.title}</b><br>₹${stay.pricePerNight} per night<br>
+                        <button onclick="window.viewPropertyDetails('${propId}', '${encodeURIComponent(stay.title)}', '${stay.pricePerNight}', '${encodeURIComponent(stay.locality || 'Guwahati')}', '${encodeURIComponent(img)}')"" style="margin-top:5px; background:#0d9488; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">View Property</button>
+                    </div>
+                `);
+                marker.addTo(markerGroup);
+            });
+        }
+
+        async function init() {
+            initializeMap();
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/homestays`);
+                const data = await res.json();
+                const props = data.data || [];
+                renderCards(props);
+                plotMapMarkers(props);
+            } catch (err) { console.error("Fetch error:", err); }
+        }
+        document.addEventListener("DOMContentLoaded", init);
+    </script>
+<script src="lang-manager.js"></script>
+</body>
+</html>

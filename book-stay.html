@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Stay - StayGuwahati</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        .flatpickr-day.disabled { color: #cbd5e1 !important; text-decoration: line-through; }
+        .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #0d9488 !important; border-color: #0d9488 !important; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+                <i class="fa-solid fa-house-chimney text-teal-600 text-2xl"></i>
+                <span class="text-xl font-bold text-teal-800">StayGuwahati</span>
+            </div>
+            <div class="flex items-center gap-6 text-sm font-medium text-gray-600">
+                <nav class="flex items-center gap-6">
+                    <a href="index.html" class="hover:text-teal-600 transition">Home</a>
+                    <a href="map.html" class="hover:text-teal-600 transition">Explore Map</a>
+                    <a href="#" onclick="handleListPropertyClick(event)" class="hover:text-teal-600 transition">List Property</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="flex items-center gap-3 mb-8">
+            <a href="index.html" class="text-gray-500 hover:text-gray-900 transition flex items-center gap-1 text-sm font-medium">
+                <i class="fa-solid fa-arrow-left"></i> Back to listings
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
+            <div class="lg:col-span-3 space-y-8">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Confirm Your Booking</h1>
+                    <p class="text-gray-500 mt-1 text-sm">Please fill out your traveler information details below to finalize your reservation.</p>
+                </div>
+
+                <form id="bookingForm" class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <h2 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-user text-teal-600 text-sm"></i> Traveler Information
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">First Name</label>
+                            <input type="text" required id="firstName" placeholder="John" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Last Name</label>
+                            <input type="text" required id="lastName" placeholder="Doe" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Email Address</label>
+                            <input type="email" required id="email" placeholder="john.doe@example.com" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Phone Number</label>
+                            <input type="tel" required id="phone" placeholder="10-digit mobile number" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition">
+                        </div>
+                    </div>
+
+                    <h2 class="text-lg font-bold text-gray-900 border-b border-gray-100 pt-4 pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-teal-600 text-sm"></i> Your Dates
+                    </h2>
+                    
+                    <div class="mt-6">
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Check-In & Check-Out Window</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
+                                    <i class="fa-solid fa-calendar-days"></i>
+                                </div>
+                                <input type="text" id="dateRangePicker" required placeholder="Choose your dates..." class="w-full bg-white border border-slate-200 rounded-lg py-2.5 pl-10 pr-4 text-sm font-medium text-slate-800 focus:outline-none focus:border-teal-500 transition cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3.5 px-6 rounded-xl transition shadow-md hover:shadow flex items-center justify-center gap-2 mt-4">
+                        <i class="fa-solid fa-credit-card"></i> Confirm & Complete Booking
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-2">
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <h3 class="text-lg font-bold text-slate-900">Price Summary</h3>
+                    <div class="flex gap-4 items-center border-b pb-4">
+                        <img id="summaryImage" src="" class="w-16 h-16 object-cover rounded-xl shadow-sm">
+                        <div>
+                            <span id="summaryLocality" class="text-xs font-bold text-teal-600 uppercase tracking-wider block"></span>
+                            <h4 id="summaryTitle" class="font-bold text-slate-900 text-sm"></h4>
+                            <span class="text-xs text-slate-400 block mt-0.5">Verified Local Host</span>
+                        </div>
+                    </div>
+                    <div class="space-y-3 text-sm text-slate-600 border-b pb-4">
+                        <div class="flex justify-between">
+                            <span>Base Rate</span>
+                            <span id="baseRateValue" class="font-semibold text-slate-900">₹0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Service Fee</span>
+                            <span id="serviceFeeValue" class="font-semibold text-slate-900">₹250</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>GST & Local Taxes</span>
+                            <span id="gstValue" class="font-semibold text-slate-900">₹0</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center pt-2">
+                        <span class="font-bold text-slate-900">Total Due Amount</span>
+                        <span id="grandTotalValue" class="text-2xl font-black text-teal-600">₹0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function handleListPropertyClick(event) {
+            event.preventDefault();
+            const userToken = localStorage.getItem('token') || localStorage.getItem('user');
+
+            if (userToken) {
+                window.location.href = 'add-property.html';
+            } else {
+                alert('Please log in first to list your property.');
+                window.location.href = 'login.html';
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            let sessionData = {};
+            try {
+                const stored = sessionStorage.getItem('pendingBooking');
+                if (stored) {
+                    sessionData = JSON.parse(stored);
+                }
+            } catch (err) {
+                console.error("Error reading sessionStorage:", err);
+            }
+
+            const homestayId = urlParams.get('id') || sessionData.id; 
+            const urlPrice = urlParams.get('price') || sessionData.price;
+            const urlTitle = urlParams.get('title') || sessionData.title;
+            const urlLocality = urlParams.get('locality') || sessionData.locality;
+            const urlImage = sessionData.image || urlParams.get('image'); 
+            
+            let pricePerNight = 0;
+            
+            function calculateInvoice(baseRate, nights) {
+                const totalBase = baseRate * nights;
+                const serviceFee = 250;
+                const gstTaxes = Math.round(totalBase * 0.12);
+                const grandTotal = totalBase + serviceFee + gstTaxes;
+
+                document.getElementById("baseRateValue").textContent = `₹${totalBase.toLocaleString('en-IN')}`;
+                document.getElementById("gstValue").textContent = `₹${gstTaxes.toLocaleString('en-IN')}`;
+                document.getElementById("grandTotalValue").textContent = `₹${grandTotal.toLocaleString('en-IN')}`;
+            }
+
+            const summaryImg = document.getElementById('summaryImage');
+            const summaryTitle = document.getElementById('summaryTitle');
+            const summaryLocality = document.getElementById('summaryLocality');
+            const defaultPlaceholder = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800";
+            
+            let loadedProperty = null;
+
+            function formatImageUrl(imagePath) {
+                if (!imagePath) return defaultPlaceholder;
+                if (imagePath.startsWith('data:image')) {
+                    return imagePath; 
+                }
+                if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+                    return imagePath;
+                }
+                if (imagePath.startsWith('/uploads')) {
+                    return `http://localhost:5000${imagePath}`;
+                }
+                return imagePath;
+            }
+
+            if (summaryImg) {
+                summaryImg.onerror = () => { summaryImg.src = defaultPlaceholder; };
+            }
+
+            if (homestayId && homestayId !== 'null' && homestayId !== 'undefined' && homestayId.trim() !== '') {
+                try {
+                    const response = await fetch(`http://localhost:5000/api/homestays/${homestayId}`);
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        loadedProperty = result.data;
+                    }
+                } catch (error) {
+                    console.warn("Could not fetch property from server ID:", error);
+                }
+            }
+
+            if (!loadedProperty) {
+                const localProperties = JSON.parse(localStorage.getItem('userProperties')) || [];
+                loadedProperty = localProperties.find(p => 
+                    (p._id && p._id === homestayId) || 
+                    (p.id && p.id === homestayId) || 
+                    (urlTitle && p.title && p.title.toLowerCase() === urlTitle.toLowerCase())
+                );
+            }
+
+            if (loadedProperty) {
+                pricePerNight = Number(loadedProperty.pricePerNight || loadedProperty.price) || 0;
+                if (summaryTitle) summaryTitle.textContent = loadedProperty.title || urlTitle || "Homestay";
+                if (summaryLocality) summaryLocality.textContent = loadedProperty.locality || urlLocality || "Guwahati";
+                
+                if (summaryImg) {
+                    const firstImage = (loadedProperty.images && loadedProperty.images.length > 0) 
+                        ? loadedProperty.images[0] 
+                        : (urlImage || defaultPlaceholder);
+                    summaryImg.src = formatImageUrl(firstImage);
+                }
+            } else {
+                pricePerNight = parseInt(urlPrice) || 0;
+                if (summaryTitle) summaryTitle.textContent = urlTitle || "Homestay";
+                if (summaryLocality) summaryLocality.textContent = urlLocality || "Guwahati";
+                if (summaryImg) {
+                    summaryImg.src = urlImage ? formatImageUrl(decodeURIComponent(urlImage)) : defaultPlaceholder;
+                }
+            }
+
+            if (pricePerNight > 0) {
+                calculateInvoice(pricePerNight, 1);
+            }
+
+            flatpickr("#dateRangePicker", {
+                mode: "range",
+                minDate: "today",
+                dateFormat: "Y-m-d",
+                onChange: function(selectedDates) {
+                    if (selectedDates.length === 2) {
+                        const diffTime = Math.abs(selectedDates[1] - selectedDates[0]);
+                        let totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        if (totalNights === 0) totalNights = 1;
+                        
+                        calculateInvoice(pricePerNight, totalNights);
+                    }
+                }
+            });
+
+            // Handle Booking Form Submission
+            const bookingForm = document.getElementById('bookingForm');
+            if (bookingForm) {
+                bookingForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const firstName = document.getElementById('firstName').value.trim();
+                    const lastName = document.getElementById('lastName').value.trim();
+                    const email = document.getElementById('email').value.trim();
+                    const phone = document.getElementById('phone').value.trim();
+                    const dateRange = document.getElementById('dateRangePicker').value;
+
+                    if (!dateRange || !dateRange.includes('to')) {
+                        alert('Please select a valid check-in and check-out date range.');
+                        return;
+                    }
+
+                    const dates = dateRange.split(' to ');
+                    const checkIn = dates[0];
+                    const checkOut = dates[1];
+
+                    // Calculate nights accurately
+                    const diffTime = Math.abs(new Date(checkOut) - new Date(checkIn));
+                    const totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+
+                    // Clean total amount string to raw number (e.g., "₹4,750" -> 4750)
+                    const rawTotalText = document.getElementById('grandTotalValue').textContent;
+                    const numericTotal = parseFloat(rawTotalText.replace(/[^\d.]/g, '')) || 0;
+
+                    const bookingData = {
+                        homestayId: (homestayId && homestayId !== 'unknown' && homestayId !== 'null' && homestayId !== 'undefined') ? homestayId : null,
+                        propertyName: summaryTitle ? summaryTitle.textContent : 'Homestay',
+                        locality: summaryLocality ? summaryLocality.textContent : (loadedProperty?.locality || 'Guwahati'),
+                        image: summaryImg ? summaryImg.src : defaultPlaceholder,
+                        firstName,
+                        lastName,
+                        email,
+                        phone,
+                        checkIn,
+                        checkOut,
+                        dates: `${checkIn} to ${checkOut}`,
+                        nights: totalNights,
+                        totalPrice: numericTotal
+                    };
+
+                    try {
+                        const response = await fetch('http://localhost:5000/api/bookings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(bookingData)
+                        });
+                        
+                        const result = await response.json();
+                        if (!response.ok) {
+                            throw new Error(result.message || 'Server error while saving booking.');
+                        }
+
+                        alert('Booking confirmed successfully!');
+                        window.location.href = 'dashboard.html';
+                    } catch (err) {
+                        console.error("Failed to save booking:", err);
+                        alert('Could not connect to the server to save your booking: ' + err.message);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
