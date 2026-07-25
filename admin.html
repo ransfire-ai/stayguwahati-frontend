@@ -17,6 +17,9 @@
                 <span class="text-base sm:text-xl font-black tracking-tight">Stay<span class="text-teal-400">Guwahati</span> <span class="text-[10px] sm:text-xs bg-teal-500/20 text-teal-300 px-1.5 sm:px-2 py-0.5 rounded ml-1 font-bold">Admin</span></span>
             </div>
             <div class="flex items-center gap-4 shrink-0">
+                <button onclick="logoutAdmin()" class="text-xs sm:text-sm font-semibold text-rose-400 hover:text-rose-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
                 <a href="index.html" class="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">Home</a>
             </div>
         </div>
@@ -96,8 +99,39 @@
     <script>
         const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
         let currentFilter = 'pending';
-        
         let loadedPropertyImages = {}; 
+
+        // --- AUTHENTICATION & ROLE VALIDATION GUARD ---
+        function checkAdminAccess() {
+            const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+            const userProfileStr = localStorage.getItem("userProfile");
+
+            if (!token || !userProfileStr) {
+                // Not logged in, redirect to login page
+                window.location.href = "login.html";
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userProfileStr);
+                // Check if user role is explicitly admin
+                if (!user || user.role !== "admin") {
+                    alert("Access Denied: Administrator privileges required.");
+                    window.location.href = "dashboard.html";
+                    return false;
+                }
+            } catch (e) {
+                localStorage.clear();
+                window.location.href = "login.html";
+                return false;
+            }
+            return true;
+        }
+
+        function logoutAdmin() {
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
 
         function setFilter(status) {
             currentFilter = status;
@@ -115,7 +149,11 @@
         }
 
         async function fetchAdminHomestays() {
+            if (!checkAdminAccess()) return;
+
             const tableBody = document.getElementById("adminTableBody");
+            const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="6" class="text-center py-12 text-slate-400">
@@ -126,12 +164,13 @@
 
             try {
                 let listings = [];
+                const headers = { 'Authorization': `Bearer ${token}` };
 
                 if (currentFilter === 'all') {
                     const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
-                        fetch(`${BACKEND_URL}/api/homestays?status=pending`).then(r => r.json()),
-                        fetch(`${BACKEND_URL}/api/homestays?status=approved`).then(r => r.json()),
-                        fetch(`${BACKEND_URL}/api/homestays?status=rejected`).then(r => r.json())
+                        fetch(`${BACKEND_URL}/api/homestays?status=pending`, { headers }).then(r => r.json()),
+                        fetch(`${BACKEND_URL}/api/homestays?status=approved`, { headers }).then(r => r.json()),
+                        fetch(`${BACKEND_URL}/api/homestays?status=rejected`, { headers }).then(r => r.json())
                     ]);
 
                     listings = [
@@ -140,7 +179,7 @@
                         ...(rejectedRes.data || [])
                     ];
                 } else {
-                    const response = await fetch(`${BACKEND_URL}/api/homestays?status=${currentFilter}`);
+                    const response = await fetch(`${BACKEND_URL}/api/homestays?status=${currentFilter}`, { headers });
                     const result = await response.json();
                     listings = result.data || result;
                 }
@@ -261,18 +300,24 @@
         }
 
         async function updateStatus(id, newStatus) {
+            if (!checkAdminAccess()) return;
+            const token = localStorage.getItem("token") || localStorage.getItem("authToken");
+
             try {
                 const response = await fetch(`${BACKEND_URL}/api/admin/homestays/${id}/status`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({ status: newStatus })
                 });
 
                 const data = await response.json();
-                if (data.success) {
+                if (response.ok && data.success) {
                     fetchAdminHomestays();
                 } else {
-                    alert("Status update failed: " + data.message);
+                    alert("Status update failed: " + (data.message || "Unauthorized action"));
                 }
             } catch (err) {
                 alert("Server communication error.");
@@ -284,7 +329,6 @@
             const gallery = document.getElementById('modalGallery');
             
             const images = loadedPropertyImages[propertyId] || [];
-
             gallery.innerHTML = "";
 
             if (!images || images.length === 0) {
@@ -308,7 +352,12 @@
             document.getElementById('photoModal').classList.add('hidden');
         }
 
-        document.addEventListener("DOMContentLoaded", fetchAdminHomestays);
+        // Run validation immediately on script load before rendering contents
+        document.addEventListener("DOMContentLoaded", () => {
+            if (checkAdminAccess()) {
+                fetchAdminHomestays();
+            }
+        });
     </script>
 </body>
 </html>
