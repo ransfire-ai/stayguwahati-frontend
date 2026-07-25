@@ -19,13 +19,13 @@
 <body class="bg-gray-50 min-h-screen font-sans flex flex-col justify-between">
 
     <header class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-16 py-2 sm:py-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
             <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
-                <i class="fa-solid fa-house-chimney text-teal-600 text-2xl"></i>
-                <span class="text-xl font-bold text-teal-800">StayGuwahati</span>
+                <i class="fa-solid fa-house-chimney text-teal-600 text-xl sm:text-2xl"></i>
+                <span class="text-lg sm:text-xl font-bold text-teal-800">StayGuwahati</span>
             </div>
             
-            <div class="flex items-center gap-4">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-4 ml-auto sm:ml-0">
                 <select id="langSelector" class="bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-700 rounded-xl p-1.5 focus:outline-none focus:border-teal-500 cursor-pointer transition">
                     <option value="en">English</option>
                     <option value="as">অসমীয়া (Assamese)</option>
@@ -33,13 +33,13 @@
                 </select>
 
                 <button id="roleSwitcherBtn" onclick="toggleUserRole()" 
-                        class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold px-3.5 py-1.5 rounded-xl text-xs transition border border-teal-200 flex items-center gap-1.5">
+                        class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold px-3 py-1.5 rounded-xl text-xs transition border border-teal-200 flex items-center gap-1.5">
                 </button>
 
-                <div class="h-6 w-px bg-gray-200"></div>
+                <div class="hidden sm:block h-6 w-px bg-gray-200"></div>
 
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-sm" id="userAvatar">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-sm" id="userAvatar">
                         U
                     </div>
                     <span id="navUserName" class="text-xs font-bold text-gray-700 hidden sm:inline">User</span>
@@ -51,15 +51,15 @@
         </div>
     </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8">
         
-        <div class="mb-8 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="mb-6 sm:mb-8 bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 id="welcomeHeader" class="text-2xl font-black text-gray-900 tracking-tight">Hello, <span id="welcomeName" class="text-teal-700">User</span>!</h1>
+                <h1 id="welcomeHeader" class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Hello, <span id="welcomeName" class="text-teal-700">User</span>!</h1>
                 <p id="roleSubtext" class="text-gray-400 text-xs mt-1">Manage your traveler reservations and local itineraries.</p>
             </div>
-            <div id="hostActionWrapper" class="hidden">
-                <a href="add-property.html" id="listPropertyBtn" class="bg-slate-900 hover:bg-teal-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+            <div id="hostActionWrapper" class="hidden w-full sm:w-auto">
+                <a href="add-property.html" id="listPropertyBtn" class="w-full sm:w-auto bg-slate-900 hover:bg-teal-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-plus"></i> List New Property
                 </a>
             </div>
@@ -67,16 +67,16 @@
 
         <!-- Traveler Section -->
         <section id="travelerSection" class="space-y-6">
-            <h2 id="travelerHeading" class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h2 id="travelerHeading" class="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
                 <i class="fa-solid fa-plane-departure text-teal-600 text-sm"></i> Your Bookings & Trips
             </h2>
             
-            <div id="bookingsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div id="bookingsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <!-- Dynamically populated -->
             </div>
 
-            <div class="mt-12 pt-4">
-                <h3 id="wishlistHeading" class="text-base font-bold text-gray-900 flex items-center gap-2 mb-4">
+            <div class="mt-8 sm:mt-12 pt-4">
+                <h3 id="wishlistHeading" class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 mb-4">
                     <i class="fa-regular fa-heart text-rose-500"></i> Your Saved Wishlists
                 </h3>
                 <div id="wishlistContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -84,8 +84,8 @@
                 </div>
             </div>
 
-            <div class="mt-12 space-y-4 pt-2">
-                <h3 id="historyHeading" class="text-base font-bold text-gray-900 flex items-center gap-2">
+            <div class="mt-8 sm:mt-12 space-y-4 pt-2">
+                <h3 id="historyHeading" class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
                     <i class="fa-solid fa-clock-rotate-left text-gray-500"></i> Past Trips History
                 </h3>
                 <div id="historyContainer">
@@ -93,8 +93,8 @@
                 </div>
             </div>
 
-            <div class="mt-12 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm space-y-4">
-                <h3 id="profileHeading" class="text-base font-bold text-gray-900 flex items-center gap-2">
+            <div class="mt-8 sm:mt-12 bg-white border border-gray-100 p-4 sm:p-6 rounded-2xl shadow-sm space-y-4">
+                <h3 id="profileHeading" class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
                     <i class="fa-regular fa-id-card text-teal-600"></i> Traveler Profile Credentials
                 </h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -107,7 +107,7 @@
                         <input type="email" id="editProfileEmail" class="w-full border border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-2.5 cursor-not-allowed" disabled>
                     </div>
                 </div>
-                <button onclick="saveProfileChanges()" id="updateProfileBtn" class="bg-slate-950 hover:bg-teal-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                <button onclick="saveProfileChanges()" id="updateProfileBtn" class="w-full sm:w-auto bg-slate-950 hover:bg-teal-600 text-white font-bold px-4 py-2.5 sm:py-2 rounded-xl text-xs transition">
                     Update Settings Data
                 </button>
             </div>
@@ -115,31 +115,31 @@
 
         <!-- Host Section -->
         <section id="hostSection" class="hidden space-y-6">
-            <h2 id="hostHeading" class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h2 id="hostHeading" class="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
                 <i class="fa-solid fa-hotel text-teal-600 text-sm"></i> Your Managed Properties Directory
             </h2>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
                     <p id="statIncomeLabel" class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Monthly Income</p>
-                    <p class="text-xl font-black text-slate-900 mt-1">₹0</p>
+                    <p class="text-lg sm:text-xl font-black text-slate-900 mt-1">₹0</p>
                 </div>
                 <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
                     <p id="statListingsLabel" class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Active Listings</p>
-                    <p class="text-xl font-black text-teal-600 mt-1" id="statListingsVal">0 Properties</p>
+                    <p class="text-lg sm:text-xl font-black text-teal-600 mt-1" id="statListingsVal">0 Properties</p>
                 </div>
                 <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
                     <p id="statRatingLabel" class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Platform Rating</p>
-                    <p class="text-xl font-black text-amber-500 mt-1">0.0 <i class="fa-solid fa-star text-xs"></i></p>
+                    <p class="text-lg sm:text-xl font-black text-amber-500 mt-1">0.0 <i class="fa-solid fa-star text-xs"></i></p>
                 </div>
             </div>
 
-            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 space-y-4">
-                <h3 id="pipelineHeading" class="text-base font-bold text-gray-900 flex items-center gap-2">
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-6 space-y-4">
+                <h3 id="pipelineHeading" class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
                     <i class="fa-solid fa-calendar-check text-teal-600"></i> Reservation Control Pipeline
                 </h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
+                <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                    <table class="w-full min-w-[600px] text-left text-xs border-collapse">
                         <thead>
                             <tr class="border-b border-gray-100 text-gray-400 font-medium">
                                 <th class="pb-3 font-semibold" id="thGuest">Guest</th>
@@ -158,19 +158,19 @@
             </div>
 
             <div class="pt-4">
-                <h3 id="activeListingsHeading" class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <h3 id="activeListingsHeading" class="text-sm sm:text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <i class="fa-solid fa-list text-gray-600"></i> Your Active Listings
                 </h3>
-                <div id="hostPropertiesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                <div id="hostPropertiesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"></div>
             </div>
         </section>
 
         <!-- Message Modal -->
-        <div id="messageModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-2xl max-w-md w-full p-6 border border-gray-100 shadow-xl space-y-4 flex flex-col h-[500px]">
+        <div id="messageModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4 flex flex-col h-[480px] sm:h-[500px]">
                 <div class="flex justify-between items-center border-b pb-3 border-gray-100">
                     <div>
-                        <h3 class="text-base font-bold text-gray-900" id="msgModalGuestName">Chat with Guest</h3>
+                        <h3 class="text-sm sm:text-base font-bold text-gray-900" id="msgModalGuestName">Chat with Guest</h3>
                         <p class="text-[10px] text-teal-600 font-semibold" id="msgModalPropTitle">Property</p>
                     </div>
                     <button onclick="closeMessageModal()" class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
@@ -182,7 +182,7 @@
 
                 <form onsubmit="sendGuestMessage(event)" class="flex gap-2 pt-2">
                     <input type="text" id="chatInput" placeholder="Type a message..." class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-teal-500 font-medium" required>
-                    <button type="submit" class="bg-teal-600 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1 shadow-sm">
+                    <button type="submit" class="bg-teal-600 hover:bg-slate-900 text-white font-bold px-3.5 sm:px-4 py-2 rounded-xl text-xs transition flex items-center gap-1 shadow-sm">
                         <span>Send</span> <i class="fa-solid fa-paper-plane text-[10px]"></i>
                     </button>
                 </form>
@@ -190,10 +190,10 @@
         </div>
 
         <!-- Review Modal -->
-        <div id="reviewModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-2xl max-w-md w-full p-6 border border-gray-100 shadow-xl space-y-4">
+        <div id="reviewModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4">
                 <div class="flex justify-between items-center">
-                    <h3 id="modalReviewTitle" class="text-base font-bold text-gray-900">Leave a Property Review</h3>
+                    <h3 id="modalReviewTitle" class="text-sm sm:text-base font-bold text-gray-900">Leave a Property Review</h3>
                     <button onclick="closeReviewModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-sm"></i></button>
                 </div>
                 <form id="reviewForm" class="space-y-4 text-xs" onsubmit="handleReviewSubmit(event)">
@@ -217,10 +217,10 @@
         </div>
 
         <!-- Receipt Modal -->
-        <div id="receiptModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-2xl max-w-md w-full p-6 border border-gray-100 shadow-xl space-y-4">
+        <div id="receiptModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-base font-bold text-gray-900">Booking Receipt</h3>
+                    <h3 class="text-sm sm:text-base font-bold text-gray-900">Booking Receipt</h3>
                     <button onclick="closeReceiptModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-sm"></i></button>
                 </div>
                 <div class="text-xs space-y-2 text-gray-600">
@@ -228,13 +228,13 @@
                     <p><strong>Platform:</strong> StayGuwahati Unified Core</p>
                     <p class="text-teal-700 font-bold">Thank you for booking with StayGuwahati!</p>
                 </div>
-                <button onclick="closeReceiptModal()" class="w-full bg-slate-900 text-white font-bold py-2 rounded-xl text-xs">Close</button>
+                <button onclick="closeReceiptModal()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">Close</button>
             </div>
         </div>
 
     </main>
 
-    <footer id="footerText" class="text-center py-4 text-xs text-gray-400 border-t border-gray-100 bg-white mt-12">
+    <footer id="footerText" class="text-center py-4 px-3 text-xs text-gray-400 border-t border-gray-100 bg-white mt-12">
         &copy; 2026 StayGuwahati Platform Unified Core Engine. All rights reserved.
     </footer>
 
@@ -346,7 +346,6 @@
                     tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-xs text-gray-400">${text.noReservations}</td></tr>`;
                 } else {
                     tableBody.innerHTML = displayReservations.map(r => {
-                        // Extract guest name from firstName/lastName fields or fallback database parameters
                         let rawName = '';
                         if (r.firstName || r.lastName) {
                             rawName = `${r.firstName || ''} ${r.lastName || ''}`.trim();
@@ -438,67 +437,61 @@
 
         function renderStaticTravelerSections() {
             const text = dictionary[currentLang] || dictionary.en;
-            const wishlists = JSON.parse(localStorage.getItem("userWishlist")) || [];
             const wishlistContainer = document.getElementById("wishlistContainer");
-            
-            wishlistContainer.innerHTML = wishlists.length === 0 ? 
-                `<div class="col-span-full bg-white border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noWishlist}</p></div>` :
-                wishlists.map((w, idx) => `
-                    <div class="bg-white border border-gray-100 p-3 rounded-xl flex gap-3 items-center shadow-xs w-full">
-                        <div class="w-16 h-16 bg-cover bg-center rounded-lg" style="background-image: url('${resolveImageUrl(w.image || w.imageUrl || w.propertyImage)}');"></div>
-                        <div class="flex-1">
-                            <h4 class="font-bold text-gray-900 text-xs">${w.title || w.propertyName || 'Saved Property'}</h4>
-                            <p class="text-teal-600 text-[10px] font-bold mt-0.5">₹${w.price || 0}/night</p>
+            const savedWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
+            if (savedWishlist.length === 0) {
+                wishlistContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noWishlist}</p></div>`;
+            } else {
+                wishlistContainer.innerHTML = savedWishlist.map(w => `
+                    <div class="bg-white border border-gray-100 rounded-xl p-3 flex gap-3 items-center shadow-sm">
+                        <div class="w-16 h-16 bg-gray-200 bg-cover bg-center rounded-lg shrink-0" style="background-image: url('${resolveImageUrl(w.image || w.imageUrl)}')"></div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-gray-900 text-xs truncate">${w.title || 'Property'}</h4>
+                            <p class="text-gray-400 text-[10px] mt-0.5">${w.location || 'Guwahati'}</p>
+                            <span class="text-teal-600 font-black text-xs block mt-1">₹${w.price || 0}/night</span>
                         </div>
                     </div>
                 `).join('');
+            }
 
             const historyContainer = document.getElementById("historyContainer");
-            const historyTrips = JSON.parse(localStorage.getItem("userHistory")) || [];
-            historyContainer.innerHTML = historyTrips.length === 0 ?
-                `<div class="bg-white border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noHistory}</p></div>` :
-                historyTrips.map(h => `
-                    <div class="bg-white border border-gray-100 p-4 rounded-xl flex justify-between items-center text-xs shadow-xs mb-3">
-                        <div>
-                            <p class="font-bold text-gray-900">${h.title || h.propertyName || 'Past Stay'}</p>
-                            <p class="text-gray-400 text-[10px] mt-0.5">${h.dates || 'Completed'}</p>
-                        </div>
-                        <button onclick="openReviewModal()" class="bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-700 font-semibold px-3 py-1.5 rounded-lg transition">${text.leaveReview}</button>
-                    </div>
-                `).join('');
-
-            document.getElementById("editProfileName").value = currentUser.name || "";
-            document.getElementById("editProfileEmail").value = currentUser.email || "";
+            historyContainer.innerHTML = `<div class="bg-white border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noHistory}</p></div>`;
         }
 
         function updateUI() {
             const text = dictionary[currentLang] || dictionary.en;
-
+            
+            document.getElementById("welcomeName").textContent = currentUser.name || "User";
             document.getElementById("navUserName").textContent = currentUser.name || "User";
             document.getElementById("userAvatar").textContent = (currentUser.name || "U").charAt(0).toUpperCase();
-            document.getElementById("welcomeName").textContent = currentUser.name || "User";
-            document.getElementById("roleSwitcherBtn").textContent = currentRole === "host" ? text.switchTraveler : text.switchHost;
-            document.getElementById("roleSubtext").textContent = currentRole === "host" ? text.subTextHost : text.subTextTraveler;
+            document.getElementById("editProfileName").value = currentUser.name || "";
+            document.getElementById("editProfileEmail").value = currentUser.email || "";
 
-            const travelerSec = document.getElementById("travelerSection");
-            const hostSec = document.getElementById("hostSection");
+            const roleBtn = document.getElementById("roleSwitcherBtn");
+            const travelerSection = document.getElementById("travelerSection");
+            const hostSection = document.getElementById("hostSection");
             const hostActionWrapper = document.getElementById("hostActionWrapper");
 
             if (currentRole === "host") {
-                travelerSec.classList.add("hidden");
-                hostSec.classList.remove("hidden");
+                roleBtn.innerHTML = `<i class="fa-solid fa-plane"></i> <span class="hidden sm:inline">${text.switchTraveler}</span>`;
+                roleBtn.title = text.switchTraveler;
+                travelerSection.classList.add("hidden");
+                hostSection.classList.remove("hidden");
                 hostActionWrapper.classList.remove("hidden");
+                document.getElementById("roleSubtext").textContent = text.subTextHost;
                 fetchHostActiveProperties();
             } else {
-                travelerSec.classList.remove("hidden");
-                hostSec.classList.add("hidden");
+                roleBtn.innerHTML = `<i class="fa-solid fa-hotel"></i> <span class="hidden sm:inline">${text.switchHost}</span>`;
+                roleBtn.title = text.switchHost;
+                hostSection.classList.add("hidden");
+                travelerSection.classList.remove("hidden");
                 hostActionWrapper.classList.add("hidden");
+                document.getElementById("roleSubtext").textContent = text.subTextTraveler;
                 fetchTravelerBookings();
                 renderStaticTravelerSections();
             }
 
             document.getElementById("welcomeHeader").innerHTML = `${text.welcome}, <span id="welcomeName" class="text-teal-700">${currentUser.name || "User"}</span>!`;
-            document.getElementById("listPropertyBtn").innerHTML = `<i class="fa-solid fa-plus"></i> ${text.listProp}`;
             document.getElementById("travelerHeading").innerHTML = `<i class="fa-solid fa-plane-departure text-teal-600 text-sm"></i> ${text.travelerHead}`;
             document.getElementById("wishlistHeading").innerHTML = `<i class="fa-regular fa-heart text-rose-500"></i> ${text.wishlistHead}`;
             document.getElementById("historyHeading").innerHTML = `<i class="fa-solid fa-clock-rotate-left text-gray-500"></i> ${text.historyHead}`;
@@ -506,6 +499,7 @@
             document.getElementById("labelProfileName").textContent = text.labelName;
             document.getElementById("labelProfileEmail").textContent = text.labelEmail;
             document.getElementById("updateProfileBtn").textContent = text.updateBtn;
+            
             document.getElementById("hostHeading").innerHTML = `<i class="fa-solid fa-hotel text-teal-600 text-sm"></i> ${text.hostHead}`;
             document.getElementById("statIncomeLabel").textContent = text.incomeLabel;
             document.getElementById("statListingsLabel").textContent = text.listingsLabel;
@@ -517,16 +511,12 @@
             document.getElementById("thPayout").textContent = text.thPay;
             document.getElementById("thStatus").textContent = text.thS;
             document.getElementById("thActions").textContent = text.thA;
-            document.getElementById("activeListHead").innerHTML = `<i class="fa-solid fa-list text-gray-600"></i> ${text.activeListHead}`;
-            document.getElementById("modalReviewTitle").textContent = text.mReviewTitle;
-            document.getElementById("modalRatingLabel").textContent = text.mRating;
-            document.getElementById("modalCommentLabel").textContent = text.mComment;
-            document.getElementById("modalReviewSubmitBtn").textContent = text.mSubmit;
+            document.getElementById("activeListingsHeading").innerHTML = `<i class="fa-solid fa-list text-gray-600"></i> ${text.activeListHead}`;
             document.getElementById("footerText").textContent = text.footer;
         }
 
         function toggleUserRole() {
-            currentRole = currentRole === "host" ? "traveler" : "host";
+            currentRole = currentRole === "traveler" ? "host" : "traveler";
             localStorage.setItem("activeDashboardRole", currentRole);
             updateUI();
         }
@@ -535,26 +525,32 @@
             localStorage.removeItem('token');
             localStorage.removeItem('userProfile');
             localStorage.removeItem('activeDashboardRole');
+            alert("Signed out successfully.");
             window.location.replace("login.html");
         }
 
         function saveProfileChanges() {
             const newName = document.getElementById("editProfileName").value.trim();
-            if (newName) {
-                currentUser.name = newName;
-                localStorage.setItem("userProfile", JSON.stringify(currentUser));
-                updateUI();
-                alert("Profile credentials updated successfully!");
+            if (!newName) {
+                alert("Name cannot be empty.");
+                return;
             }
+            currentUser.name = newName;
+            localStorage.setItem("userProfile", JSON.stringify(currentUser));
+            alert("Profile settings updated successfully!");
+            updateUI();
         }
 
         function openMessageModal(guestName, propTitle) {
-            currentActiveChatGuest = guestName;
             document.getElementById("msgModalGuestName").textContent = `Chat with ${guestName}`;
             document.getElementById("msgModalPropTitle").textContent = propTitle;
-            document.getElementById("chatHistoryBox").innerHTML = `
-                <div class="bg-white p-2 rounded-lg shadow-2xs text-gray-700 max-w-[80%]">
-                    Hello! I'm interested in your property (${propTitle}).
+            currentActiveChatGuest = guestName;
+            
+            const chatBox = document.getElementById("chatHistoryBox");
+            chatBox.innerHTML = `
+                <div class="text-center text-[10px] text-gray-400 my-2">Conversation started with ${guestName}</div>
+                <div class="bg-white p-2.5 rounded-xl rounded-tl-none shadow-xs max-w-[80%] text-gray-700">
+                    Hello! I'm interested in discussing the booking details for ${propTitle}.
                 </div>
             `;
             document.getElementById("messageModal").classList.remove("hidden");
@@ -564,34 +560,20 @@
             document.getElementById("messageModal").classList.add("hidden");
         }
 
-        function sendGuestMessage(event) {
-            event.preventDefault();
+        function sendGuestMessage(e) {
+            e.preventDefault();
             const input = document.getElementById("chatInput");
-            const box = document.getElementById("chatHistoryBox");
             const msg = input.value.trim();
             if (!msg) return;
 
-            box.innerHTML += `
-                <div class="bg-teal-50 text-teal-900 p-2 rounded-lg shadow-2xs max-w-[80%] ml-auto text-right">
+            const chatBox = document.getElementById("chatHistoryBox");
+            chatBox.innerHTML += `
+                <div class="bg-teal-600 text-white p-2.5 rounded-xl rounded-tr-none shadow-xs max-w-[80%] ml-auto">
                     ${msg}
                 </div>
             `;
             input.value = "";
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function openReviewModal() {
-            document.getElementById("reviewModal").classList.remove("hidden");
-        }
-
-        function closeReviewModal() {
-            document.getElementById("reviewModal").classList.add("hidden");
-        }
-
-        function handleReviewSubmit(event) {
-            event.preventDefault();
-            alert("Review submitted successfully!");
-            closeReviewModal();
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function openReceiptModal() {
@@ -602,14 +584,18 @@
             document.getElementById("receiptModal").classList.add("hidden");
         }
 
-        document.getElementById("langSelector").value = currentLang;
         document.getElementById("langSelector").addEventListener("change", (e) => {
             currentLang = e.target.value;
             localStorage.setItem("preferredLanguage", currentLang);
             updateUI();
         });
 
-        window.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", () => {
+            const storedUser = localStorage.getItem("userProfile");
+            if (storedUser) {
+                try { currentUser = JSON.parse(storedUser); } catch(e){}
+            }
+            document.getElementById("langSelector").value = currentLang;
             updateUI();
         });
     </script>

@@ -9,43 +9,47 @@
 </head>
 <body class="bg-gray-50 min-h-screen font-sans flex flex-col justify-between">
 
-    <header class="bg-white shadow-sm border-b border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-16 py-2 sm:py-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
             <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='dashboard.html'">
-                <span class="text-sm font-bold text-teal-600 mr-1">A.</span>
-                <i class="fa-solid fa-arrow-left text-teal-600 text-lg"></i>
-                <span class="text-sm font-bold text-gray-600">Back to Dashboard</span>
+                <span class="text-xs sm:text-sm font-bold text-teal-600 mr-1">A.</span>
+                <i class="fa-solid fa-arrow-left text-teal-600 text-base sm:text-lg"></i>
+                <span class="text-xs sm:text-sm font-bold text-gray-600">Back to Dashboard</span>
             </div>
         </div>
     </header>
 
-    <main class="flex-1 max-w-2xl w-full mx-auto p-6">
-        <div class="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm space-y-4">
+    <main class="flex-1 max-w-2xl w-full mx-auto p-3 sm:p-6">
+        <div class="bg-white border border-gray-100 p-4 sm:p-6 rounded-2xl shadow-sm space-y-4">
             <div>
-                <h1 class="text-xl font-black text-gray-900 tracking-tight">Modify Property Details</h1>
+                <h1 class="text-lg sm:text-xl font-black text-gray-900 tracking-tight">Modify Property Details</h1>
                 <p class="text-gray-400 text-xs mt-1">Update your listing information instantly across the directory.</p>
             </div>
 
             <form id="editPropertyForm" class="space-y-4 text-xs">
                 <div>
                     <label class="block text-gray-500 font-bold mb-1 uppercase tracking-wider">Property Title</label>
-                    <input type="text" id="propTitle" class="w-full border border-gray-200 rounded-xl p-2.5 font-medium focus:outline-teal-500" required>
+                    <input type="text" id="propTitle" class="w-full border border-gray-200 rounded-xl p-3 sm:p-2.5 font-medium focus:outline-teal-500" required>
                 </div>
                 <div>
                     <label class="block text-gray-500 font-bold mb-1 uppercase tracking-wider">Locality Area</label>
-                    <input type="text" id="propLocality" class="w-full border border-gray-200 rounded-xl p-2.5 font-medium focus:outline-teal-500" required>
+                    <input type="text" id="propLocality" class="w-full border border-gray-200 rounded-xl p-3 sm:p-2.5 font-medium focus:outline-teal-500" required>
                 </div>
                 <div>
                     <label class="block text-gray-500 font-bold mb-1 uppercase tracking-wider">Price Per Night (₹)</label>
-                    <input type="number" id="propPrice" class="w-full border border-gray-200 rounded-xl p-2.5 font-medium focus:outline-teal-500" required>
+                    <input type="number" id="propPrice" class="w-full border border-gray-200 rounded-xl p-3 sm:p-2.5 font-medium focus:outline-teal-500" required>
                 </div>
                 
-                <button type="submit" class="w-full bg-slate-950 hover:bg-teal-600 text-white font-bold py-2.5 rounded-xl transition shadow-sm mt-2">
+                <button type="submit" class="w-full bg-slate-950 hover:bg-teal-600 text-white font-bold py-3 sm:py-2.5 rounded-xl transition shadow-sm mt-2">
                     Save Structural Updates
                 </button>
             </form>
         </div>
     </main>
+
+    <footer class="text-center py-4 px-3 text-xs text-gray-400 border-t border-gray-100 bg-white mt-12">
+        &copy; 2026 StayGuwahati Platform Unified Core Engine. All rights reserved.
+    </footer>
 
     <script>
         // 📋 Extract the query parameter ID from the current browser URL bar
@@ -102,6 +106,6 @@
             }
         });
     </script>
-<script src="lang-manager.js"></script>
+    <script src="lang-manager.js"></script>
 </body>
 </html>

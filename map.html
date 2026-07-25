@@ -8,21 +8,36 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <style>.custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }</style>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; } 
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+        /* Mobile View Toggle Styling & Responsive Fixes */
+        @media (max-width: 1023px) {
+            body.show-map #listPanel { display: none; }
+            body.show-map #mapPanel { display: block !important; }
+            body:not(.show-map) #listPanel { display: flex; flex-direction: column; }
+            body:not(.show-map) #mapPanel { display: none; }
+        }
+        @media (min-width: 1024px) {
+            #listPanel { display: flex !important; flex-direction: column !important; }
+            #mapPanel { display: block !important; }
+        }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans h-screen flex flex-col overflow-hidden">
 
-    <header class="bg-white shadow-sm sticky top-0 z-50">
+    <header class="bg-white shadow-sm sticky top-0 z-50 shrink-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             
-            <!-- Logo (Now clickable to return Home) -->
+            <!-- Logo (Clickable to return Home) -->
             <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
                 <i class="fa-solid fa-house-chimney text-teal-600 text-2xl"></i>
                 <span class="text-xl font-bold text-teal-800">StayGuwahati</span>
             </div>
 
             <!-- Navigation Links -->
-            <nav class="flex items-center gap-6 text-sm font-medium h-full">
+            <nav class="hidden sm:flex items-center gap-6 text-sm font-medium h-full">
                 <a href="index.html" class="text-gray-500 hover:text-teal-600 transition flex items-center h-full">
                     Home
                 </a>
@@ -41,15 +56,27 @@
         </div>
     </header>
 
-    <main class="flex-1 flex overflow-hidden">
-        <div class="w-full lg:w-1/3 flex flex-col border-r border-gray-200 bg-white">
-            <div class="p-6 border-b border-gray-100">
+    <!-- Mobile View Switcher Bar (Visible only on mobile screens) -->
+    <div class="lg:hidden flex bg-white border-b border-gray-200 p-2.5 z-40 shrink-0 justify-center">
+        <div class="bg-gray-100 p-1 rounded-xl flex w-full max-w-xs shadow-inner">
+            <button id="showListBtn" onclick="switchMobileView('list')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-teal-600 text-white transition shadow-sm flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-list"></i> List View
+            </button>
+            <button id="showMapBtn" onclick="switchMobileView('map')" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-map"></i> Map View
+            </button>
+        </div>
+    </div>
+
+    <main class="flex-1 flex overflow-hidden relative">
+        <div id="listPanel" class="w-full lg:w-1/3 flex flex-col border-r border-gray-200 bg-white h-full overflow-hidden">
+            <div class="p-6 border-b border-gray-100 shrink-0">
                 <h1 class="text-2xl font-black text-gray-900">Explore Stays</h1>
                 <p id="resultCount" class="text-gray-500 text-sm mt-1">Loading availability...</p>
             </div>
             <div id="homestayGrid" class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar"></div>
         </div>
-        <div class="hidden lg:block lg:w-2/3 relative bg-gray-200">
+        <div id="mapPanel" class="w-full lg:w-2/3 relative bg-gray-200 h-full">
             <div id="map" class="h-full w-full"></div>
         </div>
     </main>
@@ -66,8 +93,32 @@
             markerGroup = L.layerGroup().addTo(map);
         }
 
+        function switchMobileView(view) {
+            const showListBtn = document.getElementById('showListBtn');
+            const showMapBtn = document.getElementById('showMapBtn');
+
+            if (view === 'list') {
+                document.body.classList.remove('show-map');
+                showListBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-teal-600 text-white transition shadow-sm flex items-center justify-center gap-1.5";
+                showMapBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center gap-1.5";
+            } else {
+                document.body.classList.add('show-map');
+                showMapBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-teal-600 text-white transition shadow-sm flex items-center justify-center gap-1.5";
+                showListBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center gap-1.5";
+                if (map) {
+                    setTimeout(() => { map.invalidateSize(); }, 150);
+                }
+            }
+        }
+
         window.focusOnProperty = function(lat, lng, id) { 
-            map.flyTo([lat, lng], 16, { duration: 1.5 }); 
+            // On mobile, automatically switch to map view when clicking image to focus
+            if (window.innerWidth < 1024) {
+                switchMobileView('map');
+            }
+            if (map) {
+                map.flyTo([lat, lng], 16, { duration: 1.5 }); 
+            }
         };
 
         window.viewPropertyDetails = function(id, title, price, locality, image) {

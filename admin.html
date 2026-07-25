@@ -9,27 +9,27 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
 
-    <!-- Admin Navigation -->
+    <!-- Admin Navigation with Mobile Responsiveness Fix -->
     <nav class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-shield-halved text-2xl text-teal-400"></i>
-                <span class="text-xl font-black tracking-tight">Stay<span class="text-teal-400">Guwahati</span> <span class="text-xs bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded ml-1 font-bold">Admin</span></span>
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex justify-between items-center">
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <i class="fa-solid fa-shield-halved text-xl sm:text-2xl text-teal-400"></i>
+                <span class="text-base sm:text-xl font-black tracking-tight">Stay<span class="text-teal-400">Guwahati</span> <span class="text-[10px] sm:text-xs bg-teal-500/20 text-teal-300 px-1.5 sm:px-2 py-0.5 rounded ml-1 font-bold">Admin</span></span>
             </div>
-            <div class="flex items-center gap-4">
-                <a href="index.html" class="text-sm font-semibold text-slate-300 hover:text-white transition">Home</a>
+            <div class="flex items-center gap-4 shrink-0">
+                <a href="index.html" class="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">Home</a>
             </div>
         </div>
     </nav>
 
     <!-- Main Admin Container -->
-    <main class="max-w-7xl mx-auto px-6 py-8">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <h1 class="text-2xl font-black text-slate-900">Property Verification Pipeline</h1>
-                <p class="text-slate-500 text-sm mt-0.5">Review, approve, or reject incoming host property listings securely.</p>
+                <h1 class="text-xl sm:text-2xl font-black text-slate-900">Property Verification Pipeline</h1>
+                <p class="text-slate-500 text-xs sm:text-sm mt-0.5">Review, approve, or reject incoming host property listings securely.</p>
             </div>
-            <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-200 flex items-center gap-2">
+            <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-200 flex items-center gap-2 shrink-0">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 Live Tracking Active
             </span>
@@ -37,16 +37,16 @@
 
         <!-- STATUS FILTER TABS -->
         <div class="flex flex-wrap gap-2 mb-6">
-            <button id="tab-pending" onclick="setFilter('pending')" class="filter-tab bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+            <button id="tab-pending" onclick="setFilter('pending')" class="filter-tab bg-slate-900 text-white px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
                 <i class="fa-solid fa-clock-rotate-left"></i> Pending Review
             </button>
-            <button id="tab-approved" onclick="setFilter('approved')" class="filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+            <button id="tab-approved" onclick="setFilter('approved')" class="filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
                 <i class="fa-solid fa-circle-check text-emerald-600"></i> Approved Listings
             </button>
-            <button id="tab-rejected" onclick="setFilter('rejected')" class="filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+            <button id="tab-rejected" onclick="setFilter('rejected')" class="filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
                 <i class="fa-solid fa-circle-xmark text-rose-600"></i> Rejected
             </button>
-            <button id="tab-all" onclick="setFilter('all')" class="filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+            <button id="tab-all" onclick="setFilter('all')" class="filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
                 <i class="fa-solid fa-layer-group text-teal-600"></i> All Properties
             </button>
         </div>
@@ -97,20 +97,18 @@
         const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
         let currentFilter = 'pending';
         
-        // NEW: Global object to store property images in memory instead of the HTML DOM
         let loadedPropertyImages = {}; 
 
         function setFilter(status) {
             currentFilter = status;
 
-            // Reset Tab UI Styles
             document.querySelectorAll('.filter-tab').forEach(btn => {
-                btn.className = 'filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm';
+                btn.className = 'filter-tab bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm';
             });
 
             const activeBtn = document.getElementById(`tab-${status}`);
             if (activeBtn) {
-                activeBtn.className = 'filter-tab bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm';
+                activeBtn.className = 'filter-tab bg-slate-900 text-white px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm';
             }
 
             fetchAdminHomestays();
@@ -130,7 +128,6 @@
                 let listings = [];
 
                 if (currentFilter === 'all') {
-                    // Fetch pending, approved, and rejected listings concurrently
                     const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
                         fetch(`${BACKEND_URL}/api/homestays?status=pending`).then(r => r.json()),
                         fetch(`${BACKEND_URL}/api/homestays?status=approved`).then(r => r.json()),
@@ -160,26 +157,21 @@
                 }
 
                 tableBody.innerHTML = "";
-                // Clear the cache before loading new items
                 loadedPropertyImages = {}; 
 
                 listings.forEach(stay => {
-                    // Store images in memory via ID to prevent bloated HTML
                     loadedPropertyImages[stay._id] = stay.images || [];
 
-                    // Image URL Resolution
                     let mainImg = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300";
                     if (stay.images && stay.images.length > 0) {
                         const rawImg = stay.images[0];
                         mainImg = rawImg.startsWith('/') ? `${BACKEND_URL}${rawImg}` : rawImg;
                     }
 
-                    // Host Contact Details
                     const hostName = stay.host?.name || stay.owner || "Host";
                     const hostEmail = stay.host?.email || stay.email || "No Email Provided";
                     const hostPhone = stay.host?.phone || stay.phone || "No Phone Provided";
 
-                    // Status Badge Mapping
                     let statusBadgeHTML = '';
                     const statusVal = (stay.status || 'pending').toLowerCase();
 
@@ -191,7 +183,6 @@
                         statusBadgeHTML = `<span class="bg-amber-50 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-200"><i class="fa-solid fa-clock text-xs mr-1"></i> Pending Verification</span>`;
                     }
 
-                    // Dynamic Action Buttons Based on Status
                     let actionsHTML = '';
                     if (statusVal === 'pending') {
                         actionsHTML = `
@@ -213,10 +204,8 @@
                             </button>`;
                     }
 
-                    // We now pass ONLY the stay._id into openPhotoModal, vastly shrinking the generated HTML
                     tableBody.innerHTML += `
                         <tr class="hover:bg-slate-50/80 transition">
-                            <!-- PROPERTY DETAILS -->
                             <td class="py-4 px-6">
                                 <div class="flex items-center gap-3">
                                     <div onclick="openPhotoModal('${stay._id}')" 
@@ -233,18 +222,12 @@
                                     </div>
                                 </div>
                             </td>
-
-                            <!-- LOCALITY -->
                             <td class="py-4 px-6 font-medium text-slate-700">
                                 ${stay.locality || 'Guwahati'}
                             </td>
-
-                            <!-- PRICING -->
                             <td class="py-4 px-6 font-bold text-slate-900">
                                 ₹${stay.pricePerNight}<span class="text-xs font-normal text-slate-400">/night</span>
                             </td>
-
-                            <!-- HOST CONTACT -->
                             <td class="py-4 px-6">
                                 <div class="text-xs font-semibold text-slate-900">${hostName}</div>
                                 <div class="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
@@ -254,13 +237,9 @@
                                     <i class="fa-solid fa-phone"></i> ${hostPhone}
                                 </div>
                             </td>
-
-                            <!-- STATUS -->
                             <td class="py-4 px-6">
                                 ${statusBadgeHTML}
                             </td>
-
-                            <!-- ACTIONS -->
                             <td class="py-4 px-6 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     ${actionsHTML}
@@ -300,12 +279,10 @@
             }
         }
 
-        // Modal Photo Viewer Controls updated to use ID to fetch from memory cache
         function openPhotoModal(propertyId) {
             const modal = document.getElementById('photoModal');
             const gallery = document.getElementById('modalGallery');
             
-            // Retrieve images from our memory object using the ID
             const images = loadedPropertyImages[propertyId] || [];
 
             gallery.innerHTML = "";

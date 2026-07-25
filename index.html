@@ -10,23 +10,25 @@
 <body class="bg-slate-50 text-slate-800 font-sans">
 
     <nav class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-house-chimney-window text-2xl text-teal-600"></i>
-                <span data-i18n="nav_brand" class="text-xl font-black text-slate-900 tracking-tight">Stay<span class="text-teal-600">Guwahati</span></span>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+                <i class="fa-solid fa-house-chimney-window text-xl sm:text-2xl text-teal-600"></i>
+                <span data-i18n="nav_brand" class="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Stay<span class="text-teal-600">Guwahati</span></span>
             </div>
-            <div class="flex gap-6 items-center">
-                <a href="index.html" class="font-medium text-teal-600 border-b-2 border-teal-600 pb-1" id="navHome" data-i18n="nav_home">Home</a>
+
+            <!-- Desktop Nav Links -->
+            <div class="hidden md:flex gap-6 items-center">
+                <a href="index.html" class="font-medium text-teal-600 border-b-2 border-teal-600 pb-1 text-sm" id="navHome" data-i18n="nav_home">Home</a>
                 
-                <a href="add-property.html" onclick="requireLoginToList(event)" class="text-slate-600 hover:text-teal-600 font-medium transition">
+                <a href="add-property.html" onclick="requireLoginToList(event)" class="text-slate-600 hover:text-teal-600 font-medium transition text-sm">
                     <i class="fa-solid fa-circle-plus mr-1"></i><span id="navProperty" data-i18n="nav_list_property">List Property</span>
                 </a>
 
-                <a href="map.html" class="bg-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-700 transition shadow-sm">
+                <a href="map.html" class="bg-teal-600 text-white px-3.5 py-2 rounded-lg font-medium hover:bg-teal-700 transition shadow-sm text-sm">
                     <i class="fa-solid fa-map-location-dot mr-2"></i><span id="navMap" data-i18n="nav_explore_map">Explore Map View</span>
                 </a>
                 
-                <a href="support.html" class="font-medium text-slate-600 hover:text-teal-600 transition flex items-center gap-1.5">
+                <a href="support.html" class="font-medium text-slate-600 hover:text-teal-600 transition flex items-center gap-1.5 text-sm">
                     <i class="fa-solid fa-headset text-sm"></i> <span id="navSupport" data-i18n="nav_support">Support</span>
                 </a>
 
@@ -37,7 +39,7 @@
                 </select>
                 
                 <div id="navAuthContainer" class="flex items-center">
-                    <a href="login.html" id="authSignInBtn" class="bg-slate-950 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-600 transition shadow-sm flex items-center gap-2">
+                    <a href="login.html" id="authSignInBtn" class="bg-slate-950 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-600 transition shadow-sm flex items-center gap-2 text-sm">
                         <i class="fa-solid fa-right-to-bracket text-xs"></i>
                         <span id="navSignIn" data-i18n="nav_sign_in">Sign In</span>
                     </a>
@@ -48,85 +50,131 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Mobile Menu Header Controls -->
+            <div class="flex items-center gap-3 md:hidden">
+                <select id="langSelectorMobile" class="bg-gray-50 border border-gray-200 text-[10px] rounded-lg p-1 focus:outline-none focus:border-teal-500 font-semibold text-gray-700 cursor-pointer shadow-sm">
+                    <option value="en">English</option>
+                    <option value="as">অসমীয়া</option>
+                    <option value="hi">हिंदी</option>
+                </select>
+                <button id="mobileMenuBtn" class="text-slate-800 hover:text-teal-600 focus:outline-none text-xl p-1.5">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Menu -->
+        <div id="mobileMenu" class="hidden md:hidden bg-white border-b border-gray-200 px-4 pt-3 pb-5 space-y-3 shadow-lg">
+            <a href="index.html" class="block font-medium text-teal-600 py-1.5 text-sm border-b border-gray-100" data-i18n="nav_home">Home</a>
+            <a href="add-property.html" onclick="requireLoginToList(event)" class="block text-slate-600 hover:text-teal-600 font-medium py-1.5 text-sm border-b border-gray-100">
+                <i class="fa-solid fa-circle-plus mr-2 text-teal-600"></i><span data-i18n="nav_list_property">List Property</span>
+            </a>
+            <a href="map.html" class="block text-slate-600 hover:text-teal-600 font-medium py-1.5 text-sm border-b border-gray-100">
+                <i class="fa-solid fa-map-location-dot mr-2 text-teal-600"></i><span data-i18n="nav_explore_map">Explore Map View</span>
+            </a>
+            <a href="support.html" class="block text-slate-600 hover:text-teal-600 font-medium py-1.5 text-sm border-b border-gray-100">
+                <i class="fa-solid fa-headset mr-2 text-teal-600"></i><span data-i18n="nav_support">Support</span>
+            </a>
+            <div class="pt-3">
+                <div id="mobileAuthContainer">
+                    <a href="login.html" id="mobileAuthSignInBtn" class="w-full text-center block bg-slate-950 text-white px-4 py-2.5 rounded-xl font-medium text-xs hover:bg-teal-600 transition shadow-sm">
+                        <i class="fa-solid fa-right-to-bracket mr-1.5"></i> <span data-i18n="nav_sign_in">Sign In</span>
+                    </a>
+                    <a href="dashboard.html" id="mobileAuthDashboardBtn" class="hidden w-full flex items-center justify-center gap-2 border border-gray-200 bg-gray-50 px-3 py-2 rounded-xl text-xs font-bold text-gray-700 shadow-sm">
+                        <div id="mobileUserAvatarCircle" class="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-[10px]"></div>
+                        <span data-i18n="nav_dashboard">My Dashboard</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </nav>
 
-    <header class="relative bg-slate-900 text-white py-24 px-6 overflow-hidden">
+    <header class="relative bg-slate-900 text-white py-16 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden">
         <div class="absolute inset-0 opacity-40 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200');"></div>
         <div class="relative max-w-4xl mx-auto text-center">
-            <span class="bg-teal-500/20 text-teal-300 font-bold text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-teal-500/30" id="heroTag" data-i18n="hero_tag">Premium Local Verifications</span>
-            <h1 class="text-4xl md:text-5xl font-black tracking-tight mt-4 mb-6 leading-tight" id="heroTitle" data-i18n="hero_title">Find Handpicked Homestays Across Guwahati</h1>
-            <p class="text-lg text-slate-300 max-w-2xl mx-auto mb-8" id="heroSubtitle" data-i18n="hero_subtitle">Skip the clinical hotels. Stay in authentic neighborhoods with trusted local hosts around Uzan Bazar, Paltan Bazar, and beyond.</p>
+            <span class="bg-teal-500/25 text-teal-300 font-bold text-[10px] sm:text-xs uppercase tracking-widest px-3.5 py-1 rounded-full border border-teal-500/30" id="heroTag" data-i18n="hero_tag">Premium Local Verifications</span>
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mt-4 mb-4 sm:mb-6 leading-tight" id="heroTitle" data-i18n="hero_title">Find Handpicked Homestays Across Guwahati</h1>
+            <p class="text-sm sm:text-base md:text-lg text-slate-300 max-w-2xl mx-auto mb-6 sm:mb-8" id="heroSubtitle" data-i18n="hero_subtitle">Skip the clinical hotels. Stay in authentic neighborhoods with trusted local hosts around Uzan Bazar, Paltan Bazar, and beyond.</p>
             
-            <a href="explore.html" class="inline-flex items-center justify-center bg-teal-500 text-slate-950 font-bold px-8 py-4 rounded-xl text-lg hover:bg-teal-400 transition transform hover:-translate-y-0.5 shadow-lg shadow-teal-500/20 group">
+            <a href="explore.html" class="inline-flex items-center justify-center bg-teal-500 text-slate-950 font-bold px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl text-base sm:text-lg hover:bg-teal-400 transition transform hover:-translate-y-0.5 shadow-lg shadow-teal-500/20 group">
                 <span data-i18n="hero_btn">Search Properties Live</span>
                 <i class="fa-solid fa-arrow-right ml-3 transition group-hover:translate-x-1"></i>
             </a>
         </div>
     </header>
 
-    <section class="max-w-7xl mx-auto px-6 pt-16 pb-8">
-        <div class="mb-10 text-center sm:text-left">
-            <h2 class="text-2xl font-black text-slate-900" data-i18n="sec1_title">Popular Neighborhoods</h2>
-            <p class="text-slate-500 mt-1" data-i18n="sec1_subtitle">Discover strategic locations to stay around the city.</p>
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-8">
+        <div class="mb-8 sm:mb-10 text-center sm:text-left">
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900" data-i18n="sec1_title">Popular Neighborhoods</h2>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1" data-i18n="sec1_subtitle">Discover strategic locations to stay around the city.</p>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
-                <div class="h-48 overflow-hidden relative">
+                <div class="h-44 sm:h-48 overflow-hidden relative">
                     <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                 </div>
-                <div class="p-5">
-                    <h3 class="font-bold text-lg text-slate-900" data-i18n="loc1_title">Uzan Bazar</h3>
-                    <p class="text-sm text-slate-500 mt-1" data-i18n="loc1_desc">Historic Riverside charm, culture hubs, and quiet leafy cafes.</p>
-                    <a href="index.html?location=Uzan Bazar" class="inline-block text-sm font-bold text-teal-600 mt-4 hover:text-teal-700" data-i18n="explore_link">Explore listings &rarr;</a>
+                <div class="p-4 sm:p-5">
+                    <h3 class="font-bold text-base sm:text-lg text-slate-900" data-i18n="loc1_title">Uzan Bazar</h3>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" data-i18n="loc1_desc">Historic Riverside charm, culture hubs, and quiet leafy cafes.</p>
+                    <a href="index.html?location=Uzan Bazar" class="inline-block text-xs sm:text-sm font-bold text-teal-600 mt-4 hover:text-teal-700" data-i18n="explore_link">Explore listings &rarr;</a>
                 </div>
             </div>
 
             <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
-                <div class="h-48 overflow-hidden relative">
+                <div class="h-44 sm:h-48 overflow-hidden relative">
                     <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                 </div>
-                <div class="p-5">
-                    <h3 class="font-bold text-lg text-slate-900" data-i18n="loc2_title">Paltan Bazar</h3>
-                    <p class="text-sm text-slate-500 mt-1" data-i18n="loc2_desc">Centrally located near transit links and active marketplaces.</p>
-                    <a href="index.html?location=Paltan Bazar" class="inline-block text-sm font-bold text-teal-600 mt-4 hover:text-teal-700" data-i18n="explore_link">Explore listings &rarr;</a>
+                <div class="p-4 sm:p-5">
+                    <h3 class="font-bold text-base sm:text-lg text-slate-900" data-i18n="loc2_title">Paltan Bazar</h3>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" data-i18n="loc2_desc">Centrally located near transit links and active marketplaces.</p>
+                    <a href="index.html?location=Paltan Bazar" class="inline-block text-xs sm:text-sm font-bold text-teal-600 mt-4 hover:text-teal-700" data-i18n="explore_link">Explore listings &rarr;</a>
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
-                <div class="h-48 overflow-hidden relative">
+            <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition sm:col-span-2 md:col-span-1">
+                <div class="h-44 sm:h-48 overflow-hidden relative">
                     <img src="https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                 </div>
-                <div class="p-5">
-                    <h3 class="font-bold text-lg text-slate-900" data-i18n="loc3_title">Ganeshguri</h3>
-                    <p class="text-sm text-slate-500 mt-1" data-i18n="loc3_desc">Vibrant commercial hub filled with food courts and boutique shopping.</p>
-                    <a href="index.html?location=Ganeshguri" class="inline-block text-sm font-bold text-teal-600 mt-4 hover:text-teal-700" data-i18n="explore_link">Explore listings &rarr;</a>
+                <div class="p-4 sm:p-5">
+                    <h3 class="font-bold text-base sm:text-lg text-slate-900" data-i18n="loc3_title">Ganeshguri</h3>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" data-i18n="loc3_desc">Vibrant commercial hub filled with food courts and boutique shopping.</p>
+                    <a href="index.html?location=Ganeshguri" class="inline-block text-xs sm:text-sm font-bold text-teal-600 mt-4 hover:text-teal-700" data-i18n="explore_link">Explore listings &rarr;</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="max-w-7xl mx-auto px-6 pb-24 pt-8">
-        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 border-b border-slate-200 pb-5">
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24 pt-6">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10 border-b border-slate-200 pb-5">
             <div>
-                <h2 class="text-2xl font-black text-slate-900" data-i18n="sec2_title">Verified Local Homestays</h2>
-                <p class="text-slate-500 mt-1" data-i18n="sec2_subtitle">Handpicked properties verified for hygiene, security, and warmth.</p>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900" data-i18n="sec2_title">Verified Local Homestays</h2>
+                <p class="text-xs sm:text-sm text-slate-500 mt-1" data-i18n="sec2_subtitle">Handpicked properties verified for hygiene, security, and warmth.</p>
             </div>
-            <div class="bg-teal-50 text-teal-700 px-4 py-2 rounded-full text-sm font-semibold border border-teal-100 self-start md:self-auto">
+            <div class="bg-teal-50 text-teal-700 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border border-teal-100 self-start sm:self-auto">
                 <span data-i18n="showing_text">Showing</span> <span id="propertyCount">0</span> <span data-i18n="active_options_text">active property options</span>
             </div>
         </div>
 
-        <div id="homestayGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div id="homestayGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <div class="col-span-full text-center py-12 text-slate-400">
                 <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3 text-teal-500"></i>
-                <p class="text-sm" data-i18n="pipeline_loading">Connecting to database pipeline...</p>
+                <p class="text-xs sm:text-sm" data-i18n="pipeline_loading">Connecting to database pipeline...</p>
             </div>
         </div>
     </section>
 
     <script>
+        // Mobile Navigation Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
         function requireLoginToList(event) {
             event.preventDefault();
             const userSession = localStorage.getItem("userProfile"); 
@@ -256,11 +304,23 @@
             document.documentElement.lang = lang;
         }
 
-        document.getElementById('langSelector').addEventListener('change', (e) => {
-            const selectedLang = e.target.value;
+        // Sync desktop and mobile language selectors
+        const langSelector = document.getElementById('langSelector');
+        const langSelectorMobile = document.getElementById('langSelectorMobile');
+
+        function handleLanguageChange(selectedLang) {
+            if (langSelector) langSelector.value = selectedLang;
+            if (langSelectorMobile) langSelectorMobile.value = selectedLang;
             applyTranslations(selectedLang);
             localStorage.setItem('preferredLang', selectedLang);
-        });
+        }
+
+        if (langSelector) {
+            langSelector.addEventListener('change', (e) => handleLanguageChange(e.target.value));
+        }
+        if (langSelectorMobile) {
+            langSelectorMobile.addEventListener('change', (e) => handleLanguageChange(e.target.value));
+        }
 
         async function loadVerifiedHomestays() {
             const grid = document.getElementById("homestayGrid");
@@ -290,9 +350,9 @@
                     grid.innerHTML = `
                         <div class="col-span-full text-center py-16 bg-white border border-slate-200 rounded-2xl shadow-sm">
                             <i class="fa-solid fa-hotel text-4xl text-slate-300 mb-3"></i>
-                            <p class="font-semibold text-slate-700">No properties available in this neighborhood</p>
-                            <p class="text-slate-400 text-sm mt-1">Check back later or view our alternative neighborhood choices.</p>
-                            <a href="index.html" class="inline-block mt-4 text-sm font-bold text-teal-600 hover:underline">&larr; Show All Listings</a>
+                            <p class="font-semibold text-slate-700 text-sm">No properties available in this neighborhood</p>
+                            <p class="text-slate-400 text-xs mt-1">Check back later or view our alternative neighborhood choices.</p>
+                            <a href="index.html" class="inline-block mt-4 text-xs sm:text-sm font-bold text-teal-600 hover:underline">&larr; Show All Listings</a>
                         </div>`;
                     return;
                 }
@@ -309,13 +369,12 @@
                     
                     const tags = stay.tags || ["Premium Linens", "Wi-Fi", "Great Location"];
                     const tagsHTML = tags.map(tag => 
-                        `<span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-md font-medium">${tag}</span>`
+                        `<span class="bg-slate-100 text-slate-600 text-[10px] sm:text-xs px-2.5 py-1 rounded-md font-medium">${tag}</span>`
                     ).join('');
 
                     const propertyId = stay._id || stay.id || '';
                     const detailUrl = `property-details.html?id=${propertyId}&title=${encodeURIComponent(stay.title)}`;
 
-                    // Safe escaping for strings passed to JS function click handler
                     const safeTitle = (stay.title || '').replace(/'/g, "\\'");
                     const safeLocality = (stay.locality || 'Guwahati').replace(/'/g, "\\'");
                     const safeImage = (img || '').replace(/'/g, "\\'");
@@ -328,24 +387,24 @@
                                 <i class="fa-solid fa-star text-amber-500"></i> ${rating} (${reviews})
                             </div>
                         </a>
-                        <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                             <div>
-                                <div class="flex items-center gap-1.5 text-xs font-bold text-teal-600 tracking-wide uppercase">
+                                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-teal-600 tracking-wide uppercase">
                                     <i class="fa-solid fa-location-dot"></i> ${stay.locality || 'Guwahati'}, GUWAHATI
                                 </div>
-                                <h3 class="font-bold text-lg text-slate-900 mt-1 group-hover:text-teal-600 transition truncate">
+                                <h3 class="font-bold text-base sm:text-lg text-slate-900 mt-1 group-hover:text-teal-600 transition truncate">
                                     <a href="${detailUrl}">${stay.title}</a>
                                 </h3>
-                                <div class="flex flex-wrap gap-1.5 mt-3">
+                                <div class="flex flex-wrap gap-1.5 mt-2.5">
                                     ${tagsHTML}
                                 </div>
                             </div>
-                            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                            <div class="mt-5 sm:mt-6 pt-3.5 sm:pt-4 border-t border-slate-100 flex items-center justify-between">
                                 <div>
-                                    <span class="text-xl font-extrabold text-slate-900">₹${stay.pricePerNight}</span>
-                                    <span class="text-xs text-slate-400 block -mt-0.5">/ night value</span>
+                                    <span class="text-lg sm:text-xl font-extrabold text-slate-900">₹${stay.pricePerNight}</span>
+                                    <span class="text-[10px] sm:text-xs text-slate-400 block -mt-0.5">/ night value</span>
                                 </div>
-                                <button onclick="handleReserveSpace('${propertyId}', '${safeTitle}', ${stay.pricePerNight}, '${safeLocality}', '${safeImage}')" class="bg-slate-900 hover:bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow-sm">
+                                <button onclick="handleReserveSpace('${propertyId}', '${safeTitle}', ${stay.pricePerNight}, '${safeLocality}', '${safeImage}')" class="bg-slate-900 hover:bg-teal-600 text-white px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-sm">
                                     Reserve Space
                                 </button>
                             </div>
@@ -362,7 +421,8 @@
             loadVerifiedHomestays();
 
             const savedLang = localStorage.getItem('preferredLang') || 'en';
-            document.getElementById('langSelector').value = savedLang;
+            if (langSelector) langSelector.value = savedLang;
+            if (langSelectorMobile) langSelectorMobile.value = savedLang;
             applyTranslations(savedLang);
 
             const currentUser = JSON.parse(localStorage.getItem("userProfile"));
@@ -370,11 +430,21 @@
             const dashboardBtn = document.getElementById("authDashboardBtn");
             const avatarCircle = document.getElementById("userAvatarCircle");
 
-            if (currentUser && signInBtn && dashboardBtn) {
-                signInBtn.classList.add("hidden");
-                dashboardBtn.classList.remove("hidden");
+            const mobileSignInBtn = document.getElementById("mobileAuthSignInBtn");
+            const mobileDashboardBtn = document.getElementById("mobileAuthDashboardBtn");
+            const mobileAvatarCircle = document.getElementById("mobileUserAvatarCircle");
+
+            if (currentUser) {
+                if (signInBtn) signInBtn.classList.add("hidden");
+                if (dashboardBtn) dashboardBtn.classList.remove("hidden");
                 if (currentUser?.name && avatarCircle) {
                     avatarCircle.textContent = currentUser.name.charAt(0).toUpperCase();
+                }
+
+                if (mobileSignInBtn) mobileSignInBtn.classList.add("hidden");
+                if (mobileDashboardBtn) mobileDashboardBtn.classList.remove("hidden");
+                if (currentUser?.name && mobileAvatarCircle) {
+                    mobileAvatarCircle.textContent = currentUser.name.charAt(0).toUpperCase();
                 }
             }
         });

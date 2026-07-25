@@ -129,6 +129,8 @@
     </main>
 
     <script>
+        const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+
         function handleListPropertyClick(event) {
             event.preventDefault();
             const userToken = localStorage.getItem('token') || localStorage.getItem('user');
@@ -189,7 +191,7 @@
                     return imagePath;
                 }
                 if (imagePath.startsWith('/uploads')) {
-                    return `http://localhost:5000${imagePath}`;
+                    return `${BACKEND_URL}${imagePath}`;
                 }
                 return imagePath;
             }
@@ -200,7 +202,7 @@
 
             if (homestayId && homestayId !== 'null' && homestayId !== 'undefined' && homestayId.trim() !== '') {
                 try {
-                    const response = await fetch(`http://localhost:5000/api/homestays/${homestayId}`);
+                    const response = await fetch(`${BACKEND_URL}/api/homestays/${homestayId}`);
                     const result = await response.json();
                     if (result.success && result.data) {
                         loadedProperty = result.data;
@@ -304,7 +306,7 @@
                     };
 
                     try {
-                        const response = await fetch('http://localhost:5000/api/bookings', {
+                        const response = await fetch(`${BACKEND_URL}/api/bookings`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(bookingData)
