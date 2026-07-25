@@ -6,6 +6,33 @@
     <title>StayGuwahati | Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+        
+        // Immediate Frontend Guard: Verify admin role before rendering or fetching data
+        (async function validateAdminAccess() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/verify-role`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (!response.ok || result.role !== 'admin') {
+                    alert('Unauthorized access. Administrator privileges required.');
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                }
+            } catch (err) {
+                console.error('Validation error:', err);
+                window.location.href = 'login.html';
+            }
+        })();
+    </script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
 
@@ -18,6 +45,7 @@
             </div>
             <div class="flex items-center gap-4 shrink-0">
                 <a href="index.html" class="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">Home</a>
+                <button onclick="handleLogout()" class="text-xs sm:text-sm font-semibold text-rose-400 hover:text-rose-300 transition">Logout</button>
             </div>
         </div>
     </nav>
@@ -94,10 +122,13 @@
     </div>
 
     <script>
-        const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
         let currentFilter = 'pending';
-        
         let loadedPropertyImages = {}; 
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
 
         function setFilter(status) {
             currentFilter = status;
@@ -124,14 +155,20 @@
                     </td>
                 </tr>`;
 
+            const token = localStorage.getItem('token');
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+
             try {
                 let listings = [];
 
                 if (currentFilter === 'all') {
                     const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
-                        fetch(`${BACKEND_URL}/api/homestays?status=pending`).then(r => r.json()),
-                        fetch(`${BACKEND_URL}/api/homestays?status=approved`).then(r => r.json()),
-                        fetch(`${BACKEND_URL}/api/homestays?status=rejected`).then(r => r.json())
+                        fetch(`${BACKEND_URL}/api/homestays?status=pending`, { headers }).then(r => r.json()),
+                        fetch(`${BACKEND_URL}/api/homestays?status=approved`, { headers }).then(r => r.json()),
+                        fetch(`${BACKEND_URL}/api/homestays?status=rejected`, { headers }).then(r => r.json())
                     ]);
 
                     listings = [
@@ -140,7 +177,7 @@
                         ...(rejectedRes.data || [])
                     ];
                 } else {
-                    const response = await fetch(`${BACKEND_URL}/api/homestays?status=${currentFilter}`);
+                    const response = await fetch(`${BACKEND_URL}/api/homestays?status=${currentFilter}`, { headers });
                     const result = await response.json();
                     listings = result.data || result;
                 }
@@ -254,25 +291,29 @@
                     <tr>
                         <td colspan="6" class="text-center py-12 text-rose-500 font-medium">
                             <i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i>
-                            Failed to load moderation pipeline. Check server connection.
+                            Failed to load moderation pipeline. Check server connection or permissions.
                         </td>
                     </tr>`;
             }
         }
 
         async function updateStatus(id, newStatus) {
+            const token = localStorage.getItem('token');
             try {
                 const response = await fetch(`${BACKEND_URL}/api/admin/homestays/${id}/status`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({ status: newStatus })
                 });
 
                 const data = await response.json();
-                if (data.success) {
+                if (response.ok && data.success) {
                     fetchAdminHomestays();
                 } else {
-                    alert("Status update failed: " + data.message);
+                    alert("Status update failed: " + (data.message || 'Unauthorized'));
                 }
             } catch (err) {
                 alert("Server communication error.");
