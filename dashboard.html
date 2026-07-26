@@ -9,12 +9,12 @@
     
     <!-- Auth Guard -->
     <script>
-        const userToken = localStorage.getItem('token');
-        if (!userToken) {
-            alert("Secure Area: Please log in to access the Dashboard.");
-            window.location.replace("login.html"); 
-        }
-    </script>
+    const userToken = sessionStorage.getItem('token');
+    if (!userToken) {
+        alert("Secure Area: Please log in to access the Dashboard.");
+        window.location.replace("login.html"); 
+    }
+</script>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans flex flex-col justify-between">
 
@@ -240,8 +240,8 @@
 
     <script>
         const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
-        let currentUser = JSON.parse(localStorage.getItem("userProfile")) || { name: "User", email: "user@example.com" };
-        let currentRole = localStorage.getItem("activeDashboardRole") || "traveler";
+        let currentUser = JSON.parse(sessionStorage.getItem("userProfile")) || { name: "User", email: "user@example.com" };
+        let currentRole = sessionStorage.getItem("activeDashboardRole") || "traveler";
         let currentLang = localStorage.getItem("preferredLanguage") || "en";
         let currentActiveChatGuest = "";
 
@@ -272,12 +272,24 @@
             }
         };
 
-        function resolveImageUrl(imgSrc) {
-            const fallback = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500';
-            if (!imgSrc) return fallback;
-            if (imgSrc.startsWith('http://') || imgSrc.startsWith('https://')) return imgSrc;
-            return `${BACKEND_URL}${imgSrc.startsWith('/') ? '' : '/'}${imgSrc}`;
-        }
+        function resolveImageUrl(imagePath) {
+    // Return a default placeholder if no path is provided
+    if (!imagePath) {
+        return 'assets/placeholder.jpg'; 
+    }
+
+    // 1. If it's already a Base64 Data URI, return it as-is
+    // 2. If it's already an absolute HTTP/HTTPS URL, return it as-is
+    if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+    }
+
+    // Otherwise, prepend the Render backend URL safely, avoiding double slashes
+    const backendUrl = 'https://stayguwahati-backend.onrender.com';
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    
+    return `${backendUrl}/${cleanPath}`;
+}
 
         async function fetchTravelerBookings() {
             const text = dictionary[currentLang] || dictionary.en;
