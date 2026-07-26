@@ -120,8 +120,15 @@
             if (langSelector) langSelector.value = lang;
             applyLanguage(lang);
 
+            // Smart auto-redirect if already logged in based on role
             if (token && userProfile) {
-                window.location.href = "dashboard.html";
+                try {
+                    const user = JSON.parse(userProfile);
+                    const isAdmin = user.role === "admin" || user.role === "ADMIN" || user.isAdmin === true || user.type === "admin";
+                    window.location.href = isAdmin ? "admin.html" : "dashboard.html";
+                } catch (e) {
+                    window.location.href = "dashboard.html";
+                }
             }
         });
 
@@ -146,19 +153,38 @@
 
                 const data = await response.json();
 
-                if (!response.ok) throw new Error(data.message || "Authentication failed.");
+                if (response.ok && (data.token || data.accessToken)) {
+                    // Save token and profile to localStorage
+                    const token = data.token || data.accessToken;
+                    const user = data.user || data.profile;
+                    
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('userProfile', JSON.stringify(user));
 
-                localStorage.setItem("token", data.token);
-                localStorage.setItem("authToken", data.token);
-                localStorage.setItem("userProfile", JSON.stringify(data.user));
-                
-                // Dynamically assign role based on backend user data
-                const userRole = (data.user && data.user.role === "admin") ? "admin" : "traveler";
-                localStorage.setItem("activeDashboardRole", userRole); 
+                    // Evaluate role status
+                    const isAdmin = 
+                        user.role === "admin" || 
+                        user.role === "ADMIN" || 
+                        user.isAdmin === true || 
+                        user.type === "admin";                    
 
-                window.location.href = "dashboard.html";
+                    const userRole = isAdmin ? "admin" : "traveler";
+                    localStorage.setItem("activeDashboardRole", userRole);  
+
+                    // Conditional Routing
+                    if (isAdmin) {
+                        window.location.href = "admin.html";
+                    } else {
+                        window.location.href = "dashboard.html";
+                    }
+                } else {
+                    errorMessage.textContent = data.message || "Invalid credentials";
+                    errorBanner.classList.remove("hidden");
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>Secure Access</span> <i class="fa-solid fa-arrow-right text-xs"></i>`;
+                }
             } catch (err) {
-                errorMessage.textContent = err.message;
+                errorMessage.textContent = err.message || "Server communication error";
                 errorBanner.classList.remove("hidden");
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = `<span>Secure Access</span> <i class="fa-solid fa-arrow-right text-xs"></i>`;
