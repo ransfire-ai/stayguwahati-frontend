@@ -273,23 +273,16 @@
         };
 
         function resolveImageUrl(imagePath) {
-    // Return a default placeholder if no path is provided
-    if (!imagePath) {
-        return 'assets/placeholder.jpg'; 
-    }
-
-    // 1. If it's already a Base64 Data URI, return it as-is
-    // 2. If it's already an absolute HTTP/HTTPS URL, return it as-is
-    if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
-    }
-
-    // Otherwise, prepend the Render backend URL safely, avoiding double slashes
-    const backendUrl = 'https://stayguwahati-backend.onrender.com';
-    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    
-    return `${backendUrl}/${cleanPath}`;
-}
+            if (!imagePath) {
+                return 'assets/placeholder.jpg'; 
+            }
+            if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+                return imagePath;
+            }
+            const backendUrl = 'https://stayguwahati-backend.onrender.com';
+            const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+            return `${backendUrl}/${cleanPath}`;
+        }
 
         async function fetchTravelerBookings() {
             const text = dictionary[currentLang] || dictionary.en;
@@ -433,9 +426,9 @@
                                     <h3 class="font-bold text-gray-900 text-base">${p.title || p.propertyName || 'Property'}</h3>
                                     <p class="text-gray-400 text-xs flex items-center gap-1 mt-1"><i class="fa-solid fa-location-dot text-teal-600 text-[10px]"></i> ${p.location || p.city || p.address || 'Guwahati'}</p>
                                 </div>
-                                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs">
-                                    <span class="font-black text-teal-600">₹${p.price || 0}/night</span>
-                                    <span class="text-gray-400 text-[10px]">Status: Active</span>
+                                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
+                                    <span>Price: <strong>₹${p.price || 0} / night</strong></span>
+                                    <span class="text-teal-600 font-bold">Active</span>
                                 </div>
                             </div>
                         </div>
@@ -447,168 +440,107 @@
             }
         }
 
-        function renderStaticTravelerSections() {
-            const text = dictionary[currentLang] || dictionary.en;
-            const wishlistContainer = document.getElementById("wishlistContainer");
-            const savedWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
-            if (savedWishlist.length === 0) {
-                wishlistContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noWishlist}</p></div>`;
-            } else {
-                wishlistContainer.innerHTML = savedWishlist.map(w => `
-                    <div class="bg-white border border-gray-100 rounded-xl p-3 flex gap-3 items-center shadow-sm">
-                        <div class="w-16 h-16 bg-gray-200 bg-cover bg-center rounded-lg shrink-0" style="background-image: url('${resolveImageUrl(w.image || w.imageUrl)}')"></div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-gray-900 text-xs truncate">${w.title || 'Property'}</h4>
-                            <p class="text-gray-400 text-[10px] mt-0.5">${w.location || 'Guwahati'}</p>
-                            <span class="text-teal-600 font-black text-xs block mt-1">₹${w.price || 0}/night</span>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            const historyContainer = document.getElementById("historyContainer");
-            historyContainer.innerHTML = `<div class="bg-white border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noHistory}</p></div>`;
+        function toggleUserRole() {
+            currentRole = currentRole === 'traveler' ? 'host' : 'traveler';
+            sessionStorage.setItem("activeDashboardRole", currentRole);
+            updateDashboardView();
         }
 
-        function updateUI() {
+        function updateDashboardView() {
             const text = dictionary[currentLang] || dictionary.en;
-            
-            document.getElementById("welcomeName").textContent = currentUser.name || "User";
-            document.getElementById("navUserName").textContent = currentUser.name || "User";
-            document.getElementById("userAvatar").textContent = (currentUser.name || "U").charAt(0).toUpperCase();
-            document.getElementById("editProfileName").value = currentUser.name || "";
-            document.getElementById("editProfileEmail").value = currentUser.email || "";
-
-            const roleBtn = document.getElementById("roleSwitcherBtn");
             const travelerSection = document.getElementById("travelerSection");
             const hostSection = document.getElementById("hostSection");
+            const roleSwitcherBtn = document.getElementById("roleSwitcherBtn");
             const hostActionWrapper = document.getElementById("hostActionWrapper");
+            const roleSubtext = document.getElementById("roleSubtext");
 
-            if (currentRole === "host") {
-                roleBtn.innerHTML = `<i class="fa-solid fa-plane"></i> <span class="hidden sm:inline">${text.switchTraveler}</span>`;
-                roleBtn.title = text.switchTraveler;
-                travelerSection.classList.add("hidden");
-                hostSection.classList.remove("hidden");
-                hostActionWrapper.classList.remove("hidden");
-                document.getElementById("roleSubtext").textContent = text.subTextHost;
+            if (currentRole === 'host') {
+                travelerSection.classList.add('hidden');
+                hostSection.classList.remove('hidden');
+                roleSwitcherBtn.innerHTML = `<i class="fa-solid fa-plane text-teal-600"></i> ${text.switchTraveler}`;
+                hostActionWrapper.classList.remove('hidden');
+                roleSubtext.textContent = text.subTextHost;
                 fetchHostActiveProperties();
             } else {
-                roleBtn.innerHTML = `<i class="fa-solid fa-hotel"></i> <span class="hidden sm:inline">${text.switchHost}</span>`;
-                roleBtn.title = text.switchHost;
-                hostSection.classList.add("hidden");
-                travelerSection.classList.remove("hidden");
-                hostActionWrapper.classList.add("hidden");
-                document.getElementById("roleSubtext").textContent = text.subTextTraveler;
+                hostSection.classList.add('hidden');
+                travelerSection.classList.remove('hidden');
+                roleSwitcherBtn.innerHTML = `<i class="fa-solid fa-hotel text-teal-600"></i> ${text.switchHost}`;
+                hostActionWrapper.classList.add('hidden');
+                roleSubtext.textContent = text.subTextTraveler;
                 fetchTravelerBookings();
-                renderStaticTravelerSections();
             }
-
-            document.getElementById("welcomeHeader").innerHTML = `${text.welcome}, <span id="welcomeName" class="text-teal-700">${currentUser.name || "User"}</span>!`;
-            document.getElementById("travelerHeading").innerHTML = `<i class="fa-solid fa-plane-departure text-teal-600 text-sm"></i> ${text.travelerHead}`;
-            document.getElementById("wishlistHeading").innerHTML = `<i class="fa-regular fa-heart text-rose-500"></i> ${text.wishlistHead}`;
-            document.getElementById("historyHeading").innerHTML = `<i class="fa-solid fa-clock-rotate-left text-gray-500"></i> ${text.historyHead}`;
-            document.getElementById("profileHeading").innerHTML = `<i class="fa-regular fa-id-card text-teal-600"></i> ${text.profileHead}`;
-            document.getElementById("labelProfileName").textContent = text.labelName;
-            document.getElementById("labelProfileEmail").textContent = text.labelEmail;
-            document.getElementById("updateProfileBtn").textContent = text.updateBtn;
-            
-            document.getElementById("hostHeading").innerHTML = `<i class="fa-solid fa-hotel text-teal-600 text-sm"></i> ${text.hostHead}`;
-            document.getElementById("statIncomeLabel").textContent = text.incomeLabel;
-            document.getElementById("statListingsLabel").textContent = text.listingsLabel;
-            document.getElementById("statRatingLabel").textContent = text.ratingLabel;
-            document.getElementById("pipelineHeading").innerHTML = `<i class="fa-solid fa-calendar-check text-teal-600"></i> ${text.pipelineHead}`;
-            document.getElementById("thGuest").textContent = text.thG;
-            document.getElementById("thProperty").textContent = text.thP;
-            document.getElementById("thDates").textContent = text.thD;
-            document.getElementById("thPayout").textContent = text.thPay;
-            document.getElementById("thStatus").textContent = text.thS;
-            document.getElementById("thActions").textContent = text.thA;
-            document.getElementById("activeListingsHeading").innerHTML = `<i class="fa-solid fa-list text-gray-600"></i> ${text.activeListHead}`;
-            document.getElementById("footerText").textContent = text.footer;
-        }
-
-        function toggleUserRole() {
-            currentRole = currentRole === "traveler" ? "host" : "traveler";
-            localStorage.setItem("activeDashboardRole", currentRole);
-            updateUI();
         }
 
         function handleLogOut() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('userProfile');
-            localStorage.removeItem('activeDashboardRole');
-            alert("Signed out successfully.");
+            sessionStorage.clear();
             window.location.replace("login.html");
         }
 
-        function saveProfileChanges() {
-            const newName = document.getElementById("editProfileName").value.trim();
-            if (!newName) {
-                alert("Name cannot be empty.");
-                return;
-            }
-            currentUser.name = newName;
-            localStorage.setItem("userProfile", JSON.stringify(currentUser));
-            alert("Profile settings updated successfully!");
-            updateUI();
-        }
-
         function openMessageModal(guestName, propTitle) {
+            currentActiveChatGuest = guestName;
             document.getElementById("msgModalGuestName").textContent = `Chat with ${guestName}`;
             document.getElementById("msgModalPropTitle").textContent = propTitle;
-            currentActiveChatGuest = guestName;
+            document.getElementById("messageModal").classList.remove('hidden');
             
             const chatBox = document.getElementById("chatHistoryBox");
             chatBox.innerHTML = `
-                <div class="text-center text-[10px] text-gray-400 my-2">Conversation started with ${guestName}</div>
-                <div class="bg-white p-2.5 rounded-xl rounded-tl-none shadow-xs max-w-[80%] text-gray-700">
-                    Hello! I'm interested in discussing the booking details for ${propTitle}.
-                </div>
+                <div class="text-center text-gray-400 text-[10px] my-2">Secure encrypted channel established with ${guestName}</div>
+                <div class="bg-white p-2.5 rounded-xl shadow-xs max-w-[80%] text-gray-700">Hello! I have a question regarding my reservation at ${propTitle}.</div>
             `;
-            document.getElementById("messageModal").classList.remove("hidden");
         }
 
         function closeMessageModal() {
-            document.getElementById("messageModal").classList.add("hidden");
+            document.getElementById("messageModal").classList.add('hidden');
         }
 
-        function sendGuestMessage(e) {
-            e.preventDefault();
+        function sendGuestMessage(event) {
+            event.preventDefault();
             const input = document.getElementById("chatInput");
-            const msg = input.value.trim();
-            if (!msg) return;
+            const message = input.value.trim();
+            if (!message) return;
 
             const chatBox = document.getElementById("chatHistoryBox");
             chatBox.innerHTML += `
-                <div class="bg-teal-600 text-white p-2.5 rounded-xl rounded-tr-none shadow-xs max-w-[80%] ml-auto">
-                    ${msg}
-                </div>
+                <div class="bg-teal-600 text-white p-2.5 rounded-xl shadow-xs max-w-[80%] ml-auto text-right">${message}</div>
             `;
-            input.value = "";
+            input.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function openReceiptModal() {
-            document.getElementById("receiptModal").classList.remove("hidden");
+            document.getElementById("receiptModal").classList.remove('hidden');
         }
 
         function closeReceiptModal() {
-            document.getElementById("receiptModal").classList.add("hidden");
+            document.getElementById("receiptModal").classList.add('hidden');
         }
 
-        document.getElementById("langSelector").addEventListener("change", (e) => {
-            currentLang = e.target.value;
-            localStorage.setItem("preferredLanguage", currentLang);
-            updateUI();
-        });
+        function saveProfileChanges() {
+            const newName = document.getElementById("editProfileName").value.trim();
+            if (newName) {
+                currentUser.name = newName;
+                sessionStorage.setItem("userProfile", JSON.stringify(currentUser));
+                document.getElementById("welcomeName").textContent = newName;
+                document.getElementById("navUserName").textContent = newName;
+                alert("Profile updated successfully!");
+            }
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
-            const storedUser = localStorage.getItem("userProfile");
-            if (storedUser) {
-                try { currentUser = JSON.parse(storedUser); } catch(e){}
-            }
-            document.getElementById("langSelector").value = currentLang;
-            updateUI();
+            document.getElementById("welcomeName").textContent = currentUser.name;
+            document.getElementById("navUserName").textContent = currentUser.name;
+            document.getElementById("editProfileName").value = currentUser.name;
+            document.getElementById("editProfileEmail").value = currentUser.email;
+
+            const langSelector = document.getElementById("langSelector");
+            langSelector.value = currentLang;
+            langSelector.addEventListener("change", (e) => {
+                currentLang = e.target.value;
+                localStorage.setItem("preferredLanguage", currentLang);
+                location.reload();
+            });
+
+            updateDashboardView();
         });
     </script>
 </body>
