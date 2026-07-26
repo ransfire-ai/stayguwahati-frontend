@@ -345,7 +345,7 @@ console.log("Filtered Bookings:", userBookings); // Add this to see if the filte
                            b.ownerEmail === currentUser.email;
                 });
 
-                const displayReservations = hostReservations.length > 0 ? hostReservations : allBookings;
+                const displayReservations = hostReservations;
 
                 if (displayReservations.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-xs text-gray-400">${text.noReservations}</td></tr>`;
@@ -410,8 +410,7 @@ console.log("Filtered Bookings:", userBookings); // Add this to see if the filte
                 }
 
                 const hostProperties = properties.filter(p => p.hostEmail === currentUser.email || p.ownerEmail === currentUser.email || p.userEmail === currentUser.email);
-                const displayProperties = hostProperties.length > 0 ? hostProperties : properties;
-
+                const displayProperties = hostProperties;
                 statListingsVal.textContent = `${displayProperties.length} Properties`;
                 fetchHostReservations(displayProperties);
 
