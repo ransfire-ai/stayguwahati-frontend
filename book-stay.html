@@ -15,38 +15,37 @@
 </head>
 <body class="bg-gray-50 min-h-screen font-sans">
 
+    <!-- Header updated for mobile responsiveness -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
-                <i class="fa-solid fa-house-chimney text-teal-600 text-2xl"></i>
-                <span class="text-xl font-bold text-teal-800">StayGuwahati</span>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0" onclick="window.location.href='index.html'">
+                <i class="fa-solid fa-house-chimney text-teal-600 text-xl sm:text-2xl"></i>
+                <span class="text-lg sm:text-xl font-bold text-teal-800 tracking-tight">Stay<span class="text-teal-600">Guwahati</span></span>
             </div>
-            <div class="flex items-center gap-6 text-sm font-medium text-gray-600">
-                <nav class="flex items-center gap-6">
-                    <a href="index.html" class="hover:text-teal-600 transition">Home</a>
-                    <a href="map.html" class="hover:text-teal-600 transition">Explore Map</a>
-                    <a href="#" onclick="handleListPropertyClick(event)" class="hover:text-teal-600 transition">List Property</a>
-                </nav>
-            </div>
+            <nav class="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium text-gray-600">
+                <a href="index.html" class="hover:text-teal-600 transition hidden sm:inline-block">Home</a>
+                <a href="map.html" class="hover:text-teal-600 transition whitespace-nowrap">Explore Map</a>
+                <a href="#" onclick="handleListPropertyClick(event)" class="bg-teal-600 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-semibold hover:bg-teal-700 transition shadow-sm whitespace-nowrap">List Property</a>
+            </nav>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="flex items-center gap-3 mb-8">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+        <div class="flex items-center gap-3 mb-6 sm:mb-8">
             <a href="index.html" class="text-gray-500 hover:text-gray-900 transition flex items-center gap-1 text-sm font-medium">
                 <i class="fa-solid fa-arrow-left"></i> Back to listings
             </a>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
-            <div class="lg:col-span-3 space-y-8">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-10">
+            <div class="lg:col-span-3 space-y-6 sm:space-y-8">
                 <div>
-                    <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Confirm Your Booking</h1>
-                    <p class="text-gray-500 mt-1 text-sm">Please fill out your traveler information details below to finalize your reservation.</p>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Confirm Your Booking</h1>
+                    <p class="text-gray-500 mt-1 text-xs sm:text-sm">Please fill out your traveler information details below to finalize your reservation.</p>
                 </div>
 
-                <form id="bookingForm" class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-6">
-                    <h2 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
+                <form id="bookingForm" class="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 shadow-sm space-y-5 sm:space-y-6">
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
                         <i class="fa-solid fa-user text-teal-600 text-sm"></i> Traveler Information
                     </h2>
                     
@@ -72,12 +71,12 @@
                         </div>
                     </div>
 
-                    <h2 class="text-lg font-bold text-gray-900 border-b border-gray-100 pt-4 pb-3 flex items-center gap-2">
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900 border-b border-gray-100 pt-4 pb-3 flex items-center gap-2">
                         <i class="fa-solid fa-calendar-days text-teal-600 text-sm"></i> Your Dates
                     </h2>
                     
-                    <div class="mt-6">
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div class="mt-4 sm:mt-6">
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4">
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Check-In & Check-Out Window</label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">
@@ -95,17 +94,17 @@
             </div>
 
             <div class="lg:col-span-2">
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-                    <h3 class="text-lg font-bold text-slate-900">Price Summary</h3>
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm space-y-6 sticky top-20">
+                    <h3 class="text-base sm:text-lg font-bold text-slate-900">Price Summary</h3>
                     <div class="flex gap-4 items-center border-b pb-4">
-                        <img id="summaryImage" src="" class="w-16 h-16 object-cover rounded-xl shadow-sm">
-                        <div>
-                            <span id="summaryLocality" class="text-xs font-bold text-teal-600 uppercase tracking-wider block"></span>
-                            <h4 id="summaryTitle" class="font-bold text-slate-900 text-sm"></h4>
-                            <span class="text-xs text-slate-400 block mt-0.5">Verified Local Host</span>
+                        <img id="summaryImage" src="" class="w-16 h-16 object-cover rounded-xl shadow-sm shrink-0">
+                        <div class="min-w-0">
+                            <span id="summaryLocality" class="text-[10px] sm:text-xs font-bold text-teal-600 uppercase tracking-wider block truncate"></span>
+                            <h4 id="summaryTitle" class="font-bold text-slate-900 text-sm truncate"></h4>
+                            <span class="text-[10px] sm:text-xs text-slate-400 block mt-0.5">Verified Local Host</span>
                         </div>
                     </div>
-                    <div class="space-y-3 text-sm text-slate-600 border-b pb-4">
+                    <div class="space-y-3 text-xs sm:text-sm text-slate-600 border-b pb-4">
                         <div class="flex justify-between">
                             <span>Base Rate</span>
                             <span id="baseRateValue" class="font-semibold text-slate-900">₹0</span>
@@ -120,8 +119,8 @@
                         </div>
                     </div>
                     <div class="flex justify-between items-center pt-2">
-                        <span class="font-bold text-slate-900">Total Due Amount</span>
-                        <span id="grandTotalValue" class="text-2xl font-black text-teal-600">₹0</span>
+                        <span class="font-bold text-slate-900 text-sm sm:text-base">Total Due Amount</span>
+                        <span id="grandTotalValue" class="text-xl sm:text-2xl font-black text-teal-600">₹0</span>
                     </div>
                 </div>
             </div>
@@ -260,7 +259,6 @@
                 }
             });
 
-            // Handle Booking Form Submission
             const bookingForm = document.getElementById('bookingForm');
             if (bookingForm) {
                 bookingForm.addEventListener('submit', async function(e) {
@@ -281,11 +279,9 @@
                     const checkIn = dates[0];
                     const checkOut = dates[1];
 
-                    // Calculate nights accurately
                     const diffTime = Math.abs(new Date(checkOut) - new Date(checkIn));
                     const totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
 
-                    // Clean total amount string to raw number (e.g., "₹4,750" -> 4750)
                     const rawTotalText = document.getElementById('grandTotalValue').textContent;
                     const numericTotal = parseFloat(rawTotalText.replace(/[^\d.]/g, '')) || 0;
 
