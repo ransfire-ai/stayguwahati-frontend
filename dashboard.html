@@ -238,6 +238,49 @@
         &copy; 2026 StayGuwahati Platform Unified Core Engine. All rights reserved.
     </footer>
 
+async function loadBookings() {
+    try {
+        const token = sessionStorage.getItem("token");
+
+        const res = await fetch(`${BACKEND_URL}/my-bookings`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const bookings = await res.json();
+
+        const container = document.getElementById("bookingsContainer");
+        container.innerHTML = "";
+
+        if (!bookings || bookings.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center text-gray-400 text-sm">
+                    No bookings found
+                </div>
+            `;
+            return;
+        }
+
+        bookings.forEach(b => {
+            container.innerHTML += `
+                <div class="bg-white p-4 rounded-xl shadow-sm border">
+                    <h3 class="font-bold text-gray-800">${b.propertyName || "Property"}</h3>
+                    <p class="text-xs text-gray-500 mt-1">
+                        ${b.checkIn} → ${b.checkOut}
+                    </p>
+                    <p class="text-xs text-teal-600 font-semibold mt-2">
+                        Status: ${b.status || "Confirmed"}
+                    </p>
+                </div>
+            `;
+        });
+
+    } catch (err) {
+        console.error("Booking load error:", err);
+    }
+}
+
     <script>
         const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
         let currentUser = JSON.parse(sessionStorage.getItem("userProfile")) || { name: "User", email: "user@example.com" };
@@ -544,6 +587,7 @@
         });
 
         window.addEventListener("DOMContentLoaded", () => {
+	    loadBookings();
             document.getElementById("welcomeName").textContent = currentUser.name || "User";
             document.getElementById("navUserName").textContent = currentUser.name || "User";
             document.getElementById("userAvatar").textContent = (currentUser.name || "U")[0].toUpperCase();
