@@ -284,19 +284,32 @@
         }
 
         async function fetchTravelerBookings() {
-            const text = dictionary[currentLang] || dictionary.en;
-            const bookingsContainer = document.getElementById("bookingsContainer");
-            const historyContainer = document.getElementById("historyContainer"); 
+    const text = dictionary[currentLang] || dictionary.en;
+    const bookingsContainer = document.getElementById("bookingsContainer");
+    const historyContainer = document.getElementById("historyContainer"); 
 
-            // Show loading spinner
-            bookingsContainer.innerHTML = `<p class="text-xs text-gray-400 col-span-full text-center py-6"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your bookings...</p>`;
+    // Show loading spinner
+    bookingsContainer.innerHTML = `<p class="text-xs text-gray-400 col-span-full text-center py-6"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your bookings...</p>`;
 
-            try {
-                const res = await fetch(`${BACKEND_URL}/api/bookings`);
-                let userBookings = [];
-                
-                if (res.ok) {
-                    const data = await res.json();
+    try {
+        // 1. Grab the token we saved during login
+        const token = sessionStorage.getItem('token');
+
+        // 2. Attach it to the fetch request headers
+        const res = await fetch(`${BACKEND_URL}/api/bookings`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // Send token to backend
+            }
+        });
+        
+        let userBookings = [];
+        
+        if (res.ok) {
+            const data = await res.json();
+            // ... (keep the rest of your filtering logic exactly the same below here)
+            let rawBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
                     let rawBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
                     
                     // Strictly filter by the logged-in user's email (case-insensitive to prevent mismatch bugs)
