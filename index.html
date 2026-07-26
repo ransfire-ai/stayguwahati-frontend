@@ -177,7 +177,7 @@
 
         function requireLoginToList(event) {
             event.preventDefault();
-            const userSession = localStorage.getItem("userProfile"); 
+            const userSession = sessionStorage.getItem("userProfile"); 
 
             if (!userSession) {
                 alert("🔒 Please log in first to list a property on StayGuwahati.");
