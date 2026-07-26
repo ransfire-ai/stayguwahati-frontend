@@ -14,7 +14,7 @@
         alert("Secure Area: Please log in to access the Dashboard.");
         window.location.replace("login.html"); 
     }
-    </script>
+</script>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans flex flex-col justify-between">
 
@@ -292,100 +292,57 @@
     bookingsContainer.innerHTML = `<p class="text-xs text-gray-400 col-span-full text-center py-6"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your bookings...</p>`;
 
     try {
-        // 1. Grab the token we saved during login
-        const token = sessionStorage.getItem('token');
-
-        // 2. Attach it to the fetch request headers
-        const res = await fetch(`${BACKEND_URL}/api/bookings`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // Send token to backend
-            }
-        });
-        
+        const res = await fetch(`${BACKEND_URL}/api/bookings`);
         let userBookings = [];
         
         if (res.ok) {
             const data = await res.json();
-            // ... (keep the rest of your filtering logic exactly the same below here)
             let rawBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-                    let rawBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-                    
-                    // Strictly filter by the logged-in user's email (case-insensitive to prevent mismatch bugs)
-                    userBookings = rawBookings.filter(b => 
-                        (b.guestEmail && b.guestEmail.toLowerCase() === currentUser.email.toLowerCase()) || 
-                        (b.userEmail && b.userEmail.toLowerCase() === currentUser.email.toLowerCase())
-                    );
-                }
+            
+            // Strictly filter by the logged-in user's email (case-insensitive to prevent mismatch bugs)
+            userBookings = rawBookings.filter(b => 
+                (b.guestEmail && b.guestEmail.toLowerCase() === currentUser.email.toLowerCase()) || 
+                (b.userEmail && b.userEmail.toLowerCase() === currentUser.email.toLowerCase())
+            );
+        }
 
-                // Separate bookings into "Upcoming" and "Past" based on today's date
-                const today = new Date();
-                const upcomingBookings = [];
-                const pastBookings = [];
+        // Separate bookings into "Upcoming" and "Past" based on today's date
+        const today = new Date();
+        const upcomingBookings = [];
+        const pastBookings = [];
 
-                userBookings.forEach(b => {
-                    // Adjust this key based on your backend (e.g., checkInDate, dates, or createdAt)
-                    const checkInDate = new Date(b.checkInDate || (b.dates ? b.dates.split(' to ')[0] : null) || b.createdAt);
-                    
-                    if (checkInDate >= today) {
-                        upcomingBookings.push(b);
-                    } else {
-                        pastBookings.push(b);
-                    }
-                });
+        userBookings.forEach(b => {
+            // Adjust this key based on your backend (e.g., checkInDate, dates, or createdAt)
+            const checkInDate = new Date(b.checkInDate || (b.dates ? b.dates.split(' to ')[0] : null) || b.createdAt);
+            
+            if (checkInDate >= today) {
+                upcomingBookings.push(b);
+            } else {
+                pastBookings.push(b);
+            }
+        });
 
-                // Render: Your Bookings & Trips (Upcoming)
-                if (upcomingBookings.length === 0) {
-                    bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><i class="fa-solid fa-plane-slash text-2xl mb-2 text-gray-300"></i><p>${text.noBookings}</p></div>`;
-                } else {
-                    bookingsContainer.innerHTML = upcomingBookings.map(b => generateBookingCard(b, text.upcoming)).join('');
-                }
+        // Render: Your Bookings & Trips (Upcoming)
+        if (upcomingBookings.length === 0) {
+            bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><i class="fa-solid fa-plane-slash text-2xl mb-2 text-gray-300"></i><p>${text.noBookings}</p></div>`;
+        } else {
+            bookingsContainer.innerHTML = upcomingBookings.map(b => generateBookingCard(b, text.upcoming)).join('');
+        }
 
-                // Render: Past Trips History
-                if (historyContainer) {
-                    if (pastBookings.length === 0) {
-                        historyContainer.innerHTML = `<div class="bg-gray-50 border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noHistory}</p></div>`;
-                    } else {
-                        historyContainer.innerHTML = pastBookings.map(b => generateBookingCard(b, text.completed)).join('');
-                    }
-                }
-
-            } catch (err) {
-                console.error("Failed to load traveler bookings:", err);
-                bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noBookings}</p></div>`;
+        // Render: Past Trips History
+        if (historyContainer) {
+            if (pastBookings.length === 0) {
+                historyContainer.innerHTML = `<div class="bg-gray-50 border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noHistory}</p></div>`;
+            } else {
+                historyContainer.innerHTML = pastBookings.map(b => generateBookingCard(b, text.completed)).join('');
             }
         }
 
-        // --- NEW HELPER FUNCTION ADDED HERE ---
-        function generateBookingCard(b, statusText) {
-            const text = dictionary[currentLang] || dictionary.en;
-            
-            // Determine badge color based on status
-            const badgeColor = statusText === text.completed 
-                ? "bg-gray-100 text-gray-600 border-gray-200" 
-                : "bg-amber-50 text-amber-700 border-amber-100";
-
-            return `
-                <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex flex-col transition hover:shadow-md">
-                    <div class="h-40 bg-gray-200 bg-cover bg-center" style="background-image: url('${resolveImageUrl(b.image || b.propertyImage)}');"></div>
-                    <div class="p-4 flex-1 flex flex-col justify-between">
-                        <div>
-                            <span class="${badgeColor} border text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">${statusText}</span>
-                            <h3 class="font-bold text-gray-900 mt-2 text-base">${b.title || b.propertyName || 'Property'}</h3>
-                            <p class="text-gray-400 text-xs flex items-center gap-1 mt-1"><i class="fa-solid fa-location-dot text-teal-600 text-[10px]"></i> ${b.location || b.city || 'Guwahati'}</p>
-                            <p class="text-gray-500 text-[10px] mt-2 font-medium"><i class="fa-regular fa-calendar"></i> ${b.checkInDate || b.dates || 'Dates TBA'}</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
-                            <span>Paid: <strong class="text-teal-700">₹${b.totalPrice || b.price || 0}</strong></span>
-                            <button onclick="openReceiptModal()" class="text-teal-600 font-bold hover:underline bg-none border-none p-0 cursor-pointer flex items-center gap-1">
-                                ${text.viewReceipt}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+    } catch (err) {
+        console.error("Failed to load traveler bookings:", err);
+        bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noBookings}</p></div>`;
+    }
+}
 
         async function fetchHostReservations(hostProperties) {
             const tableBody = document.getElementById("hostReservationsTableBody");
@@ -501,71 +458,101 @@
                 grid.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noProperties}</p></div>`;
             }
         }
-        
-        // Modal & Interface Handlers
-        function openReceiptModal() { document.getElementById('receiptModal').classList.remove('hidden'); }
-        function closeReceiptModal() { document.getElementById('receiptModal').classList.add('hidden'); }
-        function closeMessageModal() { document.getElementById('messageModal').classList.add('hidden'); }
-        function closeReviewModal() { document.getElementById('reviewModal').classList.add('hidden'); }
-        
-        // If you had existing initialization logic (window.onload etc.), it goes below here!
-    
-// --- ADD THIS INITIALIZATION LOGIC ---
 
-        function initDashboard() {
+        function toggleUserRole() {
+            currentRole = currentRole === 'traveler' ? 'host' : 'traveler';
+            sessionStorage.setItem("activeDashboardRole", currentRole);
+            updateDashboardView();
+        }
+
+        function updateDashboardView() {
             const text = dictionary[currentLang] || dictionary.en;
-
-            // 1. Set Basic User Info (Header & Welcome)
-            document.getElementById("welcomeName").textContent = currentUser.name || "User";
-            document.getElementById("navUserName").textContent = currentUser.name || "User";
-            document.getElementById("userAvatar").textContent = (currentUser.name || "U").charAt(0).toUpperCase();
-            
-            // 2. Populate Profile Settings Input Fields
-            document.getElementById("editProfileName").value = currentUser.name || "";
-            document.getElementById("editProfileEmail").value = currentUser.email || "";
-
-            // 3. Setup Role Switcher Button & Load Appropriate Data
+            const travelerSec = document.getElementById("travelerSection");
+            const hostSec = document.getElementById("hostSection");
             const roleBtn = document.getElementById("roleSwitcherBtn");
-            
-            if (currentRole === "host") {
-                // Set Host UI
+            const roleSubtext = document.getElementById("roleSubtext");
+            const hostActionWrapper = document.getElementById("hostActionWrapper");
+
+            if (currentRole === 'host') {
+                travelerSec.classList.add('hidden');
+                hostSec.classList.remove('hidden');
                 roleBtn.innerHTML = `<i class="fa-solid fa-plane"></i> ${text.switchTraveler}`;
-                document.getElementById("travelerSection").classList.add("hidden");
-                document.getElementById("hostSection").classList.remove("hidden");
-                document.getElementById("hostActionWrapper").classList.remove("hidden");
-                document.getElementById("roleSubtext").textContent = text.subTextHost;
-                
-                // Trigger Host API Calls
+                roleSubtext.textContent = text.subTextHost;
+                hostActionWrapper.classList.remove('hidden');
                 fetchHostActiveProperties();
             } else {
-                // Set Traveler UI
+                hostSec.classList.add('hidden');
+                travelerSec.classList.remove('hidden');
                 roleBtn.innerHTML = `<i class="fa-solid fa-hotel"></i> ${text.switchHost}`;
-                document.getElementById("hostSection").classList.add("hidden");
-                document.getElementById("travelerSection").classList.remove("hidden");
-                document.getElementById("hostActionWrapper").classList.add("hidden");
-                document.getElementById("roleSubtext").textContent = text.subTextTraveler;
-                
-                // Trigger Traveler API Calls
+                roleSubtext.textContent = text.subTextTraveler;
+                hostActionWrapper.classList.add('hidden');
                 fetchTravelerBookings();
             }
         }
 
-        // Handle Role Switching
-        function toggleUserRole() {
-            currentRole = currentRole === "traveler" ? "host" : "traveler";
-            sessionStorage.setItem("activeDashboardRole", currentRole);
-            initDashboard(); // Reload page layout
-        }
-        
-        // Handle Logout
         function handleLogOut() {
-            sessionStorage.removeItem("token");
-            sessionStorage.removeItem("userProfile");
+            sessionStorage.clear();
             window.location.replace("login.html");
         }
 
-        // Fire everything when the browser finishes loading the HTML
-        window.onload = initDashboard;    
+        function saveProfileChanges() {
+            const newName = document.getElementById("editProfileName").value.trim();
+            if (newName) {
+                currentUser.name = newName;
+                sessionStorage.setItem("userProfile", JSON.stringify(currentUser));
+                document.getElementById("welcomeName").textContent = newName;
+                document.getElementById("navUserName").textContent = newName;
+                alert("Profile updated successfully!");
+            }
+        }
+
+        function openMessageModal(guestName, propTitle) {
+            currentActiveChatGuest = guestName;
+            document.getElementById("msgModalGuestName").textContent = `Chat with ${guestName}`;
+            document.getElementById("msgModalPropTitle").textContent = propTitle;
+            document.getElementById("chatHistoryBox.innerHTML") = `<div class="text-center text-gray-400 py-4">Conversation started with ${guestName}</div>`;
+            document.getElementById("messageModal").classList.remove('hidden');
+        }
+
+        function closeMessageModal() {
+            document.getElementById("messageModal").classList.add('hidden');
+        }
+
+        function sendGuestMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById("chatInput");
+            const historyBox = document.getElementById("chatHistoryBox");
+            if (!input.value.trim()) return;
+
+            historyBox.innerHTML += `<div class="text-right"><span class="inline-block bg-teal-600 text-white px-3 py-1.5 rounded-xl">${input.value}</span></div>`;
+            input.value = "";
+            historyBox.scrollTop = historyBox.scrollHeight;
+        }
+
+        function openReceiptModal() {
+            document.getElementById("receiptModal").classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById("receiptModal").classList.add('hidden');
+        }
+
+        document.getElementById("langSelector").addEventListener("change", (e) => {
+            currentLang = e.target.value;
+            localStorage.setItem("preferredLanguage", currentLang);
+            updateDashboardView();
+        });
+
+        window.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("welcomeName").textContent = currentUser.name || "User";
+            document.getElementById("navUserName").textContent = currentUser.name || "User";
+            document.getElementById("userAvatar").textContent = (currentUser.name || "U")[0].toUpperCase();
+            document.getElementById("editProfileName").value = currentUser.name || "";
+            document.getElementById("editProfileEmail").value = currentUser.email || "";
+            document.getElementById("langSelector").value = currentLang;
+
+            updateDashboardView();
+        });
     </script>
 </body>
 </html>
