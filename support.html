@@ -128,129 +128,7 @@
     </main>
 
     <script>
-        // Inline Local Translation Engine 
-        const translations = {
-            en: {
-                nav_support_title: "Trust & Support - StayGuwahati",
-                nav_home: "Home",
-                nav_dashboard: "Dashboard",
-                hub_badge: "Trust & Security Hub",
-                hub_heading: "How can we help you stay safe and comfortable?",
-                hub_subheading: "Explore local property dynamics, safety guardrails, self check-in systems, or get in touch with our local site administrators.",
-                faq_title: "Frequently Asked Questions",
-                faq1_q: "How does the self check-in system work?",
-                faq1_a: "Once your reservation is confirmed, your host will send a unique smart-lock code or key-box instructions directly to your email tracker 24 hours before your check-in time.",
-                faq2_q: "What is the platform's cancellation policy?",
-                faq2_a: "We offer free cancellation up to 48 hours before your scheduled check-in time. Cancellations made inside the 48-hour window will incur a service fee equal to the first night's value.",
-                faq3_q: "Are all homestays verified?",
-                faq3_a: "Yes. Every active listing on StayGuwahati goes through an individual profile and on-site physical credentials evaluation by our verification pipeline team before going live.",
-                feat_secure_title: "Secure Architecture",
-                feat_secure_desc: "Encrypted matching network protects passwords, active profiles, and invoice history pipelines.",
-                feat_reviews_title: "Verified Reviews",
-                feat_reviews_desc: "Guest feedback can only be written after checking out from a valid transaction receipt stay.",
-                form_title: "Contact Support",
-                form_subtitle: "Can't find an answer? Shoot us a message.",
-                lbl_subject: "Issue Subject",
-                opt_booking: "Booking Query",
-                opt_verification: "Host Verification Match",
-                opt_payment: "Invoice or Payment Failures",
-                opt_other: "Other technical issue",
-                lbl_description: "Description",
-                btn_submit: "Submit Ticket"
-            },
-            as: {
-                nav_support_title: "বিশ্বাস আৰু সহায় - StayGuwahati",
-                nav_home: "হোম",
-                nav_dashboard: "ড্যাশবৰ্ড",
-                hub_badge: "বিশ্বাস আৰু সুৰক্ষা কেন্দ্ৰ",
-                hub_heading: "আপোনাক কেনেকৈ সুৰক্ষিত আৰু আৰামদায়ক কৰি ৰাখিব পাৰি?",
-                hub_subheading: "স্থানীয় সম্পত্তিৰ গতিশীলতা, সুৰক্ষা ব্যৱস্থা, নিজে চেক-ইন কৰা প্ৰণালী অন্বেষণ কৰক বা আমাৰ স্থানীয় ছাইট প্ৰশাসকৰ সৈতে যোগাযোগ কৰক।",
-                faq_title: "সঘনাই সোধা প্ৰশ্নসমূহ",
-                faq1_q: "নিজে চেক-ইন কৰা প্ৰণালীটোৱে কেনেকৈ কাম কৰে?",
-                faq1_a: "আপোনাৰ বুকিং নিশ্চিত হোৱাৰ পিছত, আপোনাৰ চেক-ইন সময়ৰ ২৪ ঘণ্টা আগতে আপোনাৰ হোষ্টে পোনপটীয়াকৈ এটা অনন্য স্মাৰ্ট-লক ক'ড বা কি-বক্সৰ নিৰ্দেশনা প্ৰেৰণ কৰিব।",
-                faq2_q: "প্লেটফৰ্মৰ বাতিলকৰণ নীতি কি?",
-                faq2_a: "আমি নিৰ্ধাৰিত চেক-ইন সময়ৰ ৪৮ ঘণ্টা আগলৈকে বিনামূলীয়া বাতিলকৰণৰ সুবিধা প্ৰদান কৰো। ৪৮ ঘণ্টাৰ ভিতৰত কৰা বাতিলৰ বাবে প্ৰথম ৰাতিৰ মূল্যৰ সমান সেৱা মাচুল ল’ব।",
-                faq3_q: "সকলো হোমষ্টে পৰীক্ষামূলকভাৱে প্ৰমাণিতনে?",
-                faq3_a: "হয়। StayGuwahati ত থকা প্ৰতিটো সক্ৰিয় লিস্টিং লাইভ হোৱাৰ আগতে আমাৰ প্ৰমাণীকৰণ দলৰ দ্বাৰা শাৰীৰিক পৰীক্ষণ প্ৰক্ৰিয়াৰ মাজেৰে পাৰ হয়।",
-                feat_secure_title: "সুৰক্ষিত স্থাপত্য",
-                feat_secure_desc: "ইনক্ৰিপ্টেড নেটৱৰ্কে পাছৱৰ্ড, সক্ৰিয় প্ৰফাইল আৰু ইনভইচ ইতিহাস সুৰক্ষিত কৰে।",
-                feat_reviews_title: "প্ৰমাণিত সমীক্ষাসমূহ",
-                feat_reviews_desc: "কেৱল এটা বৈধ লেনদেনৰ পিছতহে অতিথিৰ মতামত বা ৰেটিং লিখিব পৰা যাব।",
-                form_title: "সহায়তাৰ বাবে যোগাযোগ কৰক",
-                form_subtitle: "উত্তৰ বিচাৰি পোৱা নাই? আমালৈ এটা বাৰ্তা পঠিয়াওক।",
-                lbl_subject: "বিষয়",
-                opt_booking: "বুকিং সম্পৰ্কীয় প্ৰশ্ন",
-                opt_verification: "হোষ্ট প্ৰমাণীকৰণ মিল",
-                opt_payment: "ইনভইচ বা পৰিশোধৰ ব্যৰ্থতা",
-                opt_other: "অন্যান্য কাৰিকৰী সমস্যা",
-                lbl_description: "বিৱৰণ",
-                btn_submit: "টিকট জমা কৰক"
-            },
-            hi: {
-                nav_support_title: "विश्वास और सहायता - StayGuwahati",
-                nav_home: "होम",
-                nav_dashboard: "डैशबोर्ड",
-                hub_badge: "विश्वास और सुरक्षा केंद्र",
-                hub_heading: "हम आपको सुरक्षित और आरामदायक रखने में कैसे मदद कर सकते हैं?",
-                hub_subheading: "स्थानीय संपत्ति गतिकी, सुरक्षा दिशानिर्देश, स्वयं चेक-इन सिस्टम का पता लगाएं, या हमारे स्थानीय साइट प्रबंधकों से संपर्क करें।",
-                faq_title: "अक्सर पूछे जाने वाले प्रश्न",
-                faq1_q: "स्वयं चेक-इन सिस्टम कैसे काम करता है?",
-                faq1_a: "एक बार आपकी बुकिंग सुरक्षित हो जाने पर, आपका होस्ट आपके चेक-इन समय से 24 घंटे पहले एक विशिष्ट स्मार्ट-लॉक कोड या की-बॉक्स निर्देश सीधे आपके ईमेल पर भेजेगा।",
-                faq2_q: "प्लेटफ़ॉर्म की रद्दीकरण नीति क्या है?",
-                faq2_a: "हम आपके निर्धारित चेक-इन समय से 48 घंटे पहले तक मुफ्त रद्दीकरण की पेशकश करते हैं। 48 घंटे के भीतर रद्दीकरण करने पर पहली रात के मूल्य के बराबर सेवा शुल्क लगेगा।",
-                faq3_q: "क्या सभी होमस्टे सत्यापित हैं?",
-                faq3_a: "हाँ। StayGuwahati पर हर सक्रिय प्रविष्टि लाइव होने से पहले हमारी सत्यापन टीम द्वारा ऑन-साइट भौतिक क्रेडेंशियल मूल्यांकन से गुजरती है।",
-                feat_secure_title: "सुरक्षित आर्किटेक्चर",
-                feat_secure_desc: "एन्क्रिप्टेड मिलान नेटवर्क पासवर्ड, सक्रिय प्रोफाइल और चालान इतिहास पाइपलाइनों की सुरक्षा करता है।",
-                feat_reviews_title: "सत्यापित समीक्षाएं",
-                feat_reviews_desc: "अतिथि प्रतिक्रिया केवल एक वैध लेनदेन रसीद प्रवास से चेक आउट करने के बाद ही लिखी जा सकती है।",
-                form_title: "सहायता से संपर्क करें",
-                form_subtitle: "जवाब नहीं मिल रहा है? हमें एक संदेश भेजें।",
-                lbl_subject: "समस्या का विषय",
-                opt_booking: "बुकिंग पूछताछ",
-                opt_verification: "होस्ट सत्यापन मिलान",
-                opt_payment: "चालान या भुगतान विफलताएं",
-                opt_other: "अन्य तकनीकी समस्या",
-                lbl_description: "विवरण",
-                btn_submit: "टिकट सबमिट करें"
-            }
-        };
-
-        function applyTranslations(lang) {
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (translations[lang] && translations[lang][key]) {
-                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                        el.placeholder = translations[lang][key];
-                    } else if (el.tagName === 'TITLE') {
-                        document.title = translations[lang][key];
-                    } else {
-                        const icon = el.querySelector('i');
-                        if (icon) {
-                            el.innerHTML = '';
-                            el.appendChild(icon);
-                            el.append(' ' + translations[lang][key]);
-                        } else {
-                            el.textContent = translations[lang][key];
-                        }
-                    }
-                }
-            });
-            document.documentElement.lang = lang;
-        }
-
-        document.getElementById('langSelector').addEventListener('change', (e) => {
-            const selectedLang = e.target.value;
-            applyTranslations(selectedLang);
-            localStorage.setItem('preferredLang', selectedLang);
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedLang = localStorage.getItem('preferredLang') || 'en';
-            document.getElementById('langSelector').value = savedLang;
-            applyTranslations(savedLang);
-        });
-
+        // Interactive FAQ Accordion Trigger
         function toggleAccordion(id) {
             const content = document.getElementById(id);
             const icon = document.getElementById(`${id}-icon`);
@@ -264,6 +142,7 @@
             }
         }
 
+        // Support Ticket Submission Handler
         document.getElementById('supportForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -274,7 +153,6 @@
             };
 
             try {
-                // Updated to point to the production backend on Render
                 const response = await fetch('https://stayguwahati-backend.onrender.com/api/tickets', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -295,6 +173,6 @@
             }
         });
     </script>
-<script src="lang-manager.js"></script>
+    <script src="lang-manager.js"></script>
 </body>
 </html>
