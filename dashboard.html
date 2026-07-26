@@ -244,6 +244,7 @@
         let currentRole = sessionStorage.getItem("activeDashboardRole") || "traveler";
         let currentLang = localStorage.getItem("preferredLanguage") || "en";
         let currentActiveChatGuest = "";
+        let currentChatRecipientPhone = "";
 
         const dictionary = {
             en: { 
@@ -380,7 +381,7 @@
                                 <td class="py-3.5 font-black text-teal-700">₹${r.totalPrice || r.payout || r.price || 0}</td>
                                 <td class="py-3.5"><span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-100">${text.statusConf}</span></td>
                                 <td class="py-3.5 text-right">
-                                    <button onclick="openMessageModal('${formattedName}', '${propName.replace(/'/g, "\\'")}')" class="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto">
+                                    <button onclick="openMessageModal('${formattedName}', '${propName.replace(/'/g, "\\'")}', '${r.guestPhone || r.phone || ''}')" class="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto">
                                         <i class="fa-regular fa-comment-dots"></i> ${text.msgBtn}
                                     </button>
                                 </td>
@@ -428,141 +429,124 @@
                                 </div>
                                 <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
                                     <span>₹${p.price || p.nightlyPrice || 0} / night</span>
-                                    <button onclick="deleteProperty('${p._id || p.id}')" class="text-rose-600 font-bold hover:underline bg-none border-none p-0 cursor-pointer">Delete</button>
+                                    <button onclick="deleteProperty('${p._id || p.id}')" class="text-rose-600 font-bold hover:underline bg-none border-none p-0 cursor-pointer text-xs">Delete</button>
                                 </div>
                             </div>
                         </div>
                     `).join('');
                 }
             } catch (err) {
-                console.error("Failed to load host properties:", err);
+                console.error("Failed to load active properties:", err);
                 grid.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noProperties}</p></div>`;
             }
         }
 
-        function toggleUserRole() {
-            currentRole = currentRole === 'traveler' ? 'host' : 'traveler';
-            sessionStorage.setItem("activeDashboardRole", currentRole);
-            updateRoleUI();
-        }
-
-        function updateRoleUI() {
-            const text = dictionary[currentLang] || dictionary.en;
-            const roleSwitcherBtn = document.getElementById("roleSwitcherBtn");
-            const travelerSection = document.getElementById("travelerSection");
-            const hostSection = document.getElementById("hostSection");
-            const hostActionWrapper = document.getElementById("hostActionWrapper");
-            const roleSubtext = document.getElementById("roleSubtext");
-
-            if (currentRole === 'host') {
-                roleSwitcherBtn.innerHTML = `<i class="fa-solid fa-plane text-xs"></i> ${text.switchTraveler}`;
-                travelerSection.classList.add("hidden");
-                hostSection.classList.remove("hidden");
-                hostActionWrapper.classList.remove("hidden");
-                roleSubtext.textContent = text.subTextHost;
-                fetchHostActiveProperties();
-            } else {
-                roleSwitcherBtn.innerHTML = `<i class="fa-solid fa-hotel text-xs"></i> ${text.switchHost}`;
-                hostSection.classList.add("hidden");
-                travelerSection.classList.remove("hidden");
-                hostActionWrapper.classList.add("hidden");
-                roleSubtext.textContent = text.subTextTraveler;
-                fetchTravelerBookings();
-            }
-        }
-
-        function openMessageModal(guestName, propTitle) {
+        // --- Chat & Messaging Functions (Twilio Integration) ---
+        function openMessageModal(guestName, propertyTitle, guestPhone = '') {
             currentActiveChatGuest = guestName;
-            document.getElementById("msgModalGuestName").textContent = `Chat with ${guestName}`;
-            document.getElementById("msgModalPropTitle").textContent = propTitle;
-            document.getElementById("chatHistoryBox").innerHTML = `
-                <div class="bg-teal-50 border border-teal-100 p-2.5 rounded-xl text-teal-800 text-xs">
-                    <p class="font-bold">System Connection</p>
-                    <p class="text-[10px] mt-0.5">Secure channel established with ${guestName} regarding ${propTitle}.</p>
+            document.getElementById('msgModalGuestName').textContent = `Chat with ${guestName}`;
+            document.getElementById('msgModalPropTitle').textContent = propertyTitle;
+            window.currentChatRecipientPhone = guestPhone; 
+
+            const chatBox = document.getElementById('chatHistoryBox');
+            chatBox.innerHTML = `
+                <div class="text-center text-gray-400 py-2 text-[10px]">
+                    Connected securely with ${guestName} via StayGuwahati Messaging.
                 </div>
             `;
-            document.getElementById("messageModal").classList.remove("hidden");
+            document.getElementById('messageModal').classList.remove('hidden');
         }
 
         function closeMessageModal() {
-            document.getElementById("messageModal").classList.add("hidden");
+            document.getElementById('messageModal').classList.add('hidden');
         }
 
-        function sendGuestMessage(e) {
-            e.preventDefault();
-            const input = document.getElementById("chatInput");
-            const message = input.value.trim();
-            if (!message) return;
+        async function sendGuestMessage(event) {
+            event.preventDefault();
+            const input = document.getElementById('chatInput');
+            const messageText = input.value.trim();
+            if (!messageText) return;
 
-            const chatBox = document.getElementById("chatHistoryBox");
+            const chatBox = document.getElementById('chatHistoryBox');
+
             chatBox.innerHTML += `
-                <div class="flex justify-end">
-                    <div class="bg-slate-900 text-white p-2.5 rounded-xl max-w-[80%] text-xs shadow-sm">
-                        <p>${message}</p>
+                <div class="flex flex-col items-end mb-2">
+                    <div class="bg-teal-600 text-white rounded-xl px-3 py-2 max-w-[80%] text-xs shadow-xs">
+                        ${messageText}
                     </div>
+                    <span class="text-[9px] text-gray-400 mt-0.5">Just now</span>
                 </div>
             `;
-            input.value = "";
+            input.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
-        }
 
-        function openReviewModal() {
-            document.getElementById("reviewModal").classList.remove("hidden");
-        }
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/messages/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        recipientPhone: window.currentChatRecipientPhone || '+910000000000',
+                        message: messageText,
+                        senderName: currentUser.name || 'Host',
+                        propertyTitle: document.getElementById('msgModalPropTitle').textContent
+                    })
+                });
 
-        function closeReviewModal() {
-            document.getElementById("reviewModal").classList.add("hidden");
-        }
-
-        function handleReviewSubmit(e) {
-            e.preventDefault();
-            alert("Review submitted successfully!");
-            closeReviewModal();
-        }
-
-        function openReceiptModal() {
-            document.getElementById("receiptModal").classList.remove("hidden");
+                const result = await response.json();
+                if (!result.success) {
+                    console.error("Failed to push SMS via gateway:", result.error);
+                }
+            } catch (err) {
+                console.error("Network error while trying to send message SMS:", err);
+            }
         }
 
         function closeReceiptModal() {
-            document.getElementById("receiptModal").classList.add("hidden");
+            document.getElementById('receiptModal').classList.add('hidden');
         }
 
-        function saveProfileChanges() {
-            const newName = document.getElementById("editProfileName").value.trim();
-            if (newName) {
-                currentUser.name = newName;
-                sessionStorage.setItem("userProfile", JSON.stringify(currentUser));
-                document.getElementById("welcomeName").textContent = newName;
-                document.getElementById("navUserName").textContent = newName;
-                document.getElementById("userAvatar").textContent = newName.charAt(0).toUpperCase();
-                alert("Profile credentials updated successfully!");
+        function openReceiptModal() {
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+
+        function closeReviewModal() {
+            document.getElementById('reviewModal').classList.add('hidden');
+        }
+
+        async function deleteProperty(propertyId) {
+            if (!confirm("Are you sure you want to delete this property?")) return;
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/properties/${propertyId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                    }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert("Property deleted successfully.");
+                    fetchHostActiveProperties();
+                } else {
+                    alert(data.error || "Failed to delete property.");
+                }
+            } catch (err) {
+                console.error("Error deleting property:", err);
+                alert("Network error while deleting property.");
             }
         }
 
         function handleLogOut() {
-            sessionStorage.removeItem("token");
-            sessionStorage.removeItem("userProfile");
-            sessionStorage.removeItem("activeDashboardRole");
+            sessionStorage.clear();
             window.location.replace("login.html");
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("welcomeName").textContent = currentUser.name;
-            document.getElementById("navUserName").textContent = currentUser.name;
-            document.getElementById("userAvatar").textContent = currentUser.name.charAt(0).toUpperCase();
-            document.getElementById("editProfileName").value = currentUser.name;
-            document.getElementById("editProfileEmail").value = currentUser.email || "user@example.com";
-
-            const langSelector = document.getElementById("langSelector");
-            langSelector.value = currentLang;
-            langSelector.addEventListener("change", (e) => {
-                currentLang = e.target.value;
-                localStorage.setItem("preferredLanguage", currentLang);
-                location.reload();
-            });
-
-            updateRoleUI();
+        // Initialize dashboard on load
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchTravelerBookings();
+            fetchHostActiveProperties();
         });
     </script>
 </body>
