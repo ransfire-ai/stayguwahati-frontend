@@ -322,10 +322,18 @@
             langSelectorMobile.addEventListener('change', (e) => handleLanguageChange(e.target.value));
         }
 
+        const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+
+        function resolveImageUrl(imgSrc) {
+            const fallback = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600';
+            if (!imgSrc) return fallback;
+            if (imgSrc.startsWith('http://') || imgSrc.startsWith('https://')) return imgSrc;
+            return `${BACKEND_URL}${imgSrc.startsWith('/') ? '' : '/'}${imgSrc}`;
+        }
+
         async function loadVerifiedHomestays() {
             const grid = document.getElementById("homestayGrid");
             const countLabel = document.getElementById("propertyCount");
-            const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
             const urlParams = new URLSearchParams(window.location.search);
             const selectedLocation = urlParams.get('location');
@@ -361,7 +369,7 @@
                 properties.forEach(stay => {
                     let img = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600";
                     if (stay.images && stay.images.length > 0) {
-                        img = stay.images[0].startsWith('/uploads') ? `${BACKEND_URL}${stay.images[0]}` : stay.images[0];
+                        img = resolveImageUrl(stay.images[0]);
                     }
 
                     const rating = stay.rating || (4.3 + Math.random() * 0.6).toFixed(1);
