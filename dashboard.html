@@ -279,9 +279,8 @@
             if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
                 return imagePath;
             }
-            const backendUrl = 'https://stayguwahati-backend.onrender.com';
             const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-            return `${backendUrl}/${cleanPath}`;
+            return `${BACKEND_URL}/${cleanPath}`;
         }
 
         async function fetchTravelerBookings() {
@@ -356,9 +355,9 @@
                             rawName = `${r.firstName || ''} ${r.lastName || ''}`.trim();
                         } else {
                             rawName = r.guestName || r.userName || r.name || r.guest || 
-                                      (typeof r.userId === 'object' ? (r.userId?.name || r.userId?.username || r.userId?.fullName) : null) ||
-                                      (typeof r.user === 'object' ? (r.user?.name || r.user?.username || r.user?.fullName) : r.user) ||
-                                      r.guestEmail || r.userEmail || '';
+                                    (typeof r.userId === 'object' ? (r.userId?.name || r.userId?.username || r.userId?.fullName) : null) ||
+                                    (typeof r.user === 'object' ? (r.user?.name || r.user?.username || r.user?.fullName) : r.user) ||
+                                    r.guestEmail || r.userEmail || '';
                         }
                         
                         if (rawName && typeof rawName === 'string' && rawName.includes('@')) {
@@ -448,25 +447,25 @@
 
         function updateDashboardView() {
             const text = dictionary[currentLang] || dictionary.en;
-            const travelerSection = document.getElementById("travelerSection");
-            const hostSection = document.getElementById("hostSection");
-            const roleSwitcherBtn = document.getElementById("roleSwitcherBtn");
-            const hostActionWrapper = document.getElementById("hostActionWrapper");
+            const travelerSec = document.getElementById("travelerSection");
+            const hostSec = document.getElementById("hostSection");
+            const roleBtn = document.getElementById("roleSwitcherBtn");
             const roleSubtext = document.getElementById("roleSubtext");
+            const hostActionWrapper = document.getElementById("hostActionWrapper");
 
             if (currentRole === 'host') {
-                travelerSection.classList.add('hidden');
-                hostSection.classList.remove('hidden');
-                roleSwitcherBtn.innerHTML = `<i class="fa-solid fa-plane text-teal-600"></i> ${text.switchTraveler}`;
-                hostActionWrapper.classList.remove('hidden');
+                travelerSec.classList.add('hidden');
+                hostSec.classList.remove('hidden');
+                roleBtn.innerHTML = `<i class="fa-solid fa-plane"></i> ${text.switchTraveler}`;
                 roleSubtext.textContent = text.subTextHost;
+                hostActionWrapper.classList.remove('hidden');
                 fetchHostActiveProperties();
             } else {
-                hostSection.classList.add('hidden');
-                travelerSection.classList.remove('hidden');
-                roleSwitcherBtn.innerHTML = `<i class="fa-solid fa-hotel text-teal-600"></i> ${text.switchHost}`;
-                hostActionWrapper.classList.add('hidden');
+                hostSec.classList.add('hidden');
+                travelerSec.classList.remove('hidden');
+                roleBtn.innerHTML = `<i class="fa-solid fa-hotel"></i> ${text.switchHost}`;
                 roleSubtext.textContent = text.subTextTraveler;
+                hostActionWrapper.classList.add('hidden');
                 fetchTravelerBookings();
             }
         }
@@ -474,45 +473,6 @@
         function handleLogOut() {
             sessionStorage.clear();
             window.location.replace("login.html");
-        }
-
-        function openMessageModal(guestName, propTitle) {
-            currentActiveChatGuest = guestName;
-            document.getElementById("msgModalGuestName").textContent = `Chat with ${guestName}`;
-            document.getElementById("msgModalPropTitle").textContent = propTitle;
-            document.getElementById("messageModal").classList.remove('hidden');
-            
-            const chatBox = document.getElementById("chatHistoryBox");
-            chatBox.innerHTML = `
-                <div class="text-center text-gray-400 text-[10px] my-2">Secure encrypted channel established with ${guestName}</div>
-                <div class="bg-white p-2.5 rounded-xl shadow-xs max-w-[80%] text-gray-700">Hello! I have a question regarding my reservation at ${propTitle}.</div>
-            `;
-        }
-
-        function closeMessageModal() {
-            document.getElementById("messageModal").classList.add('hidden');
-        }
-
-        function sendGuestMessage(event) {
-            event.preventDefault();
-            const input = document.getElementById("chatInput");
-            const message = input.value.trim();
-            if (!message) return;
-
-            const chatBox = document.getElementById("chatHistoryBox");
-            chatBox.innerHTML += `
-                <div class="bg-teal-600 text-white p-2.5 rounded-xl shadow-xs max-w-[80%] ml-auto text-right">${message}</div>
-            `;
-            input.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function openReceiptModal() {
-            document.getElementById("receiptModal").classList.remove('hidden');
-        }
-
-        function closeReceiptModal() {
-            document.getElementById("receiptModal").classList.add('hidden');
         }
 
         function saveProfileChanges() {
@@ -526,19 +486,50 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("welcomeName").textContent = currentUser.name;
-            document.getElementById("navUserName").textContent = currentUser.name;
-            document.getElementById("editProfileName").value = currentUser.name;
-            document.getElementById("editProfileEmail").value = currentUser.email;
+        function openMessageModal(guestName, propTitle) {
+            currentActiveChatGuest = guestName;
+            document.getElementById("msgModalGuestName").textContent = `Chat with ${guestName}`;
+            document.getElementById("msgModalPropTitle").textContent = propTitle;
+            document.getElementById("chatHistoryBox.innerHTML") = `<div class="text-center text-gray-400 py-4">Conversation started with ${guestName}</div>`;
+            document.getElementById("messageModal").classList.remove('hidden');
+        }
 
-            const langSelector = document.getElementById("langSelector");
-            langSelector.value = currentLang;
-            langSelector.addEventListener("change", (e) => {
-                currentLang = e.target.value;
-                localStorage.setItem("preferredLanguage", currentLang);
-                location.reload();
-            });
+        function closeMessageModal() {
+            document.getElementById("messageModal").classList.add('hidden');
+        }
+
+        function sendGuestMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById("chatInput");
+            const historyBox = document.getElementById("chatHistoryBox");
+            if (!input.value.trim()) return;
+
+            historyBox.innerHTML += `<div class="text-right"><span class="inline-block bg-teal-600 text-white px-3 py-1.5 rounded-xl">${input.value}</span></div>`;
+            input.value = "";
+            historyBox.scrollTop = historyBox.scrollHeight;
+        }
+
+        function openReceiptModal() {
+            document.getElementById("receiptModal").classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById("receiptModal").classList.add('hidden');
+        }
+
+        document.getElementById("langSelector").addEventListener("change", (e) => {
+            currentLang = e.target.value;
+            localStorage.setItem("preferredLanguage", currentLang);
+            updateDashboardView();
+        });
+
+        window.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("welcomeName").textContent = currentUser.name || "User";
+            document.getElementById("navUserName").textContent = currentUser.name || "User";
+            document.getElementById("userAvatar").textContent = (currentUser.name || "U")[0].toUpperCase();
+            document.getElementById("editProfileName").value = currentUser.name || "";
+            document.getElementById("editProfileEmail").value = currentUser.email || "";
+            document.getElementById("langSelector").value = currentLang;
 
             updateDashboardView();
         });
