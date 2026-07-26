@@ -10,6 +10,14 @@
         .hover-zoom:hover img {
             transform: scale(1.05);
         }
+        /* Hide scrollbar for a cleaner mobile carousel */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
@@ -56,9 +64,9 @@
             </div>
         </div>
 
-        <!-- Dynamic Image Gallery Grid Container -->
+        <!-- Dynamic Image Gallery Grid Container (UPDATED) -->
         <div class="w-full mb-8 sm:mb-10">
-            <div id="imageGalleryGrid" class="grid grid-cols-1 md:grid-cols-4 gap-3 h-[280px] sm:h-[350px] md:h-[450px]">
+            <div id="imageGalleryGrid" class="flex overflow-x-auto snap-x snap-mandatory gap-3 md:grid md:grid-cols-4 md:grid-rows-2 h-[280px] sm:h-[350px] md:h-[450px] pb-2 md:pb-0 scrollbar-hide">
                 <!-- Injected dynamically via script -->
             </div>
         </div>
@@ -195,7 +203,6 @@
             }
         }
 
-        // Safe Session-Storage Booking Redirect to avoid long URLs
         function handleReserveSpace(property) {
             const mainImage = (property.images && property.images.length > 0) ? property.images[0] : '';
             const bookingData = {
@@ -217,7 +224,6 @@
 
             let property = null;
 
-            // 1. Try fetching from Database API if ID is available
             if (propertyId && propertyId !== 'default') {
                 try {
                     const response = await fetch(`${BACKEND_URL}/api/homestays/${propertyId}`);
@@ -230,13 +236,11 @@
                 }
             }
 
-            // 2. Fallback to LocalStorage if API data wasn't found
             if (!property) {
                 const localProps = JSON.parse(localStorage.getItem("userProperties")) || [];
                 property = localProps.find(p => p.id === propertyId || p._id === propertyId || p.title === titleParam);
             }
 
-            // 3. Fallback to default object populated from URL parameters
             if (!property) {
                 property = {
                     id: propertyId || 'default',
@@ -256,14 +260,12 @@
                 }
             }
 
-            // Format image absolute URLs if they use relative paths
             if (property.images && property.images.length > 0) {
                 property.images = property.images.map(img => 
                     img.startsWith('/uploads') ? `${BACKEND_URL}${img}` : img
                 );
             }
 
-            // Fallback image pool if none exist
             if (!property.images || property.images.length === 0) {
                 property.images = [
                     "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
@@ -273,14 +275,12 @@
                 ];
             }
 
-            // Populate text elements
             document.getElementById('pageTitle').textContent = `StayGuwahati | ${property.title}`;
             document.getElementById('propTitle').textContent = property.title;
             document.getElementById('propLocation').innerHTML = `<i class="fa-solid fa-location-dot text-teal-600 animate-pulse"></i> ${property.locality || 'Guwahati'}, Guwahati`;
             document.getElementById('propPrice').textContent = `₹${parseInt(property.pricePerNight || property.price || 1500).toLocaleString('en-IN')}`;
             document.getElementById('propDescription').textContent = property.description || "No description provided by host.";
 
-            // Render Host details if present
             if (property.host && property.host.name) {
                 const hostCard = document.getElementById('hostDetailsCard');
                 hostCard.classList.remove('hidden');
@@ -288,7 +288,6 @@
                 document.getElementById('hostPhone').textContent = property.host.phone || 'Verified Host';
             }
 
-            // Render Amenities badges dynamically
             const amenitiesContainer = document.getElementById('amenitiesContainer');
             const featuresList = property.features || property.amenities || ['Premium Linens', 'Free Wi-Fi', 'Great Location'];
             if (featuresList && featuresList.length > 0) {
@@ -299,35 +298,27 @@
                 `).join('');
             }
 
-            // Render Image Gallery Grid Layout dynamically based on total images count
+            // Render Image Gallery Grid Layout (UPDATED LOGIC)
             const imgGrid = document.getElementById('imageGalleryGrid');
             const totalImages = property.images.length;
             const mainImg = property.images[0];
             
-            let galleryHTML = `
-                <div class="md:col-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group hover-zoom">
-                    <img id="mainGalleryImg" src="${mainImg}" class="w-full h-full object-cover transition-transform duration-500 ease-out" alt="Main Property View">
-                </div>
-            `;
+            let galleryHTML = '';
 
             if (totalImages === 1) {
-                galleryHTML += `
-                    <div class="hidden md:grid md:col-span-1 grid-rows-2 gap-3 h-full">
-                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom"><img src="${mainImg}" class="w-full h-full object-cover"></div>
-                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom"><img src="${mainImg}" class="w-full h-full object-cover"></div>
-                    </div>
-                    <div class="hidden md:block md:col-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom">
-                        <img src="${mainImg}" class="w-full h-full object-cover">
+                galleryHTML = `
+                    <div class="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-4 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group hover-zoom">
+                        <img id="mainGalleryImg" src="${mainImg}" class="w-full h-full object-cover transition-transform duration-500 ease-out" alt="Main Property View">
                     </div>
                 `;
             } else if (totalImages === 2) {
-                galleryHTML += `
-                    <div class="hidden md:grid md:col-span-1 grid-rows-2 gap-3 h-full">
-                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom"><img src="${property.images[1]}" class="w-full h-full object-cover"></div>
-                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom"><img src="${property.images[1]}" class="w-full h-full object-cover"></div>
+                const img2 = property.images[1];
+                galleryHTML = `
+                    <div class="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group hover-zoom">
+                        <img id="mainGalleryImg" src="${mainImg}" class="w-full h-full object-cover transition-transform duration-500 ease-out" alt="Main Property View">
                     </div>
-                    <div class="hidden md:block md:col-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom">
-                        <img src="${property.images[1]}" class="w-full h-full object-cover">
+                    <div class="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img2}'">
+                        <img src="${img2}" class="w-full h-full object-cover transition-transform duration-500 ease-out" alt="Property View 2">
                     </div>
                 `;
             } else {
@@ -335,19 +326,27 @@
                 const img3 = property.images[2] || mainImg;
                 const img4 = property.images[3] || mainImg;
 
-                galleryHTML += `
-                    <div class="hidden md:grid md:col-span-1 grid-rows-2 gap-3 h-full">
-                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img2}'">
-                            <img src="${img2}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
-                        </div>
-                        <div class="rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img3}'">
-                            <img src="${img3}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
-                        </div>
+                galleryHTML = `
+                    <!-- Image 1: Main (Left half on desktop) -->
+                    <div class="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group hover-zoom">
+                        <img id="mainGalleryImg" src="${mainImg}" class="w-full h-full object-cover transition-transform duration-500 ease-out" alt="Main Property View">
                     </div>
-                    <div class="hidden md:block md:col-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img4}'">
+                    
+                    <!-- Image 2: Mobile swipe item | Desktop top-mid -->
+                    <div class="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:row-start-1 md:col-span-1 md:row-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img2}'">
+                        <img src="${img2}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
+                    </div>
+
+                    <!-- Image 3: Mobile swipe item | Desktop bottom-mid -->
+                    <div class="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:row-start-2 md:col-span-1 md:row-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img3}'">
+                        <img src="${img3}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
+                    </div>
+
+                    <!-- Image 4: Mobile swipe item | Desktop far-right tall -->
+                    <div class="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-4 md:row-start-1 md:col-span-1 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img4}'">
                         <img src="${img4}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
-                        <div class="absolute bottom-4 right-4 bg-white/95 backdrop-blur text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-md border border-slate-200/50 pointer-events-none">
-                            <i class="fa-solid fa-images mr-1.5 text-teal-600"></i> <span id="photoCountBadge">${totalImages}</span> Photos
+                        <div class="absolute bottom-4 right-4 bg-white/95 backdrop-blur text-slate-900 px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-[10px] md:text-xs font-bold shadow-md border border-slate-200/50 pointer-events-none flex items-center gap-1.5">
+                            <i class="fa-solid fa-images text-teal-600"></i> <span>${totalImages}</span> Photos
                         </div>
                     </div>
                 `;
@@ -355,7 +354,6 @@
 
             imgGrid.innerHTML = galleryHTML;
 
-            // Reserve / Checkout routing action
             const reserveBtn = document.getElementById('reserveBtn');
             if (reserveBtn) {
                 reserveBtn.onclick = () => {
