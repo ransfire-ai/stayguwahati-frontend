@@ -1,602 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StayGuwahati | Portal Control Center</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Auth Guard -->
-    <script>
-    const userToken = sessionStorage.getItem('token');
-    if (!userToken) {
-        alert("Secure Area: Please log in to access the Dashboard.");
-        window.location.replace("login.html"); 
-    }
-</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owner Dashboard</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f5f7fb;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  background: #1e293b;
+  color: white;
+  position: fixed;
+  padding: 20px;
+}
+
+.sidebar h2 {
+  margin-bottom: 30px;
+}
+
+.sidebar a {
+  display: block;
+  color: #cbd5e1;
+  padding: 10px 0;
+  text-decoration: none;
+}
+
+.sidebar a:hover {
+  color: white;
+}
+
+/* Main */
+.main {
+  margin-left: 240px;
+  padding: 20px;
+}
+
+/* Cards */
+.cards {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.card {
+  flex: 1;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Table */
+table {
+  width: 100%;
+  background: white;
+  border-radius: 10px;
+  border-collapse: collapse;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background: #f1f5f9;
+}
+
+/* Status */
+.status {
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: white;
+  font-size: 12px;
+}
+
+.confirmed { background: green; }
+.pending { background: orange; }
+
+/* Button */
+button {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.delete {
+  background: red;
+  color: white;
+}
+</style>
+
 </head>
-<body class="bg-gray-50 min-h-screen font-sans flex flex-col justify-between">
+<body>
 
-    <header class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-16 py-2 sm:py-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
-                <i class="fa-solid fa-house-chimney text-teal-600 text-xl sm:text-2xl"></i>
-                <span class="text-lg sm:text-xl font-bold text-teal-800">StayGuwahati</span>
-            </div>
-            
-            <div class="flex flex-wrap items-center gap-2 sm:gap-4 ml-auto sm:ml-0">
-                <select id="langSelector" class="bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-700 rounded-xl p-1.5 focus:outline-none focus:border-teal-500 cursor-pointer transition">
-                    <option value="en">English</option>
-                    <option value="as">অসমীয়া (Assamese)</option>
-                    <option value="hi">हिंदी (Hindi)</option>
-                </select>
+<div class="sidebar">
+  <h2>StayGuwahati</h2>
+  <a href="#">Dashboard</a>
+  <a href="#">Bookings</a>
+  <a href="#">Properties</a>
+  <a href="#">Logout</a>
+</div>
 
-                <button id="roleSwitcherBtn" onclick="toggleUserRole()" 
-                        class="bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold px-3 py-1.5 rounded-xl text-xs transition border border-teal-200 flex items-center gap-1.5">
-                </button>
+<div class="main">
 
-                <div class="hidden sm:block h-6 w-px bg-gray-200"></div>
+  <h1>Owner Dashboard</h1>
 
-                <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-sm" id="userAvatar">
-                        U
-                    </div>
-                    <span id="navUserName" class="text-xs font-bold text-gray-700 hidden sm:inline">User</span>
-                    <button onclick="handleLogOut()" class="text-gray-400 hover:text-rose-600 text-sm pl-1 transition" id="logoutBtn" title="Sign Out">
-                        <i class="fa-solid fa-power-off"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
+  <!-- Stats -->
+  <div class="cards">
+    <div class="card">
+      <h3>Total Bookings</h3>
+      <p id="totalBookings">0</p>
+    </div>
+    <div class="card">
+      <h3>Revenue</h3>
+      <p id="totalRevenue">₹0</p>
+    </div>
+    <div class="card">
+      <h3>Pending</h3>
+      <p id="pendingBookings">0</p>
+    </div>
+  </div>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8">
-        
-        <div class="mb-6 sm:mb-8 bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-                <h1 id="welcomeHeader" class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Hello, <span id="welcomeName" class="text-teal-700">User</span>!</h1>
-                <p id="roleSubtext" class="text-gray-400 text-xs mt-1">Manage your traveler reservations and local itineraries.</p>
-            </div>
-            <div id="hostActionWrapper" class="hidden w-full sm:w-auto">
-                <a href="add-property.html" id="listPropertyBtn" class="w-full sm:w-auto bg-slate-900 hover:bg-teal-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-plus"></i> List New Property
-                </a>
-            </div>
-        </div>
+  <!-- Booking Table -->
+  <h2>Your Bookings</h2>
 
-        <!-- Traveler Section -->
-        <section id="travelerSection" class="space-y-6">
-            <h2 id="travelerHeading" class="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
-                <i class="fa-solid fa-plane-departure text-teal-600 text-sm"></i> Your Bookings & Trips
-            </h2>
-            
-            <div id="bookingsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                <!-- Dynamically populated -->
-            </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Property</th>
+        <th>Guest</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="bookings">
+      <!-- Data will come here -->
+    </tbody>
+  </table>
 
-            <div class="mt-8 sm:mt-12 pt-4">
-                <h3 id="wishlistHeading" class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 mb-4">
-                    <i class="fa-regular fa-heart text-rose-500"></i> Your Saved Wishlists
-                </h3>
-                <div id="wishlistContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Dynamically populated -->
-                </div>
-            </div>
+</div>
 
-            <div class="mt-8 sm:mt-12 space-y-4 pt-2">
-                <h3 id="historyHeading" class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
-                    <i class="fa-solid fa-clock-rotate-left text-gray-500"></i> Past Trips History
-                </h3>
-                <div id="historyContainer">
-                    <!-- Dynamically populated -->
-                </div>
-            </div>
+<script>
 
-            <div class="mt-8 sm:mt-12 bg-white border border-gray-100 p-4 sm:p-6 rounded-2xl shadow-sm space-y-4">
-                <h3 id="profileHeading" class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
-                    <i class="fa-regular fa-id-card text-teal-600"></i> Traveler Profile Credentials
-                </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div>
-                        <label id="labelProfileName" class="block text-gray-400 font-medium mb-1">Display / Preferred Name</label>
-                        <input type="text" id="editProfileName" class="w-full border border-gray-200 rounded-xl p-2.5 focus:outline-teal-500 font-medium">
-                    </div>
-                    <div>
-                        <label id="labelProfileEmail" class="block text-gray-400 font-medium mb-1">Email Coordinates</label>
-                        <input type="email" id="editProfileEmail" class="w-full border border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-2.5 cursor-not-allowed" disabled>
-                    </div>
-                </div>
-                <button onclick="saveProfileChanges()" id="updateProfileBtn" class="w-full sm:w-auto bg-slate-950 hover:bg-teal-600 text-white font-bold px-4 py-2.5 sm:py-2 rounded-xl text-xs transition">
-                    Update Settings Data
-                </button>
-            </div>
-        </section>
-
-        <!-- Host Section -->
-        <section id="hostSection" class="hidden space-y-6">
-            <h2 id="hostHeading" class="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
-                <i class="fa-solid fa-hotel text-teal-600 text-sm"></i> Your Managed Properties Directory
-            </h2>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-                <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
-                    <p id="statIncomeLabel" class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Monthly Income</p>
-                    <p class="text-lg sm:text-xl font-black text-slate-900 mt-1">₹0</p>
-                </div>
-                <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
-                    <p id="statListingsLabel" class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Active Listings</p>
-                    <p class="text-lg sm:text-xl font-black text-teal-600 mt-1" id="statListingsVal">0 Properties</p>
-                </div>
-                <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
-                    <p id="statRatingLabel" class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Platform Rating</p>
-                    <p class="text-lg sm:text-xl font-black text-amber-500 mt-1">0.0 <i class="fa-solid fa-star text-xs"></i></p>
-                </div>
-            </div>
-
-            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-6 space-y-4">
-                <h3 id="pipelineHeading" class="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
-                    <i class="fa-solid fa-calendar-check text-teal-600"></i> Reservation Control Pipeline
-                </h3>
-                <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                    <table class="w-full min-w-[600px] text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-100 text-gray-400 font-medium">
-                                <th class="pb-3 font-semibold" id="thGuest">Guest</th>
-                                <th class="pb-3 font-semibold" id="thProperty">Property</th>
-                                <th class="pb-3 font-semibold" id="thDates">Dates</th>
-                                <th class="pb-3 font-semibold" id="thPayout">Payout</th>
-                                <th class="pb-3 font-semibold" id="thStatus">Status</th>
-                                <th class="pb-3 font-semibold text-right" id="thActions">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="hostReservationsTableBody" class="divide-y divide-gray-50 text-gray-700">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="pt-4">
-                <h3 id="activeListingsHeading" class="text-sm sm:text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-list text-gray-600"></i> Your Active Listings
-                </h3>
-                <div id="hostPropertiesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"></div>
-            </div>
-        </section>
-
-        <!-- Message Modal -->
-        <div id="messageModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
-            <div class="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4 flex flex-col h-[480px] sm:h-[500px]">
-                <div class="flex justify-between items-center border-b pb-3 border-gray-100">
-                    <div>
-                        <h3 class="text-sm sm:text-base font-bold text-gray-900" id="msgModalGuestName">Chat with Guest</h3>
-                        <p class="text-[10px] text-teal-600 font-semibold" id="msgModalPropTitle">Property</p>
-                    </div>
-                    <button onclick="closeMessageModal()" class="text-gray-400 hover:text-gray-600 p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
-                </div>
-                
-                <div id="chatHistoryBox" class="flex-1 overflow-y-auto space-y-3 p-2 bg-gray-50 rounded-xl text-xs border border-gray-100">
-                    <!-- Chat bubbles insert dynamically -->
-                </div>
-
-                <form onsubmit="sendGuestMessage(event)" class="flex gap-2 pt-2">
-                    <input type="text" id="chatInput" placeholder="Type a message..." class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-teal-500 font-medium" required>
-                    <button type="submit" class="bg-teal-600 hover:bg-slate-900 text-white font-bold px-3.5 sm:px-4 py-2 rounded-xl text-xs transition flex items-center gap-1 shadow-sm">
-                        <span>Send</span> <i class="fa-solid fa-paper-plane text-[10px]"></i>
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Review Modal -->
-        <div id="reviewModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
-            <div class="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 id="modalReviewTitle" class="text-sm sm:text-base font-bold text-gray-900">Leave a Property Review</h3>
-                    <button onclick="closeReviewModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-sm"></i></button>
-                </div>
-                <form id="reviewForm" class="space-y-4 text-xs" onsubmit="handleReviewSubmit(event)">
-                    <div>
-                        <label id="modalRatingLabel" class="block text-gray-400 font-medium mb-1">Rating</label>
-                        <select id="reviewRating" class="w-full border border-gray-200 rounded-xl p-2.5 font-bold text-amber-500 focus:outline-teal-500">
-                            <option value="5">⭐⭐⭐⭐⭐ 5.0</option>
-                            <option value="4">⭐⭐⭐⭐ 4.0</option>
-                            <option value="3">⭐⭐⭐ 3.0</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label id="modalCommentLabel" class="block text-gray-400 font-medium mb-1">Your Comments</label>
-                        <textarea id="reviewComment" rows="3" class="w-full border border-gray-200 rounded-xl p-2.5 font-medium focus:outline-teal-500" required></textarea>
-                    </div>
-                    <button type="submit" id="modalReviewSubmitBtn" class="w-full bg-teal-600 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl transition shadow-sm">
-                        Submit Review
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Receipt Modal -->
-        <div id="receiptModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
-            <div class="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-sm sm:text-base font-bold text-gray-900">Booking Receipt</h3>
-                    <button onclick="closeReceiptModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-sm"></i></button>
-                </div>
-                <div class="text-xs space-y-2 text-gray-600">
-                    <p><strong>Status:</strong> Confirmed & Paid</p>
-                    <p><strong>Platform:</strong> StayGuwahati Unified Core</p>
-                    <p class="text-teal-700 font-bold">Thank you for booking with StayGuwahati!</p>
-                </div>
-                <button onclick="closeReceiptModal()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">Close</button>
-            </div>
-        </div>
-
-    </main>
-
-    <footer id="footerText" class="text-center py-4 px-3 text-xs text-gray-400 border-t border-gray-100 bg-white mt-12">
-        &copy; 2026 StayGuwahati Platform Unified Core Engine. All rights reserved.
-    </footer>
+const USER_ID = "YOUR_USER_ID"; // replace
 
 async function loadBookings() {
-    try {
-        const token = sessionStorage.getItem("token");
+  try {
+    const res = await fetch(`http://localhost:3000/owner-bookings/${USER_ID}`);
+    const data = await res.json();
 
-        const res = await fetch(`${BACKEND_URL}/my-bookings`, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
+    const container = document.getElementById("bookings");
 
-        const bookings = await res.json();
+    // FIX: check null
+    if (!container) return;
 
-        const container = document.getElementById("bookingsContainer");
-        container.innerHTML = "";
+    container.innerHTML = "";
 
-        if (!bookings || bookings.length === 0) {
-            container.innerHTML = `
-                <div class="col-span-full text-center text-gray-400 text-sm">
-                    No bookings found
-                </div>
-            `;
-            return;
-        }
+    let total = 0;
+    let revenue = 0;
+    let pending = 0;
 
-        bookings.forEach(b => {
-            container.innerHTML += `
-                <div class="bg-white p-4 rounded-xl shadow-sm border">
-                    <h3 class="font-bold text-gray-800">${b.propertyName || "Property"}</h3>
-                    <p class="text-xs text-gray-500 mt-1">
-                        ${b.checkIn} → ${b.checkOut}
-                    </p>
-                    <p class="text-xs text-teal-600 font-semibold mt-2">
-                        Status: ${b.status || "Confirmed"}
-                    </p>
-                </div>
-            `;
-        });
+    data.forEach(b => {
 
-    } catch (err) {
-        console.error("Booking load error:", err);
-    }
+      total++;
+
+      if (b.status === "pending") pending++;
+      if (b.price) revenue += b.price;
+
+      container.innerHTML += `
+        <tr>
+          <td>${b.propertyName || "N/A"}</td>
+          <td>${b.guestName || "Guest"}</td>
+          <td>${b.date || "-"}</td>
+          <td>
+            <span class="status ${b.status}">
+              ${b.status}
+            </span>
+          </td>
+          <td>
+            <button class="delete" onclick="deleteBooking('${b._id}')">
+              Delete
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    // Update stats
+    document.getElementById("totalBookings").innerText = total;
+    document.getElementById("totalRevenue").innerText = "₹" + revenue;
+    document.getElementById("pendingBookings").innerText = pending;
+
+  } catch (err) {
+    console.error("Error loading bookings:", err);
+  }
 }
 
-    <script>
-        const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
-        let currentUser = JSON.parse(sessionStorage.getItem("userProfile")) || { name: "User", email: "user@example.com" };
-        let currentRole = sessionStorage.getItem("activeDashboardRole") || "traveler";
-        let currentLang = localStorage.getItem("preferredLanguage") || "en";
-        let currentActiveChatGuest = "";
+async function deleteBooking(id) {
+  if (!confirm("Delete this booking?")) return;
 
-        const dictionary = {
-            en: { 
-                welcome: "Hello", subTextTraveler: "Manage your traveler reservations and local itineraries.", subTextHost: "Oversee property listings, analyze data, and manage income tracks.", switchHost: "Switch to Host Mode", switchTraveler: "Switch to Traveler Mode", listProp: "List New Property", travelerHead: "Your Bookings & Trips", upcoming: "Upcoming Stay", viewReceipt: "View Receipt →", wishlistHead: "Your Saved Wishlists", historyHead: "Past Trips History", completed: "Completed", leaveReview: "Leave a Review", profileHead: "Traveler Profile Credentials", labelName: "Display / Preferred Name", labelEmail: "Email Coordinates", updateBtn: "Update Settings Data", hostHead: "Your Managed Properties Directory", incomeLabel: "Monthly Income", listingsLabel: "Active Listings", ratingLabel: "Platform Rating", pipelineHead: "Reservation Control Pipeline", thG: "Guest", thP: "Property", thD: "Dates", thPay: "Payout", thS: "Status", thA: "Actions", statusConf: "Confirmed", activeListHead: "Your Active Listings", msgBtn: "Message", mReviewTitle: "Leave a Property Review", mRating: "Rating", mComment: "Your Comments", mSubmit: "Submit Review", footer: "© 2026 StayGuwahati Platform Unified Core Engine. All rights reserved.",
-                noBookings: "No upcoming bookings found. Explore properties to book your next stay!",
-                noWishlist: "Your wishlist is currently empty.",
-                noHistory: "No past trips recorded.",
-                noReservations: "No reservations found in your pipeline.",
-                noProperties: "No properties listed by you yet."
-            },
-            as: { 
-                welcome: "নমস্কাৰ", subTextTraveler: "আপোনাৰ ভ্ৰমণ সংৰক্ষণ আৰু স্থানীয় ভ্ৰমণসূচী পৰিচালনা কৰক।", subTextHost: "সম্পত্তিৰ তালিকা পৰীক্ষা কৰক, তথ্য বিশ্লেষণ কৰক, আৰু উপাৰ্জন ট্ৰেক পৰিচালনা কৰক।", switchHost: "হোষ্ট মোডলৈ সলনি কৰক", switchTraveler: "ভ্ৰমণকাৰী মোডলৈ সলনি কৰক", listProp: "নতুন সম্পত্তি তালিকাভুক্ত কৰক", travelerHead: "আপোনাৰ বুকিং আৰু ভ্ৰমণসমূহ", upcoming: "অনাগত থকাৰ ব্যৱস্থা", viewReceipt: "ৰচিদ চাওক →", wishlistHead: "আপোনাৰ সংৰক্ষিত ইচ্ছাতালিকা", historyHead: "অতীতৰ ভ্ৰমণ ইতিহাস", completed: "সম্পূৰ্ণ হ’ল", leaveReview: "মতামত দিয়ক", profileHead: "ভ্ৰমণকাৰী প্ৰফাইলৰ প্ৰমাণপত্ৰ", labelName: "প্ৰদৰ্শন / পছন্দৰ নাম", labelEmail: "ইমেইল ঠিকনা", updateBtn: "ছেটিংছ ডাটা আপডেট কৰক", hostHead: "আপোনাৰ পৰিচালিত সম্পত্তি নিৰ্দেশিকা", incomeLabel: "মাহিলী উপাৰ্জন", listingsLabel: "সক্ৰিয় তালিকাসমূহ", ratingLabel: "প্লেটফৰ্ম ৰেটিং", pipelineHead: "সংৰক্ষণ নিয়ন্ত্ৰণ পাইপলাইন", thG: "অতিথি", thP: "সম্পত্তি", thD: "তাৰিখ", thPay: "পৰিশোধ", thS: "স্থিতি", thA: "কাৰ্য্যসমূহ", statusConf: "নিশ্চিত কৰা হৈছে", activeListHead: "আপোনাৰ সক্ৰিয় তালিকাসমূহ", msgBtn: "বাৰ্তা পঠিয়াওক", mReviewTitle: "সম্পত্তিৰ সমীক্ষা এৰক", mRating: "ৰেটিং", mComment: "আপোনাৰ মন্তব্য", mSubmit: "সমীক্ষা জমা কৰক", footer: "© ২০২৬ ষ্টেগুৱাটী প্লেটফৰ্ম ইউনিফাইড কোৰ ইঞ্জিন। সৰ্বস্বত্ব সংৰক্ষিত।",
-                noBookings: "কোনো অনাগত বুকিং পোৱা নগ’ল। আপোনাৰ পৰৱৰ্তী ভ্ৰমণৰ বাবে সম্পত্তি অন্বেষণ কৰক!",
-                noWishlist: "আপোনাৰ ইচ্ছাতালিকা বৰ্তমান খালী।",
-                noHistory: "কোনো অতীতৰ ভ্ৰমণ ৰেকৰ্ড কৰা হোৱা নাই।",
-                noReservations: "পাইপলাইনত কোনো সংৰক্ষণ পোৱা নগ’ল।",
-                noProperties: "আপোনাৰ দ্বাৰা কোনো সম্পত্তি তালিকাভুক্ত কৰা হোৱা নাই।"
-            },
-            hi: { 
-                welcome: "नमस्ते", subTextTraveler: "अपनी यात्री बुकिंग और स्थानीय यात्रा कार्यक्रमों का प्रबंधन करें।", subTextHost: "संपत्ति लिस्टिंग की देखरेख करें, डेटा का विश्लेषण करें और आय ट्रैक प्रबंधित करें।", switchHost: "होस्ट मोड पर जाएं", switchTraveler: "यात्री मोड पर जाएं", listProp: "नई संपत्ति सूचीबद्ध करें", travelerHead: "आपकी बुकिंग और यात्राएं", upcoming: "आगामी प्रवास", viewReceipt: "रसीद देखें →", wishlistHead: "आपकी सहेजी गई विशलिस्ट", historyHead: "पुरानी यात्राओं का इतिहास", completed: "पूर्ण", leaveReview: "समीक्षा लिखें", profileHead: "यात्री प्रोफ़ाइल क्रेडेंशियल", labelName: "प्रदर्शित / पसंदीदा नाम", labelEmail: "ईमेल आईडी", updateBtn: "प्रोफ़ाइल डेटा अपडेट करें", hostHead: "आपकी प्रबंधित संपत्तियों की निर्देशिका", incomeLabel: "मासिक आय", listingsLabel: "सक्रिय लिस्टिंग", ratingLabel: "प्लेटफ़ॉर्म रेटिंग", pipelineHead: "बुकिंग नियंत्रण पाइपलाइन", thG: "अतिथि", thP: "संपत्ति", thD: "तारीखें", thPay: "भुगतान", thS: "स्थिति", thA: "कार्रवाई", statusConf: "पुष्टि की गई", activeListHead: "आपकी सक्रिय लिस्टिंग", msgBtn: "संदेश भेजें", mReviewTitle: "प्रॉपर्टी की समीक्षा करें", mRating: "रेटिंग", mComment: "आपकी टिप्पणी", mSubmit: "समीक्षा सबमिट करें", footer: "© 2026 स्टेगुवाहाटी प्लेटफॉर्म यूनिफाइड कोर इंजन। सर्वाधिकार सुरक्षित।",
-                noBookings: "कोई आगामी बुकिंग नहीं मिली। अपनी अगली यात्रा बुक करने के लिए संपत्तियों का अन्वेषण करें!",
-                noWishlist: "आपकी विशलिस्ट वर्तमान में खाली है।",
-                noHistory: "कोई पुरानी यात्रा दर्ज नहीं की गई है।",
-                noReservations: "आपकी पाइपलाइन में कोई आरक्षण नहीं मिला।",
-                noProperties: "आपके द्वारा अभी तक कोई संपत्ति सूचीबद्ध नहीं की गई है।"
-            }
-        };
+  try {
+    await fetch(`http://localhost:3000/delete-booking/${id}`, {
+      method: "DELETE"
+    });
 
-        function resolveImageUrl(imagePath) {
-            if (!imagePath) {
-                return 'assets/placeholder.jpg'; 
-            }
-            if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-                return imagePath;
-            }
-            const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-            return `${BACKEND_URL}/${cleanPath}`;
-        }
+    loadBookings();
 
-        async function fetchTravelerBookings() {
-    const text = dictionary[currentLang] || dictionary.en;
-    const bookingsContainer = document.getElementById("bookingsContainer");
-    const historyContainer = document.getElementById("historyContainer"); 
-
-    // Show loading spinner
-    bookingsContainer.innerHTML = `<p class="text-xs text-gray-400 col-span-full text-center py-6"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your bookings...</p>`;
-
-    try {
-        const res = await fetch(`${BACKEND_URL}/api/bookings`);
-        let userBookings = [];
-        
-        if (res.ok) {
-            const data = await res.json();
-            let rawBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-            
-            // Strictly filter by the logged-in user's email (case-insensitive to prevent mismatch bugs)
-            userBookings = rawBookings.filter(b => 
-                (b.guestEmail && b.guestEmail.toLowerCase() === currentUser.email.toLowerCase()) || 
-                (b.userEmail && b.userEmail.toLowerCase() === currentUser.email.toLowerCase())
-            );
-        }
-
-        // Separate bookings into "Upcoming" and "Past" based on today's date
-        const today = new Date();
-        const upcomingBookings = [];
-        const pastBookings = [];
-
-        userBookings.forEach(b => {
-            // Adjust this key based on your backend (e.g., checkInDate, dates, or createdAt)
-            const checkInDate = new Date(b.checkInDate || (b.dates ? b.dates.split(' to ')[0] : null) || b.createdAt);
-            
-            if (checkInDate >= today) {
-                upcomingBookings.push(b);
-            } else {
-                pastBookings.push(b);
-            }
-        });
-
-        // Render: Your Bookings & Trips (Upcoming)
-        if (upcomingBookings.length === 0) {
-            bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><i class="fa-solid fa-plane-slash text-2xl mb-2 text-gray-300"></i><p>${text.noBookings}</p></div>`;
-        } else {
-            bookingsContainer.innerHTML = upcomingBookings.map(b => generateBookingCard(b, text.upcoming)).join('');
-        }
-
-        // Render: Past Trips History
-        if (historyContainer) {
-            if (pastBookings.length === 0) {
-                historyContainer.innerHTML = `<div class="bg-gray-50 border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noHistory}</p></div>`;
-            } else {
-                historyContainer.innerHTML = pastBookings.map(b => generateBookingCard(b, text.completed)).join('');
-            }
-        }
-
-    } catch (err) {
-        console.error("Failed to load traveler bookings:", err);
-        bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noBookings}</p></div>`;
-    }
+  } catch (err) {
+    console.error("Delete failed:", err);
+  }
 }
 
-        async function fetchHostReservations(hostProperties) {
-            const tableBody = document.getElementById("hostReservationsTableBody");
-            const text = dictionary[currentLang] || dictionary.en;
-            tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-xs text-gray-400"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading pipeline reservations...</td></tr>`;
+loadBookings();
 
-            try {
-                const res = await fetch(`${BACKEND_URL}/api/bookings`);
-                let allBookings = [];
-                if (res.ok) {
-                    const data = await res.json();
-                    allBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-                }
+</script>
 
-                const hostPropertyIds = hostProperties.map(p => String(p._id || p.id));
-                const hostReservations = allBookings.filter(b => {
-                    const bPropId = String(b.propertyId?._id || b.propertyId || b.property?._id || b.property || '');
-                    return hostPropertyIds.includes(bPropId) || 
-                           b.hostEmail === currentUser.email || 
-                           b.ownerEmail === currentUser.email;
-                });
-
-                const displayReservations = hostReservations;
-
-                if (displayReservations.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-xs text-gray-400">${text.noReservations}</td></tr>`;
-                } else {
-                    tableBody.innerHTML = displayReservations.map(r => {
-                        let rawName = '';
-                        if (r.firstName || r.lastName) {
-                            rawName = `${r.firstName || ''} ${r.lastName || ''}`.trim();
-                        } else {
-                            rawName = r.guestName || r.userName || r.name || r.guest || 
-                                    (typeof r.userId === 'object' ? (r.userId?.name || r.userId?.username || r.userId?.fullName) : null) ||
-                                    (typeof r.user === 'object' ? (r.user?.name || r.user?.username || r.user?.fullName) : r.user) ||
-                                    r.guestEmail || r.userEmail || '';
-                        }
-                        
-                        if (rawName && typeof rawName === 'string' && rawName.includes('@')) {
-                            rawName = rawName.split('@')[0];
-                        }
-                        
-                        if (!rawName || rawName === 'Guest') {
-                            rawName = 'Valued Guest';
-                        }
-                        
-                        const formattedName = typeof rawName === 'string' ? rawName : 'Valued Guest';
-                        const propName = r.propertyName || r.propertyId?.title || r.title || 'Property';
-
-                        return `
-                            <tr class="hover:bg-gray-50/55 transition">
-                                <td class="py-3.5 font-bold text-gray-900">${formattedName}</td>
-                                <td class="py-3.5 text-gray-600">${propName}</td>
-                                <td class="py-3.5 text-gray-500">${r.dates || r.checkInDate || 'N/A'}</td>
-                                <td class="py-3.5 font-black text-teal-700">₹${r.totalPrice || r.payout || r.price || 0}</td>
-                                <td class="py-3.5"><span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-100">${text.statusConf}</span></td>
-                                <td class="py-3.5 text-right">
-                                    <button onclick="openMessageModal('${formattedName}', '${propName.replace(/'/g, "\\'")}')" class="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto">
-                                        <i class="fa-regular fa-comment-dots"></i> ${text.msgBtn}
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
-                }
-            } catch (err) {
-                console.error("Failed to load host reservations:", err);
-                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-xs text-gray-400">${text.noReservations}</td></tr>`;
-            }
-        }
-
-        async function fetchHostActiveProperties() {
-            const grid = document.getElementById("hostPropertiesGrid");
-            const statListingsVal = document.getElementById("statListingsVal");
-            const text = dictionary[currentLang] || dictionary.en;
-
-            grid.innerHTML = `<p class="text-xs text-gray-400 col-span-3 text-center py-6"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading properties...</p>`;
-            
-            try {
-                const res = await fetch(`${BACKEND_URL}/api/properties`);
-                let properties = [];
-                if (res.ok) {
-                    const data = await res.json();
-                    properties = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-                }
-
-                const hostProperties = properties.filter(p => p.hostEmail === currentUser.email || p.ownerEmail === currentUser.email || p.userEmail === currentUser.email);
-                const displayProperties = hostProperties;
-                statListingsVal.textContent = `${displayProperties.length} Properties`;
-                fetchHostReservations(displayProperties);
-
-                if (displayProperties.length === 0) {
-                    grid.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><i class="fa-solid fa-hotel text-2xl mb-2 text-gray-300"></i><p>${text.noProperties}</p></div>`;
-                } else {
-                    grid.innerHTML = displayProperties.map(p => `
-                        <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-                            <div class="h-40 bg-gray-200 bg-cover bg-center" style="background-image: url('${resolveImageUrl(p.image || p.imageUrl || p.propertyImage)}');"></div>
-                            <div class="p-4 flex-1 flex flex-col justify-between">
-                                <div>
-                                    <h3 class="font-bold text-gray-900 text-base">${p.title || p.propertyName || 'Property'}</h3>
-                                    <p class="text-gray-400 text-xs flex items-center gap-1 mt-1"><i class="fa-solid fa-location-dot text-teal-600 text-[10px]"></i> ${p.location || p.city || p.address || 'Guwahati'}</p>
-                                </div>
-                                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
-                                    <span>Price: <strong>₹${p.price || 0} / night</strong></span>
-                                    <span class="text-teal-600 font-bold">Active</span>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            } catch (err) {
-                console.error("Failed to load host properties:", err);
-                grid.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noProperties}</p></div>`;
-            }
-        }
-
-        function toggleUserRole() {
-            currentRole = currentRole === 'traveler' ? 'host' : 'traveler';
-            sessionStorage.setItem("activeDashboardRole", currentRole);
-            updateDashboardView();
-        }
-
-        function updateDashboardView() {
-            const text = dictionary[currentLang] || dictionary.en;
-            const travelerSec = document.getElementById("travelerSection");
-            const hostSec = document.getElementById("hostSection");
-            const roleBtn = document.getElementById("roleSwitcherBtn");
-            const roleSubtext = document.getElementById("roleSubtext");
-            const hostActionWrapper = document.getElementById("hostActionWrapper");
-
-            if (currentRole === 'host') {
-                travelerSec.classList.add('hidden');
-                hostSec.classList.remove('hidden');
-                roleBtn.innerHTML = `<i class="fa-solid fa-plane"></i> ${text.switchTraveler}`;
-                roleSubtext.textContent = text.subTextHost;
-                hostActionWrapper.classList.remove('hidden');
-                fetchHostActiveProperties();
-            } else {
-                hostSec.classList.add('hidden');
-                travelerSec.classList.remove('hidden');
-                roleBtn.innerHTML = `<i class="fa-solid fa-hotel"></i> ${text.switchHost}`;
-                roleSubtext.textContent = text.subTextTraveler;
-                hostActionWrapper.classList.add('hidden');
-                fetchTravelerBookings();
-            }
-        }
-
-        function handleLogOut() {
-            sessionStorage.clear();
-            window.location.replace("login.html");
-        }
-
-        function saveProfileChanges() {
-            const newName = document.getElementById("editProfileName").value.trim();
-            if (newName) {
-                currentUser.name = newName;
-                sessionStorage.setItem("userProfile", JSON.stringify(currentUser));
-                document.getElementById("welcomeName").textContent = newName;
-                document.getElementById("navUserName").textContent = newName;
-                alert("Profile updated successfully!");
-            }
-        }
-
-        function openMessageModal(guestName, propTitle) {
-            currentActiveChatGuest = guestName;
-            document.getElementById("msgModalGuestName").textContent = `Chat with ${guestName}`;
-            document.getElementById("msgModalPropTitle").textContent = propTitle;
-            document.getElementById("chatHistoryBox.innerHTML") = `<div class="text-center text-gray-400 py-4">Conversation started with ${guestName}</div>`;
-            document.getElementById("messageModal").classList.remove('hidden');
-        }
-
-        function closeMessageModal() {
-            document.getElementById("messageModal").classList.add('hidden');
-        }
-
-        function sendGuestMessage(e) {
-            e.preventDefault();
-            const input = document.getElementById("chatInput");
-            const historyBox = document.getElementById("chatHistoryBox");
-            if (!input.value.trim()) return;
-
-            historyBox.innerHTML += `<div class="text-right"><span class="inline-block bg-teal-600 text-white px-3 py-1.5 rounded-xl">${input.value}</span></div>`;
-            input.value = "";
-            historyBox.scrollTop = historyBox.scrollHeight;
-        }
-
-        function openReceiptModal() {
-            document.getElementById("receiptModal").classList.remove('hidden');
-        }
-
-        function closeReceiptModal() {
-            document.getElementById("receiptModal").classList.add('hidden');
-        }
-
-        document.getElementById("langSelector").addEventListener("change", (e) => {
-            currentLang = e.target.value;
-            localStorage.setItem("preferredLanguage", currentLang);
-            updateDashboardView();
-        });
-
-        window.addEventListener("DOMContentLoaded", () => {
-	    loadBookings();
-            document.getElementById("welcomeName").textContent = currentUser.name || "User";
-            document.getElementById("navUserName").textContent = currentUser.name || "User";
-            document.getElementById("userAvatar").textContent = (currentUser.name || "U")[0].toUpperCase();
-            document.getElementById("editProfileName").value = currentUser.name || "";
-            document.getElementById("editProfileEmail").value = currentUser.email || "";
-            document.getElementById("langSelector").value = currentLang;
-
-            updateDashboardView();
-        });
-    </script>
 </body>
 </html>
