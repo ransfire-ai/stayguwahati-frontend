@@ -244,7 +244,6 @@
         let currentRole = sessionStorage.getItem("activeDashboardRole") || "traveler";
         let currentLang = localStorage.getItem("preferredLanguage") || "en";
         let currentActiveChatGuest = "";
-        let currentChatRecipientPhone = "";
 
         const dictionary = {
             en: { 
@@ -274,16 +273,23 @@
         };
 
         function resolveImageUrl(imagePath) {
-            if (!imagePath) {
-                return 'assets/placeholder.jpg'; 
-            }
-            if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-                return imagePath;
-            }
-            const backendUrl = 'https://stayguwahati-backend.onrender.com';
-            const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-            return `${backendUrl}/${cleanPath}`;
-        }
+    // Return a default placeholder if no path is provided
+    if (!imagePath) {
+        return 'assets/placeholder.jpg'; 
+    }
+
+    // 1. If it's already a Base64 Data URI, return it as-is
+    // 2. If it's already an absolute HTTP/HTTPS URL, return it as-is
+    if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+    }
+
+    // Otherwise, prepend the Render backend URL safely, avoiding double slashes
+    const backendUrl = 'https://stayguwahati-backend.onrender.com';
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    
+    return `${backendUrl}/${cleanPath}`;
+}
 
         async function fetchTravelerBookings() {
             const text = dictionary[currentLang] || dictionary.en;
@@ -357,9 +363,9 @@
                             rawName = `${r.firstName || ''} ${r.lastName || ''}`.trim();
                         } else {
                             rawName = r.guestName || r.userName || r.name || r.guest || 
-                                    (typeof r.userId === 'object' ? (r.userId?.name || r.userId?.username || r.userId?.fullName) : null) ||
-                                    (typeof r.user === 'object' ? (r.user?.name || r.user?.username || r.user?.fullName) : r.user) ||
-                                    r.guestEmail || r.userEmail || '';
+                                      (typeof r.userId === 'object' ? (r.userId?.name || r.userId?.username || r.userId?.fullName) : null) ||
+                                      (typeof r.user === 'object' ? (r.user?.name || r.user?.username || r.user?.fullName) : r.user) ||
+                                      r.guestEmail || r.userEmail || '';
                         }
                         
                         if (rawName && typeof rawName === 'string' && rawName.includes('@')) {
@@ -381,7 +387,7 @@
                                 <td class="py-3.5 font-black text-teal-700">₹${r.totalPrice || r.payout || r.price || 0}</td>
                                 <td class="py-3.5"><span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-100">${text.statusConf}</span></td>
                                 <td class="py-3.5 text-right">
-                                    <button onclick="openMessageModal('${formattedName}', '${propName.replace(/'/g, "\\'")}', '${r.guestPhone || r.phone || ''}')" class="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto">
+                                    <button onclick="openMessageModal('${formattedName}', '${propName.replace(/'/g, "\\'")}')" class="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto">
                                         <i class="fa-regular fa-comment-dots"></i> ${text.msgBtn}
                                     </button>
                                 </td>
@@ -427,126 +433,182 @@
                                     <h3 class="font-bold text-gray-900 text-base">${p.title || p.propertyName || 'Property'}</h3>
                                     <p class="text-gray-400 text-xs flex items-center gap-1 mt-1"><i class="fa-solid fa-location-dot text-teal-600 text-[10px]"></i> ${p.location || p.city || p.address || 'Guwahati'}</p>
                                 </div>
-                                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
-                                    <span>₹${p.price || p.nightlyPrice || 0} / night</span>
-                                    <button onclick="deleteProperty('${p._id || p.id}')" class="text-rose-600 font-bold hover:underline bg-none border-none p-0 cursor-pointer text-xs">Delete</button>
+                                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs">
+                                    <span class="font-black text-teal-600">₹${p.price || 0}/night</span>
+                                    <span class="text-gray-400 text-[10px]">Status: Active</span>
                                 </div>
                             </div>
                         </div>
                     `).join('');
                 }
             } catch (err) {
-                console.error("Failed to load active properties:", err);
+                console.error("Failed to load host properties:", err);
                 grid.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noProperties}</p></div>`;
             }
         }
 
-        // --- Chat & Messaging Functions (Twilio Integration) ---
-        function openMessageModal(guestName, propertyTitle, guestPhone = '') {
-            currentActiveChatGuest = guestName;
-            document.getElementById('msgModalGuestName').textContent = `Chat with ${guestName}`;
-            document.getElementById('msgModalPropTitle').textContent = propertyTitle;
-            window.currentChatRecipientPhone = guestPhone; 
-
-            const chatBox = document.getElementById('chatHistoryBox');
-            chatBox.innerHTML = `
-                <div class="text-center text-gray-400 py-2 text-[10px]">
-                    Connected securely with ${guestName} via StayGuwahati Messaging.
-                </div>
-            `;
-            document.getElementById('messageModal').classList.remove('hidden');
-        }
-
-        function closeMessageModal() {
-            document.getElementById('messageModal').classList.add('hidden');
-        }
-
-        async function sendGuestMessage(event) {
-            event.preventDefault();
-            const input = document.getElementById('chatInput');
-            const messageText = input.value.trim();
-            if (!messageText) return;
-
-            const chatBox = document.getElementById('chatHistoryBox');
-
-            chatBox.innerHTML += `
-                <div class="flex flex-col items-end mb-2">
-                    <div class="bg-teal-600 text-white rounded-xl px-3 py-2 max-w-[80%] text-xs shadow-xs">
-                        ${messageText}
+        function renderStaticTravelerSections() {
+            const text = dictionary[currentLang] || dictionary.en;
+            const wishlistContainer = document.getElementById("wishlistContainer");
+            const savedWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
+            if (savedWishlist.length === 0) {
+                wishlistContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noWishlist}</p></div>`;
+            } else {
+                wishlistContainer.innerHTML = savedWishlist.map(w => `
+                    <div class="bg-white border border-gray-100 rounded-xl p-3 flex gap-3 items-center shadow-sm">
+                        <div class="w-16 h-16 bg-gray-200 bg-cover bg-center rounded-lg shrink-0" style="background-image: url('${resolveImageUrl(w.image || w.imageUrl)}')"></div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-gray-900 text-xs truncate">${w.title || 'Property'}</h4>
+                            <p class="text-gray-400 text-[10px] mt-0.5">${w.location || 'Guwahati'}</p>
+                            <span class="text-teal-600 font-black text-xs block mt-1">₹${w.price || 0}/night</span>
+                        </div>
                     </div>
-                    <span class="text-[9px] text-gray-400 mt-0.5">Just now</span>
-                </div>
-            `;
-            input.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            try {
-                const response = await fetch(`${BACKEND_URL}/api/messages/send`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({
-                        recipientPhone: window.currentChatRecipientPhone || '+910000000000',
-                        message: messageText,
-                        senderName: currentUser.name || 'Host',
-                        propertyTitle: document.getElementById('msgModalPropTitle').textContent
-                    })
-                });
-
-                const result = await response.json();
-                if (!result.success) {
-                    console.error("Failed to push SMS via gateway:", result.error);
-                }
-            } catch (err) {
-                console.error("Network error while trying to send message SMS:", err);
+                `).join('');
             }
+
+            const historyContainer = document.getElementById("historyContainer");
+            historyContainer.innerHTML = `<div class="bg-white border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noHistory}</p></div>`;
         }
 
-        function closeReceiptModal() {
-            document.getElementById('receiptModal').classList.add('hidden');
-        }
+        function updateUI() {
+            const text = dictionary[currentLang] || dictionary.en;
+            
+            document.getElementById("welcomeName").textContent = currentUser.name || "User";
+            document.getElementById("navUserName").textContent = currentUser.name || "User";
+            document.getElementById("userAvatar").textContent = (currentUser.name || "U").charAt(0).toUpperCase();
+            document.getElementById("editProfileName").value = currentUser.name || "";
+            document.getElementById("editProfileEmail").value = currentUser.email || "";
 
-        function openReceiptModal() {
-            document.getElementById('receiptModal').classList.remove('hidden');
-        }
+            const roleBtn = document.getElementById("roleSwitcherBtn");
+            const travelerSection = document.getElementById("travelerSection");
+            const hostSection = document.getElementById("hostSection");
+            const hostActionWrapper = document.getElementById("hostActionWrapper");
 
-        function closeReviewModal() {
-            document.getElementById('reviewModal').classList.add('hidden');
-        }
-
-        async function deleteProperty(propertyId) {
-            if (!confirm("Are you sure you want to delete this property?")) return;
-            try {
-                const res = await fetch(`${BACKEND_URL}/api/properties/${propertyId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-                    }
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    alert("Property deleted successfully.");
-                    fetchHostActiveProperties();
-                } else {
-                    alert(data.error || "Failed to delete property.");
-                }
-            } catch (err) {
-                console.error("Error deleting property:", err);
-                alert("Network error while deleting property.");
+            if (currentRole === "host") {
+                roleBtn.innerHTML = `<i class="fa-solid fa-plane"></i> <span class="hidden sm:inline">${text.switchTraveler}</span>`;
+                roleBtn.title = text.switchTraveler;
+                travelerSection.classList.add("hidden");
+                hostSection.classList.remove("hidden");
+                hostActionWrapper.classList.remove("hidden");
+                document.getElementById("roleSubtext").textContent = text.subTextHost;
+                fetchHostActiveProperties();
+            } else {
+                roleBtn.innerHTML = `<i class="fa-solid fa-hotel"></i> <span class="hidden sm:inline">${text.switchHost}</span>`;
+                roleBtn.title = text.switchHost;
+                hostSection.classList.add("hidden");
+                travelerSection.classList.remove("hidden");
+                hostActionWrapper.classList.add("hidden");
+                document.getElementById("roleSubtext").textContent = text.subTextTraveler;
+                fetchTravelerBookings();
+                renderStaticTravelerSections();
             }
+
+            document.getElementById("welcomeHeader").innerHTML = `${text.welcome}, <span id="welcomeName" class="text-teal-700">${currentUser.name || "User"}</span>!`;
+            document.getElementById("travelerHeading").innerHTML = `<i class="fa-solid fa-plane-departure text-teal-600 text-sm"></i> ${text.travelerHead}`;
+            document.getElementById("wishlistHeading").innerHTML = `<i class="fa-regular fa-heart text-rose-500"></i> ${text.wishlistHead}`;
+            document.getElementById("historyHeading").innerHTML = `<i class="fa-solid fa-clock-rotate-left text-gray-500"></i> ${text.historyHead}`;
+            document.getElementById("profileHeading").innerHTML = `<i class="fa-regular fa-id-card text-teal-600"></i> ${text.profileHead}`;
+            document.getElementById("labelProfileName").textContent = text.labelName;
+            document.getElementById("labelProfileEmail").textContent = text.labelEmail;
+            document.getElementById("updateProfileBtn").textContent = text.updateBtn;
+            
+            document.getElementById("hostHeading").innerHTML = `<i class="fa-solid fa-hotel text-teal-600 text-sm"></i> ${text.hostHead}`;
+            document.getElementById("statIncomeLabel").textContent = text.incomeLabel;
+            document.getElementById("statListingsLabel").textContent = text.listingsLabel;
+            document.getElementById("statRatingLabel").textContent = text.ratingLabel;
+            document.getElementById("pipelineHeading").innerHTML = `<i class="fa-solid fa-calendar-check text-teal-600"></i> ${text.pipelineHead}`;
+            document.getElementById("thGuest").textContent = text.thG;
+            document.getElementById("thProperty").textContent = text.thP;
+            document.getElementById("thDates").textContent = text.thD;
+            document.getElementById("thPayout").textContent = text.thPay;
+            document.getElementById("thStatus").textContent = text.thS;
+            document.getElementById("thActions").textContent = text.thA;
+            document.getElementById("activeListingsHeading").innerHTML = `<i class="fa-solid fa-list text-gray-600"></i> ${text.activeListHead}`;
+            document.getElementById("footerText").textContent = text.footer;
+        }
+
+        function toggleUserRole() {
+            currentRole = currentRole === "traveler" ? "host" : "traveler";
+            localStorage.setItem("activeDashboardRole", currentRole);
+            updateUI();
         }
 
         function handleLogOut() {
-            sessionStorage.clear();
+            localStorage.removeItem('token');
+            localStorage.removeItem('userProfile');
+            localStorage.removeItem('activeDashboardRole');
+            alert("Signed out successfully.");
             window.location.replace("login.html");
         }
 
-        // Initialize dashboard on load
-        window.addEventListener('DOMContentLoaded', () => {
-            fetchTravelerBookings();
-            fetchHostActiveProperties();
+        function saveProfileChanges() {
+            const newName = document.getElementById("editProfileName").value.trim();
+            if (!newName) {
+                alert("Name cannot be empty.");
+                return;
+            }
+            currentUser.name = newName;
+            localStorage.setItem("userProfile", JSON.stringify(currentUser));
+            alert("Profile settings updated successfully!");
+            updateUI();
+        }
+
+        function openMessageModal(guestName, propTitle) {
+            document.getElementById("msgModalGuestName").textContent = `Chat with ${guestName}`;
+            document.getElementById("msgModalPropTitle").textContent = propTitle;
+            currentActiveChatGuest = guestName;
+            
+            const chatBox = document.getElementById("chatHistoryBox");
+            chatBox.innerHTML = `
+                <div class="text-center text-[10px] text-gray-400 my-2">Conversation started with ${guestName}</div>
+                <div class="bg-white p-2.5 rounded-xl rounded-tl-none shadow-xs max-w-[80%] text-gray-700">
+                    Hello! I'm interested in discussing the booking details for ${propTitle}.
+                </div>
+            `;
+            document.getElementById("messageModal").classList.remove("hidden");
+        }
+
+        function closeMessageModal() {
+            document.getElementById("messageModal").classList.add("hidden");
+        }
+
+        function sendGuestMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById("chatInput");
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const chatBox = document.getElementById("chatHistoryBox");
+            chatBox.innerHTML += `
+                <div class="bg-teal-600 text-white p-2.5 rounded-xl rounded-tr-none shadow-xs max-w-[80%] ml-auto">
+                    ${msg}
+                </div>
+            `;
+            input.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function openReceiptModal() {
+            document.getElementById("receiptModal").classList.remove("hidden");
+        }
+
+        function closeReceiptModal() {
+            document.getElementById("receiptModal").classList.add("hidden");
+        }
+
+        document.getElementById("langSelector").addEventListener("change", (e) => {
+            currentLang = e.target.value;
+            localStorage.setItem("preferredLanguage", currentLang);
+            updateUI();
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const storedUser = localStorage.getItem("userProfile");
+            if (storedUser) {
+                try { currentUser = JSON.parse(storedUser); } catch(e){}
+            }
+            document.getElementById("langSelector").value = currentLang;
+            updateUI();
         });
     </script>
 </body>
