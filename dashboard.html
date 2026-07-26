@@ -496,7 +496,63 @@
         function closeReviewModal() { document.getElementById('reviewModal').classList.add('hidden'); }
         
         // If you had existing initialization logic (window.onload etc.), it goes below here!
+    
+// --- ADD THIS INITIALIZATION LOGIC ---
+
+        function initDashboard() {
+            const text = dictionary[currentLang] || dictionary.en;
+
+            // 1. Set Basic User Info (Header & Welcome)
+            document.getElementById("welcomeName").textContent = currentUser.name || "User";
+            document.getElementById("navUserName").textContent = currentUser.name || "User";
+            document.getElementById("userAvatar").textContent = (currentUser.name || "U").charAt(0).toUpperCase();
+            
+            // 2. Populate Profile Settings Input Fields
+            document.getElementById("editProfileName").value = currentUser.name || "";
+            document.getElementById("editProfileEmail").value = currentUser.email || "";
+
+            // 3. Setup Role Switcher Button & Load Appropriate Data
+            const roleBtn = document.getElementById("roleSwitcherBtn");
+            
+            if (currentRole === "host") {
+                // Set Host UI
+                roleBtn.innerHTML = `<i class="fa-solid fa-plane"></i> ${text.switchTraveler}`;
+                document.getElementById("travelerSection").classList.add("hidden");
+                document.getElementById("hostSection").classList.remove("hidden");
+                document.getElementById("hostActionWrapper").classList.remove("hidden");
+                document.getElementById("roleSubtext").textContent = text.subTextHost;
+                
+                // Trigger Host API Calls
+                fetchHostActiveProperties();
+            } else {
+                // Set Traveler UI
+                roleBtn.innerHTML = `<i class="fa-solid fa-hotel"></i> ${text.switchHost}`;
+                document.getElementById("hostSection").classList.add("hidden");
+                document.getElementById("travelerSection").classList.remove("hidden");
+                document.getElementById("hostActionWrapper").classList.add("hidden");
+                document.getElementById("roleSubtext").textContent = text.subTextTraveler;
+                
+                // Trigger Traveler API Calls
+                fetchTravelerBookings();
+            }
+        }
+
+        // Handle Role Switching
+        function toggleUserRole() {
+            currentRole = currentRole === "traveler" ? "host" : "traveler";
+            sessionStorage.setItem("activeDashboardRole", currentRole);
+            initDashboard(); // Reload page layout
+        }
         
+        // Handle Logout
+        function handleLogOut() {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("userProfile");
+            window.location.replace("login.html");
+        }
+
+        // Fire everything when the browser finishes loading the HTML
+        window.onload = initDashboard;    
     </script>
 </body>
 </html>
