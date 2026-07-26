@@ -507,26 +507,24 @@
         }
 
         function openMessageModal(guestName, propTitle) {
-            currentActiveChatGuest = guestName;
-            document.getElementById("msgModalGuestName").textContent = `Chat with ${guestName}`;
-            document.getElementById("msgModalPropTitle").textContent = propTitle;
-            document.getElementById("chatHistoryBox.innerHTML") = `<div class="text-center text-gray-400 py-4">Conversation started with ${guestName}</div>`;
-            document.getElementById("messageModal").classList.remove('hidden');
-        }
+            currentActiveChatGuest = guestName || "Guest";
+            
+            // Safely set modal text fields
+            const nameEl = document.getElementById('msgModalGuestName');
+            const propEl = document.getElementById('msgModalPropTitle');
+            
+            if (nameEl) nameEl.textContent = `Chat with ${currentActiveChatGuest}`;
+            if (propEl) propEl.textContent = propTitle || 'Property';
+            
+            // Clear previous chat history box or show empty state
+            const chatBox = document.getElementById('chatHistoryBox');
+            if (chatBox) {
+                chatBox.innerHTML = `<p class="text-gray-400 text-center py-4">Conversation started with ${currentActiveChatGuest}.</p>`;
+            }
 
-        function closeMessageModal() {
-            document.getElementById("messageModal").classList.add('hidden');
-        }
-
-        function sendGuestMessage(e) {
-            e.preventDefault();
-            const input = document.getElementById("chatInput");
-            const historyBox = document.getElementById("chatHistoryBox");
-            if (!input.value.trim()) return;
-
-            historyBox.innerHTML += `<div class="text-right"><span class="inline-block bg-teal-600 text-white px-3 py-1.5 rounded-xl">${input.value}</span></div>`;
-            input.value = "";
-            historyBox.scrollTop = historyBox.scrollHeight;
+            // Open modal
+            const modal = document.getElementById('messageModal');
+            if (modal) modal.classList.remove('hidden');
         }
 
         function openReceiptModal() {
