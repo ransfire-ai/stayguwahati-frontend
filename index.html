@@ -439,7 +439,7 @@
             if (langSelectorMobile) langSelectorMobile.value = savedLang;
             applyTranslations(savedLang);
 
-            const currentUser = JSON.parse(localStorage.getItem("userProfile") || sessionStorage.getItem("userProfile"));
+            const currentUser = JSON.parse(sessionStorage.getItem("userProfile"));
             const signInBtn = document.getElementById("authSignInBtn");
             const dashboardBtn = document.getElementById("authDashboardBtn");
             const avatarCircle = document.getElementById("userAvatarCircle");
