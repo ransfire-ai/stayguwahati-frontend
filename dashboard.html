@@ -295,6 +295,7 @@
                     const data = await res.json();
                     let rawBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
                     userBookings = rawBookings.filter(b => b.guestEmail === currentUser.email || b.userEmail === currentUser.email);
+console.log("Filtered Bookings:", userBookings); // Add this to see if the filter is working
                 }
 
                 if (userBookings.length === 0) {
