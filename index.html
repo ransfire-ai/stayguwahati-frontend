@@ -177,7 +177,7 @@
 
         function requireLoginToList(event) {
             event.preventDefault();
-            const userSession = sessionStorage.getItem("userProfile"); 
+            const userSession = localStorage.getItem("userProfile") || sessionStorage.getItem("userProfile"); 
 
             if (!userSession) {
                 alert("🔒 Please log in first to list a property on StayGuwahati.");
@@ -325,23 +325,17 @@
         const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
         function resolveImageUrl(imagePath) {
-    // Return a default placeholder if no path is provided
-    if (!imagePath) {
-        return 'assets/placeholder.jpg'; 
-    }
-
-    // 1. If it's already a Base64 Data URI, return it as-is
-    // 2. If it's already an absolute HTTP/HTTPS URL, return it as-is
-    if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
-    }
-
-    // Otherwise, prepend the Render backend URL safely, avoiding double slashes
-    const backendUrl = 'https://stayguwahati-backend.onrender.com';
-    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    
-    return `${backendUrl}/${cleanPath}`;
-}
+            if (!imagePath) {
+                return 'assets/placeholder.jpg'; 
+            }
+            if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+                return imagePath;
+            }
+            const backendUrl = 'https://stayguwahati-backend.onrender.com';
+            const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+            
+            return `${backendUrl}/${cleanPath}`;
+        }
 
         async function loadVerifiedHomestays() {
             const grid = document.getElementById("homestayGrid");
@@ -403,7 +397,7 @@
                     <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between group">
                         <a href="${detailUrl}" class="relative overflow-hidden aspect-[4/3] bg-slate-100 block cursor-pointer">
                             <img src="${img}" alt="${stay.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                            <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-gray-900 shadow-sm flex items-center gap-1">
+                            <div class="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-gray-900 shadow-sm flex items-center gap-1">
                                 <i class="fa-solid fa-star text-amber-500"></i> ${rating} (${reviews})
                             </div>
                         </a>
@@ -445,7 +439,7 @@
             if (langSelectorMobile) langSelectorMobile.value = savedLang;
             applyTranslations(savedLang);
 
-            const currentUser = JSON.parse(localStorage.getItem("userProfile"));
+            const currentUser = JSON.parse(localStorage.getItem("userProfile") || sessionStorage.getItem("userProfile"));
             const signInBtn = document.getElementById("authSignInBtn");
             const dashboardBtn = document.getElementById("authDashboardBtn");
             const avatarCircle = document.getElementById("userAvatarCircle");
