@@ -273,23 +273,35 @@
         };
 
         function resolveImageUrl(imagePath) {
-            if (!imagePath) {
-                return 'assets/placeholder.jpg'; 
-            }
-            if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-                return imagePath;
-            }
-            const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-            return `${BACKEND_URL}/${cleanPath}`;
-        }
+    if (!imagePath) {
+        return 'https://via.placeholder.com/400x250?text=No+Photo';
+    }
+
+    if (
+        imagePath.startsWith('data:') ||
+        imagePath.startsWith('http://') ||
+        imagePath.startsWith('https://')
+    ) {
+        return imagePath;
+    }
+
+    const formattedPath = imagePath.startsWith('/')
+        ? imagePath
+        : `/${imagePath}`;
+
+    return `${BACKEND_URL}${formattedPath}`;
+}
 
 function generateBookingCard(b, statusText) {
-    const image = resolveImageUrl(
-        b.image || 
-        b.propertyImage || 
-        b.propertyId?.image || 
-        b.propertyId?.imageUrl
-    );
+    const photoPath =
+    b.propertyId?.images?.[0] ||
+    b.propertyId?.photos?.[0] ||
+    b.image ||
+    b.propertyImage ||
+    b.propertyId?.image ||
+    b.propertyId?.imageUrl;
+
+const image = resolveImageUrl(photoPath);
 
     const title =
         b.propertyName ||
@@ -316,8 +328,9 @@ function generateBookingCard(b, statusText) {
         <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
             
             <div class="h-40 bg-gray-200 bg-cover bg-center"
-                 style="background-image:url('${image}')">
-            </div>
+     style="background-image:url('${image}')"
+     onerror="this.style.backgroundImage='url(https://via.placeholder.com/400x250?text=Image+Not+Found)'">
+</div>
 
             <div class="p-4 flex flex-col gap-2">
                 
