@@ -272,52 +272,51 @@
             }
         };
 
-        function resolveImageUrl(imagePath) {
+function resolveImageUrl(imagePath) {
     if (!imagePath) {
-        return 'https://via.placeholder.com/400x250?text=No+Photo';
+        return 'https://via.placeholder.com/400x200?text=No+Photo'; 
     }
-
-    if (
-        imagePath.startsWith('data:') ||
-        imagePath.startsWith('http://') ||
-        imagePath.startsWith('https://')
-    ) {
+    if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
         return imagePath;
     }
-
-    const formattedPath = imagePath.startsWith('/')
-        ? imagePath
-        : `/${imagePath}`;
-
-    return `${BACKEND_URL}${formattedPath}`;
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    return `${BACKEND_URL}/${cleanPath}`;
 }
 
 function generateBookingCard(b, statusText) {
-    const photoPath =
-    b.propertyId?.images?.[0] ||
-    b.propertyId?.photos?.[0] ||
-    b.image ||
-    b.propertyImage ||
-    b.propertyId?.image ||
-    b.propertyId?.imageUrl;
+    // Extract photo across single fields and array references
+    const rawPhoto = 
+        b.image || 
+        b.propertyImage || 
+        b.propertyId?.image || 
+        b.propertyId?.imageUrl ||
+        (Array.isArray(b.propertyId?.images) ? b.propertyId.images[0] : null) ||
+        (Array.isArray(b.propertyId?.photos) ? b.propertyId.photos[0] : null) ||
+        b.homestayId?.image ||
+        (Array.isArray(b.homestayId?.images) ? b.homestayId.images[0] : null) ||
+        (Array.isArray(b.homestayId?.photos) ? b.homestayId.photos[0] : null) ||
+        (Array.isArray(b.images) ? b.images[0] : null);
 
-const image = resolveImageUrl(photoPath);
+    const image = resolveImageUrl(rawPhoto);
 
     const title =
         b.propertyName ||
         b.propertyId?.title ||
+        b.homestayId?.title ||
         b.title ||
         "StayGuwahati Property";
 
     const location =
         b.location ||
         b.propertyId?.location ||
+        b.homestayId?.location ||
         "Guwahati";
 
     const price =
         b.totalPrice ||
         b.price ||
         b.propertyId?.price ||
+        b.homestayId?.price ||
         0;
 
     const dates =
@@ -326,14 +325,16 @@ const image = resolveImageUrl(photoPath);
 
     return `
         <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-            
-            <div class="h-40 bg-gray-200 bg-cover bg-center"
-     style="background-image:url('${image}')"
-     onerror="this.style.backgroundImage='url(https://via.placeholder.com/400x250?text=Image+Not+Found)'">
-</div>
+            <div class="h-40 bg-gray-100 overflow-hidden relative">
+                <img 
+                    src="${image}" 
+                    alt="${title}" 
+                    class="w-full h-full object-cover"
+                    onerror="this.onerror=null; this.src='https://via.placeholder.com/400x200?text=Image+Not+Found';"
+                />
+            </div>
 
             <div class="p-4 flex flex-col gap-2">
-                
                 <h3 class="font-bold text-gray-900 text-sm">
                     ${title}
                 </h3>
@@ -360,7 +361,6 @@ const image = resolveImageUrl(photoPath);
                         View Receipt →
                     </button>
                 </div>
-
             </div>
         </div>
     `;
