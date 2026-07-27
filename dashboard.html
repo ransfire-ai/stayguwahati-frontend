@@ -283,7 +283,7 @@
             return `${BACKEND_URL}/${cleanPath}`;
         }
 
-        async function fetchTravelerBookings() {
+       async function fetchTravelerBookings() {
     const text = dictionary[currentLang] || dictionary.en;
     const bookingsContainer = document.getElementById("bookingsContainer");
     const historyContainer = document.getElementById("historyContainer"); 
@@ -292,18 +292,21 @@
     bookingsContainer.innerHTML = `<p class="text-xs text-gray-400 col-span-full text-center py-6"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your bookings...</p>`;
 
     try {
-        const res = await fetch(`${BACKEND_URL}/api/bookings`);
+        const userEmail = (currentUser.email || '').toLowerCase().trim();
+
+        // Updated API request passing the user email query parameter
+        const res = await fetch(`${BACKEND_URL}/api/bookings?email=${encodeURIComponent(userEmail)}`);
         let userBookings = [];
         
         if (res.ok) {
             const data = await res.json();
             let rawBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
             
-            // Strictly filter by the logged-in user's email (case-insensitive to prevent mismatch bugs)
-            userBookings = rawBookings.filter(b => 
-                (b.guestEmail && b.guestEmail.toLowerCase() === currentUser.email.toLowerCase()) || 
-                (b.userEmail && b.userEmail.toLowerCase() === currentUser.email.toLowerCase())
-            );
+            // Case-insensitive check across common email field keys
+            userBookings = rawBookings.filter(b => {
+                const bEmail = (b.email || b.guestEmail || b.userEmail || '').toLowerCase().trim();
+                return bEmail === userEmail;
+            });
         }
 
         // Separate bookings into "Upcoming" and "Past" based on today's date
@@ -312,7 +315,6 @@
         const pastBookings = [];
 
         userBookings.forEach(b => {
-            // Adjust this key based on your backend (e.g., checkInDate, dates, or createdAt)
             const checkInDate = new Date(b.checkInDate || (b.dates ? b.dates.split(' to ')[0] : null) || b.createdAt);
             
             if (checkInDate >= today) {
