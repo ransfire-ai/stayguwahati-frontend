@@ -23,7 +23,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen font-sans">
 
-    <!-- Header updated for mobile responsiveness -->
+    <!-- Header -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
             <div class="flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0" onclick="window.location.href='index.html'">
@@ -107,8 +107,8 @@
                     <div class="flex gap-4 items-center border-b pb-4">
                         <img id="summaryImage" src="" class="w-16 h-16 object-cover rounded-xl shadow-sm shrink-0">
                         <div class="min-w-0">
-                            <span id="summaryLocality" class="text-[10px] sm:text-xs font-bold text-teal-600 uppercase tracking-wider block truncate"></span>
-                            <h4 id="summaryTitle" class="font-bold text-slate-900 text-sm truncate"></h4>
+                            <span id="summaryLocality" class="text-[10px] sm:text-xs font-bold text-teal-600 uppercase tracking-wider block truncate">GUWAHATI</span>
+                            <h4 id="summaryTitle" class="font-bold text-slate-900 text-sm truncate">Homestay Stay</h4>
                             <span class="text-[10px] sm:text-xs text-slate-400 block mt-0.5">Verified Local Host</span>
                         </div>
                     </div>
@@ -141,7 +141,6 @@
         function handleListPropertyClick(event) {
             event.preventDefault();
             const userToken = localStorage.getItem('token') || localStorage.getItem('user');
-
             if (userToken) {
                 window.location.href = 'add-property.html';
             } else {
@@ -150,26 +149,31 @@
             }
         }
 
+        // Check for valid 24-char hex string for MongoDB
+        function isValidMongoId(id) {
+            return typeof id === 'string' && id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id);
+        }
+
         document.addEventListener("DOMContentLoaded", async () => {
             const urlParams = new URLSearchParams(window.location.search);
             
             let sessionData = {};
             try {
                 const stored = sessionStorage.getItem('pendingBooking');
-                if (stored) {
-                    sessionData = JSON.parse(stored);
-                }
+                if (stored) sessionData = JSON.parse(stored);
             } catch (err) {
                 console.error("Error reading sessionStorage:", err);
             }
 
-            const homestayId = urlParams.get('id') || sessionData.id; 
+            const rawId = urlParams.get('id') || sessionData.id;
+            const homestayId = isValidMongoId(rawId) ? rawId : null;
+            
             const urlPrice = urlParams.get('price') || sessionData.price;
             const urlTitle = urlParams.get('title') || sessionData.title;
             const urlLocality = urlParams.get('locality') || sessionData.locality;
             const urlImage = sessionData.image || urlParams.get('image'); 
             
-            let pricePerNight = 0;
+            let pricePerNight = parseInt(urlPrice) || 1200; // Default fallback if price missing
             
             function calculateInvoice(baseRate, nights) {
                 const totalBase = baseRate * nights;
@@ -191,23 +195,16 @@
 
             function formatImageUrl(imagePath) {
                 if (!imagePath) return defaultPlaceholder;
-                if (imagePath.startsWith('data:image')) {
-                    return imagePath; 
-                }
-                if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-                    return imagePath;
-                }
-                if (imagePath.startsWith('/uploads')) {
-                    return `${BACKEND_URL}${imagePath}`;
-                }
-                return imagePath;
+                if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
+                if (imagePath.startsWith('/uploads')) return `${BACKEND_URL}${imagePath}`;
+                return defaultPlaceholder;
             }
 
             if (summaryImg) {
                 summaryImg.onerror = () => { summaryImg.src = defaultPlaceholder; };
             }
 
-            if (homestayId && homestayId !== 'null' && homestayId !== 'undefined' && homestayId.trim() !== '') {
+            if (homestayId) {
                 try {
                     const response = await fetch(`${BACKEND_URL}/api/homestays/${homestayId}`);
                     const result = await response.json();
@@ -219,60 +216,35 @@
                 }
             }
 
-            if (!loadedProperty) {
-                const localProperties = JSON.parse(localStorage.getItem('userProperties')) || [];
-                loadedProperty = localProperties.find(p => 
-                    (p._id && p._id === homestayId) || 
-                    (p.id && p.id === homestayId) || 
-                    (urlTitle && p.title && p.title.toLowerCase() === urlTitle.toLowerCase())
-                );
-            }
-
             if (loadedProperty) {
-                pricePerNight = Number(loadedProperty.pricePerNight || loadedProperty.price) || 0;
+                pricePerNight = Number(loadedProperty.pricePerNight || loadedProperty.price) || pricePerNight;
                 if (summaryTitle) summaryTitle.textContent = loadedProperty.title || urlTitle || "Homestay";
                 if (summaryLocality) summaryLocality.textContent = loadedProperty.locality || urlLocality || "Guwahati";
-                
                 if (summaryImg) {
-                    const firstImage = (loadedProperty.images && loadedProperty.images.length > 0) 
-                        ? loadedProperty.images[0] 
-                        : (urlImage || defaultPlaceholder);
+                    const firstImage = (loadedProperty.images && loadedProperty.images.length > 0) ? loadedProperty.images[0] : urlImage;
                     summaryImg.src = formatImageUrl(firstImage);
                 }
             } else {
-                pricePerNight = parseInt(urlPrice) || 0;
                 if (summaryTitle) summaryTitle.textContent = urlTitle || "Homestay";
                 if (summaryLocality) summaryLocality.textContent = urlLocality || "Guwahati";
-                if (summaryImg) {
-                    summaryImg.src = urlImage ? formatImageUrl(decodeURIComponent(urlImage)) : defaultPlaceholder;
-                }
+                if (summaryImg) summaryImg.src = formatImageUrl(urlImage);
             }
 
-            if (pricePerNight > 0) {
-                calculateInvoice(pricePerNight, 1);
-            }
+            calculateInvoice(pricePerNight, 1);
 
-            // --- 1. FETCH BOOKED DATES FOR THIS HOMESTAY ---
+            // Fetch disabled date ranges
             let disabledDateRanges = [];
-            if (homestayId && homestayId !== 'null' && homestayId !== 'undefined') {
+            if (homestayId) {
                 try {
                     const response = await fetch(`${BACKEND_URL}/api/bookings?homestayId=${homestayId}`);
                     const result = await response.json();
-
                     if (result.success && Array.isArray(result.data)) {
                         disabledDateRanges = result.data
                             .filter(b => b.status !== 'Cancelled' && b.status !== 'cancelled')
                             .map(b => {
-                                let checkInStr = b.checkInDate || (b.dates ? b.dates.split(' to ')[0] : null);
-                                let checkOutStr = b.checkOutDate || (b.dates ? b.dates.split(' to ')[1] : null);
-                                
-                                if (checkInStr && checkOutStr) {
-                                    return {
-                                        from: checkInStr.split('T')[0],
-                                        to: checkOutStr.split('T')[0]
-                                    };
-                                }
-                                return null;
+                                let checkInStr = b.checkInDate || b.checkIn || (b.dates ? b.dates.split(' to ')[0] : null);
+                                let checkOutStr = b.checkOutDate || b.checkOut || (b.dates ? b.dates.split(' to ')[1] : null);
+                                return (checkInStr && checkOutStr) ? { from: checkInStr.split('T')[0], to: checkOutStr.split('T')[0] } : null;
                             })
                             .filter(Boolean);
                     }
@@ -281,7 +253,7 @@
                 }
             }
 
-            // --- 2. INITIALIZE FLATPICKR WITH DISABLED DATES ---
+            // Flatpickr initialization
             flatpickr("#dateRangePicker", {
                 mode: "range",
                 minDate: "today",
@@ -290,15 +262,13 @@
                 onChange: function(selectedDates) {
                     if (selectedDates.length === 2) {
                         const diffTime = Math.abs(selectedDates[1] - selectedDates[0]);
-                        let totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        if (totalNights === 0) totalNights = 1;
-                        
+                        let totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
                         calculateInvoice(pricePerNight, totalNights);
                     }
                 }
             });
 
-            // --- 3. SUBMIT FORM WITH DOUBLE-CLICK PREVENTION ---
+            // Form submission logic
             const bookingForm = document.getElementById('bookingForm');
             const submitBtn = document.getElementById('submitBtn');
 
@@ -318,8 +288,8 @@
                     }
 
                     const dates = dateRange.split(' to ');
-                    const checkIn = dates[0];
-                    const checkOut = dates[1];
+                    const checkIn = dates[0].trim();
+                    const checkOut = dates[1].trim();
 
                     const diffTime = Math.abs(new Date(checkOut) - new Date(checkIn));
                     const totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
@@ -327,23 +297,35 @@
                     const rawTotalText = document.getElementById('grandTotalValue').textContent;
                     const numericTotal = parseFloat(rawTotalText.replace(/[^\d.]/g, '')) || 0;
 
-                    const bookingData = {
-                        homestayId: (homestayId && homestayId !== 'unknown' && homestayId !== 'null' && homestayId !== 'undefined') ? homestayId : null,
+                    // Ensure image is clean URL and not base64 to prevent payload oversized errors
+                    let imageUrl = summaryImg ? summaryImg.src : defaultPlaceholder;
+                    if (imageUrl.startsWith('data:image')) {
+                        imageUrl = defaultPlaceholder;
+                    }
+
+                    // Combined structure matching common Mongoose schemas
+                    const bookingPayload = {
+                        homestayId: homestayId || undefined,
                         propertyName: summaryTitle ? summaryTitle.textContent : 'Homestay',
-                        locality: summaryLocality ? summaryLocality.textContent : (loadedProperty?.locality || 'Guwahati'),
-                        image: summaryImg ? summaryImg.src : defaultPlaceholder,
+                        locality: summaryLocality ? summaryLocality.textContent : 'Guwahati',
+                        image: imageUrl,
                         firstName,
                         lastName,
+                        name: `${firstName} ${lastName}`,
                         email,
                         phone,
                         checkIn,
                         checkOut,
+                        checkInDate: checkIn,
+                        checkOutDate: checkOut,
                         dates: `${checkIn} to ${checkOut}`,
                         nights: totalNights,
-                        totalPrice: numericTotal
+                        totalPrice: numericTotal,
+                        totalAmount: numericTotal,
+                        price: numericTotal
                     };
 
-                    // Lock button instantly to prevent race conditions / multi-clicks
+                    // Disable button
                     submitBtn.disabled = true;
                     submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
                     submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing Booking...`;
@@ -352,21 +334,22 @@
                         const response = await fetch(`${BACKEND_URL}/api/bookings`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(bookingData)
+                            body: JSON.stringify(bookingPayload)
                         });
                         
                         const result = await response.json();
+
                         if (!response.ok) {
-                            throw new Error(result.message || 'Server error while saving booking.');
+                            throw new Error(result.error || result.message || 'Server error while saving booking.');
                         }
 
                         alert('Booking confirmed successfully!');
                         window.location.href = 'dashboard.html';
                     } catch (err) {
-                        console.error("Failed to save booking:", err);
-                        alert(err.message);
+                        console.error("Booking Error Details:", err);
+                        alert(`Booking Failed: ${err.message}`);
                         
-                        // Re-enable button on error
+                        // Re-enable button
                         submitBtn.disabled = false;
                         submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                         submitBtn.innerHTML = `<i class="fa-solid fa-credit-card"></i> Confirm & Complete Booking`;
