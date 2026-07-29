@@ -9,8 +9,16 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
-        .flatpickr-day.disabled { color: #cbd5e1 !important; text-decoration: line-through; }
-        .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #0d9488 !important; border-color: #0d9488 !important; }
+        .flatpickr-day.disabled, .flatpickr-day.disabled:hover { 
+            color: #cbd5e1 !important; 
+            text-decoration: line-through; 
+            background: #f1f5f9 !important;
+            cursor: not-allowed !important;
+        }
+        .flatpickr-day.selected, .flatpickr-day.selected:hover { 
+            background: #0d9488 !important; 
+            border-color: #0d9488 !important; 
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans">
@@ -244,10 +252,41 @@
                 calculateInvoice(pricePerNight, 1);
             }
 
+            // --- 1. FETCH BOOKED DATES FOR THIS HOMESTAY ---
+            let disabledDateRanges = [];
+            if (homestayId && homestayId !== 'null' && homestayId !== 'undefined') {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/bookings?homestayId=${homestayId}`);
+                    const result = await response.json();
+
+                    if (result.success && Array.isArray(result.data)) {
+                        disabledDateRanges = result.data
+                            .filter(b => b.status !== 'Cancelled' && b.status !== 'cancelled')
+                            .map(b => {
+                                let checkInStr = b.checkInDate || (b.dates ? b.dates.split(' to ')[0] : null);
+                                let checkOutStr = b.checkOutDate || (b.dates ? b.dates.split(' to ')[1] : null);
+                                
+                                if (checkInStr && checkOutStr) {
+                                    return {
+                                        from: checkInStr.split('T')[0],
+                                        to: checkOutStr.split('T')[0]
+                                    };
+                                }
+                                return null;
+                            })
+                            .filter(Boolean);
+                    }
+                } catch (err) {
+                    console.error("Could not fetch existing booked dates:", err);
+                }
+            }
+
+            // --- 2. INITIALIZE FLATPICKR WITH DISABLED DATES ---
             flatpickr("#dateRangePicker", {
                 mode: "range",
                 minDate: "today",
                 dateFormat: "Y-m-d",
+                disable: disabledDateRanges,
                 onChange: function(selectedDates) {
                     if (selectedDates.length === 2) {
                         const diffTime = Math.abs(selectedDates[1] - selectedDates[0]);
@@ -259,7 +298,10 @@
                 }
             });
 
+            // --- 3. SUBMIT FORM WITH DOUBLE-CLICK PREVENTION ---
             const bookingForm = document.getElementById('bookingForm');
+            const submitBtn = document.getElementById('submitBtn');
+
             if (bookingForm) {
                 bookingForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
@@ -301,6 +343,11 @@
                         totalPrice: numericTotal
                     };
 
+                    // Lock button instantly to prevent race conditions / multi-clicks
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing Booking...`;
+
                     try {
                         const response = await fetch(`${BACKEND_URL}/api/bookings`, {
                             method: 'POST',
@@ -317,7 +364,12 @@
                         window.location.href = 'dashboard.html';
                     } catch (err) {
                         console.error("Failed to save booking:", err);
-                        alert('Could not connect to the server to save your booking: ' + err.message);
+                        alert(err.message);
+                        
+                        // Re-enable button on error
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        submitBtn.innerHTML = `<i class="fa-solid fa-credit-card"></i> Confirm & Complete Booking`;
                     }
                 });
             }
