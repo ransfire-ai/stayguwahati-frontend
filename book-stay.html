@@ -310,25 +310,26 @@
                     }
 
                     const bookingPayload = {
-                        homestayId: homestayId,
-                        propertyName: summaryTitle ? summaryTitle.textContent : 'Homestay',
-                        locality: summaryLocality ? summaryLocality.textContent : 'Guwahati',
-                        image: imageUrl,
-                        firstName,
-                        lastName,
-                        name: `${firstName} ${lastName}`,
-                        email,
-                        phone,
-                        checkIn,
-                        checkOut,
-                        checkInDate: checkIn,
-                        checkOutDate: checkOut,
-                        dates: `${checkIn} to ${checkOut}`,
-                        nights: totalNights,
-                        totalPrice: numericTotal,
-                        totalAmount: numericTotal,
-                        price: numericTotal
-                    };
+    homestayId: homestayId,
+    propertyName: summaryTitle ? summaryTitle.textContent : 'Homestay',
+    locality: summaryLocality ? summaryLocality.textContent : 'Guwahati',
+    image: imageUrl,
+    firstName,
+    lastName,
+    name: `${firstName} ${lastName}`,
+    email,
+    phone,
+    checkIn,
+    checkOut,
+    checkInDate: checkIn,
+    checkOutDate: checkOut,
+    dates: `${checkIn} to ${checkOut}`,
+    nights: totalNights,
+    totalPrice: numericTotal,
+    totalAmount: numericTotal,
+    price: numericTotal,
+    status: 'Confirmed' // 👈 Add capitalized 'Confirmed' here
+};
 
                     submitBtn.disabled = true;
                     submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
