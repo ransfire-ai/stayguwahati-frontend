@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StayGuwahati | Portal Control Center</title>
+    <!-- Favicon inline fix -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -14,7 +16,7 @@
         alert("Secure Area: Please log in to access the Dashboard.");
         window.location.replace("login.html"); 
     }
-</script>
+    </script>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans flex flex-col justify-between">
 
@@ -189,33 +191,6 @@
             </div>
         </div>
 
-        <!-- Review Modal -->
-        <div id="reviewModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
-            <div class="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 id="modalReviewTitle" class="text-sm sm:text-base font-bold text-gray-900">Leave a Property Review</h3>
-                    <button onclick="closeReviewModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-sm"></i></button>
-                </div>
-                <form id="reviewForm" class="space-y-4 text-xs" onsubmit="handleReviewSubmit(event)">
-                    <div>
-                        <label id="modalRatingLabel" class="block text-gray-400 font-medium mb-1">Rating</label>
-                        <select id="reviewRating" class="w-full border border-gray-200 rounded-xl p-2.5 font-bold text-amber-500 focus:outline-teal-500">
-                            <option value="5">⭐⭐⭐⭐⭐ 5.0</option>
-                            <option value="4">⭐⭐⭐⭐ 4.0</option>
-                            <option value="3">⭐⭐⭐ 3.0</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label id="modalCommentLabel" class="block text-gray-400 font-medium mb-1">Your Comments</label>
-                        <textarea id="reviewComment" rows="3" class="w-full border border-gray-200 rounded-xl p-2.5 font-medium focus:outline-teal-500" required></textarea>
-                    </div>
-                    <button type="submit" id="modalReviewSubmitBtn" class="w-full bg-teal-600 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl transition shadow-sm">
-                        Submit Review
-                    </button>
-                </form>
-            </div>
-        </div>
-
         <!-- Receipt Modal -->
         <div id="receiptModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
             <div class="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4">
@@ -243,11 +218,13 @@
         let currentUser = JSON.parse(sessionStorage.getItem("userProfile")) || { name: "User", email: "user@example.com" };
         let currentRole = sessionStorage.getItem("activeDashboardRole") || "traveler";
         let currentLang = localStorage.getItem("preferredLanguage") || "en";
+        
         let currentActiveChatGuest = "";
+        let currentActiveChatPropTitle = "";
 
         const dictionary = {
             en: { 
-                welcome: "Hello", subTextTraveler: "Manage your traveler reservations and local itineraries.", subTextHost: "Oversee property listings, analyze data, and manage income tracks.", switchHost: "Switch to Host Mode", switchTraveler: "Switch to Traveler Mode", listProp: "List New Property", travelerHead: "Your Bookings & Trips", upcoming: "Upcoming Stay", viewReceipt: "View Receipt →", wishlistHead: "Your Saved Wishlists", historyHead: "Past Trips History", completed: "Completed", leaveReview: "Leave a Review", profileHead: "Traveler Profile Credentials", labelName: "Display / Preferred Name", labelEmail: "Email Coordinates", updateBtn: "Update Settings Data", hostHead: "Your Managed Properties Directory", incomeLabel: "Monthly Income", listingsLabel: "Active Listings", ratingLabel: "Platform Rating", pipelineHead: "Reservation Control Pipeline", thG: "Guest", thP: "Property", thD: "Dates", thPay: "Payout", thS: "Status", thA: "Actions", statusConf: "Confirmed", activeListHead: "Your Active Listings", msgBtn: "Message", mReviewTitle: "Leave a Property Review", mRating: "Rating", mComment: "Your Comments", mSubmit: "Submit Review", footer: "© 2026 StayGuwahati Platform Unified Core Engine. All rights reserved.",
+                welcome: "Hello", subTextTraveler: "Manage your traveler reservations and local itineraries.", subTextHost: "Oversee property listings, analyze data, and manage income tracks.", switchHost: "Switch to Host Mode", switchTraveler: "Switch to Traveler Mode", listProp: "List New Property", travelerHead: "Your Bookings & Trips", upcoming: "Upcoming Stay", viewReceipt: "View Receipt →", wishlistHead: "Your Saved Wishlists", historyHead: "Past Trips History", completed: "Completed", leaveReview: "Leave a Review", profileHead: "Traveler Profile Credentials", labelName: "Display / Preferred Name", labelEmail: "Email Coordinates", updateBtn: "Update Settings Data", hostHead: "Your Managed Properties Directory", incomeLabel: "Monthly Income", listingsLabel: "Active Listings", ratingLabel: "Platform Rating", pipelineHead: "Reservation Control Pipeline", thG: "Guest", thP: "Property", thD: "Dates", thPay: "Payout", thS: "Status", thA: "Actions", statusConf: "Confirmed", activeListHead: "Your Active Listings", msgBtn: "Message",
                 noBookings: "No upcoming bookings found. Explore properties to book your next stay!",
                 noWishlist: "Your wishlist is currently empty.",
                 noHistory: "No past trips recorded.",
@@ -255,7 +232,7 @@
                 noProperties: "No properties listed by you yet."
             },
             as: { 
-                welcome: "নমস্কাৰ", subTextTraveler: "আপোনাৰ ভ্ৰমণ সংৰক্ষণ আৰু স্থানীয় ভ্ৰমণসূচী পৰিচালনা কৰক।", subTextHost: "সম্পত্তিৰ তালিকা পৰীক্ষা কৰক, তথ্য বিশ্লেষণ কৰক, আৰু উপাৰ্জন ট্ৰেক পৰিচালনা কৰক।", switchHost: "হোষ্ট মোডলৈ সলনি কৰক", switchTraveler: "ভ্ৰমণকাৰী মোডলৈ সলনি কৰক", listProp: "নতুন সম্পত্তি তালিকাভুক্ত কৰক", travelerHead: "আপোনাৰ বুকিং আৰু ভ্ৰমণসমূহ", upcoming: "অনাগত থকাৰ ব্যৱস্থা", viewReceipt: "ৰচিদ চাওক →", wishlistHead: "আপোনাৰ সংৰক্ষিত ইচ্ছাতালিকা", historyHead: "অতীতৰ ভ্ৰমণ ইতিহাস", completed: "সম্পূৰ্ণ হ’ল", leaveReview: "মতামত দিয়ক", profileHead: "ভ্ৰমণকাৰী প্ৰফাইলৰ প্ৰমাণপত্ৰ", labelName: "প্ৰদৰ্শন / পছন্দৰ নাম", labelEmail: "ইমেইল ঠিকনা", updateBtn: "ছেটিংছ ডাটা আপডেট কৰক", hostHead: "আপোনাৰ পৰিচালিত সম্পত্তি নিৰ্দেশিকা", incomeLabel: "মাহিলী উপাৰ্জন", listingsLabel: "সক্ৰিয় তালিকাসমূহ", ratingLabel: "প্লেটফৰ্ম ৰেটিং", pipelineHead: "সংৰক্ষণ নিয়ন্ত্ৰণ পাইপলাইন", thG: "অতিথি", thP: "সম্পত্তি", thD: "তাৰিখ", thPay: "পৰিশোধ", thS: "স্থিতি", thA: "কাৰ্য্যসমূহ", statusConf: "নিশ্চিত কৰা হৈছে", activeListHead: "আপোনাৰ সক্ৰিয় তালিকাসমূহ", msgBtn: "বাৰ্তা পঠিয়াওক", mReviewTitle: "সম্পত্তিৰ সমীক্ষা এৰক", mRating: "ৰেটিং", mComment: "আপোনাৰ মন্তব্য", mSubmit: "সমীক্ষা জমা কৰক", footer: "© ২০২৬ ষ্টেগুৱাটী প্লেটফৰ্ম ইউনিফাইড কোৰ ইঞ্জিন। সৰ্বস্বত্ব সংৰক্ষিত।",
+                welcome: "নমস্কাৰ", subTextTraveler: "আপোনাৰ ভ্ৰমণ সংৰক্ষণ আৰু স্থানীয় ভ্ৰমণসূচী পৰিচালনা কৰক।", subTextHost: "সম্পত্তিৰ তালিকা পৰীক্ষা কৰক, তথ্য বিশ্লেষণ কৰক, আৰু উপাৰ্জন ট্ৰেক পৰিচালনা কৰক।", switchHost: "হোষ্ট মোডলৈ সলনি কৰক", switchTraveler: "ভ্ৰমণকাৰী মোডলৈ সলনি কৰক", listProp: "নতুন সম্পত্তি তালিকাভুক্ত কৰক", travelerHead: "আপোনাৰ বুকিং আৰু ভ্ৰমণসমূহ", upcoming: "অনাগত থকাৰ ব্যৱস্থা", viewReceipt: "ৰচিদ চাওক →", wishlistHead: "আপোনাৰ সংৰক্ষিত ইচ্ছাতালিকা", historyHead: "অতীতৰ ভ্ৰমণ ইতিহাস", completed: "সম্পূৰ্ণ হ’ল", leaveReview: "মতামত দিয়ক", profileHead: "ভ্ৰমণকাৰী প্ৰফাইলৰ প্ৰমাণপত্ৰ", labelName: "প্ৰদৰ্শন / পছন্দৰ নাম", labelEmail: "ইমেইল ঠিকনা", updateBtn: "ছেটিংছ ডাটা আপডেট কৰক", hostHead: "আপোনাৰ পৰিচালিত সম্পত্তি নিৰ্দেশিকা", incomeLabel: "মাহিলী উপাৰ্জন", listingsLabel: "সক্ৰিয় তালিকাসমূহ", ratingLabel: "প্লেটফৰ্ম ৰেটিং", pipelineHead: "সংৰক্ষণ নিয়ন্ত্ৰণ পাইপলাইন", thG: "অতিথি", thP: "সম্পত্তি", thD: "তাৰিখ", thPay: "পৰিশোধ", thS: "স্থিতি", thA: "কাৰ্য্যসমূহ", statusConf: "নিশ্চিত কৰা হৈছে", activeListHead: "আপোনাৰ সক্ৰিয় তালিকাসমূহ", msgBtn: "বাৰ্তা পঠিয়াওক",
                 noBookings: "কোনো অনাগত বুকিং পোৱা নগ’ল। আপোনাৰ পৰৱৰ্তী ভ্ৰমণৰ বাবে সম্পত্তি অন্বেষণ কৰক!",
                 noWishlist: "আপোনাৰ ইচ্ছাতালিকা বৰ্তমান খালী।",
                 noHistory: "কোনো অতীতৰ ভ্ৰমণ ৰেকৰ্ড কৰা হোৱা নাই।",
@@ -263,7 +240,7 @@
                 noProperties: "আপোনাৰ দ্বাৰা কোনো সম্পত্তি তালিকাভুক্ত কৰা হোৱা নাই।"
             },
             hi: { 
-                welcome: "नमस्ते", subTextTraveler: "अपनी यात्री बुकिंग और स्थानीय यात्रा कार्यक्रमों का प्रबंधन करें।", subTextHost: "संपत्ति लिस्टिंग की देखरेख करें, डेटा का विश्लेषण करें और आय ट्रैक प्रबंधित करें।", switchHost: "होस्ट मोड पर जाएं", switchTraveler: "यात्री मोड पर जाएं", listProp: "नई संपत्ति सूचीबद्ध करें", travelerHead: "आपकी बुकिंग और यात्राएं", upcoming: "आगामी प्रवास", viewReceipt: "रसीद देखें →", wishlistHead: "आपकी सहेजी गई विशलिस्ट", historyHead: "पुरानी यात्राओं का इतिहास", completed: "पूर्ण", leaveReview: "समीक्षा लिखें", profileHead: "यात्री प्रोफ़ाइल क्रेडेंशियल", labelName: "प्रदर्शित / पसंदीदा नाम", labelEmail: "ईमेल आईडी", updateBtn: "प्रोफ़ाइल डेटा अपडेट करें", hostHead: "आपकी प्रबंधित संपत्तियों की निर्देशिका", incomeLabel: "मासिक आय", listingsLabel: "सक्रिय लिस्टिंग", ratingLabel: "प्लेटफ़ॉर्म रेटिंग", pipelineHead: "बुकिंग नियंत्रण पाइपलाइन", thG: "अतिथि", thP: "संपत्ति", thD: "तारीखें", thPay: "भुगतान", thS: "स्थिति", thA: "कार्रवाई", statusConf: "पुष्टि की गई", activeListHead: "आपकी सक्रिय लिस्टिंग", msgBtn: "संदेश भेजें", mReviewTitle: "प्रॉपर्टी की समीक्षा करें", mRating: "रेटिंग", mComment: "आपकी टिप्पणी", mSubmit: "समीक्षा सबमिट करें", footer: "© 2026 स्टेगुवाहाटी प्लेटफॉर्म यूनिफाइड कोर इंजन। सर्वाधिकार सुरक्षित।",
+                welcome: "नमस्ते", subTextTraveler: "अपनी यात्री बुकिंग और स्थानीय यात्रा कार्यक्रमों का प्रबंधन करें।", subTextHost: "संपत्ति लिस्टिंग की देखरेख करें, डेटा का विश्लेषण करें और आय ट्रैक प्रबंधित करें।", switchHost: "होस्ट मोड पर जाएं", switchTraveler: "यात्री मोड पर जाएं", listProp: "नई संपत्ति सूचीबद्ध करें", travelerHead: "आपकी बुकिंग और यात्राएं", upcoming: "आगामी प्रवास", viewReceipt: "रसीद देखें →", wishlistHead: "आपकी सहेजी गई विशलिस्ट", historyHead: "पुरानी यात्राओं का इतिहास", completed: "पूर्ण", leaveReview: "समीक्षा लिखें", profileHead: "यात्री प्रोफ़ाइल क्रेडेंशियल", labelName: "प्रदर्शित / पसंदीदा नाम", labelEmail: "ईमेल आईडी", updateBtn: "प्रोफ़ाइल डेटा अपडेट करें", hostHead: "आपकी प्रबंधित संपत्तियों की निर्देशिका", incomeLabel: "मासिक आय", listingsLabel: "सक्रिय लिस्टिंग", ratingLabel: "प्लेटफ़ॉर्म रेटिंग", pipelineHead: "बुकिंग नियंत्रण पाइपलाइन", thG: "अतिथि", thP: "संपत्ति", thD: "तारीखें", thPay: "भुगतान", thS: "स्थिति", thA: "कार्रवाई", statusConf: "पुष्टि की गई", activeListHead: "आपकी सक्रिय लिस्टिंग", msgBtn: "संदेश भेजें",
                 noBookings: "कोई आगामी बुकिंग नहीं मिली। अपनी अगली यात्रा बुक करने के लिए संपत्तियों का अन्वेषण करें!",
                 noWishlist: "आपकी विशलिस्ट वर्तमान में खाली है।",
                 noHistory: "कोई पुरानी यात्रा दर्ज नहीं की गई है।",
@@ -273,9 +250,7 @@
         };
 
         function resolveImageUrl(imagePath) {
-            if (!imagePath) {
-                return 'https://via.placeholder.com/400x200?text=No+Photo'; 
-            }
+            if (!imagePath) return 'https://via.placeholder.com/400x200?text=No+Photo'; 
             if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
                 return imagePath;
             }
@@ -324,7 +299,6 @@
 
             return `
                 <div class="group bg-white border border-gray-200/80 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
-                    <!-- Image Header with Floating Badge -->
                     <div class="relative w-full h-48 bg-gray-100 overflow-hidden">
                         <img 
                             src="${image}" 
@@ -337,7 +311,6 @@
                         </span>
                     </div>
 
-                    <!-- Card Body -->
                     <div class="p-5 flex flex-col flex-grow justify-between gap-3">
                         <div>
                             <div class="flex items-center gap-1.5 text-xs text-teal-600 font-medium mb-1">
@@ -353,7 +326,6 @@
                             </p>
                         </div>
 
-                        <!-- Card Footer -->
                         <div class="pt-3 border-t border-gray-100 flex items-center justify-between mt-auto">
                             <div>
                                 <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Total Paid</span>
@@ -376,7 +348,6 @@
             const bookingsContainer = document.getElementById("bookingsContainer");
             const historyContainer = document.getElementById("historyContainer"); 
 
-            // Show loading spinner
             bookingsContainer.innerHTML = `<p class="text-xs text-gray-400 col-span-full text-center py-6"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your bookings...</p>`;
 
             try {
@@ -455,12 +426,10 @@
                            b.ownerEmail === currentUser.email;
                 });
 
-                const displayReservations = hostReservations;
-
-                if (displayReservations.length === 0) {
+                if (hostReservations.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-xs text-gray-400">${text.noReservations}</td></tr>`;
                 } else {
-                    tableBody.innerHTML = displayReservations.map(r => {
+                    tableBody.innerHTML = hostReservations.map(r => {
                         let rawName = '';
                         if (r.firstName || r.lastName) {
                             rawName = `${r.firstName || ''} ${r.lastName || ''}`.trim();
@@ -475,11 +444,7 @@
                             rawName = rawName.split('@')[0];
                         }
                         
-                        if (!rawName || rawName === 'Guest') {
-                            rawName = 'Valued Guest';
-                        }
-                        
-                        const formattedName = typeof rawName === 'string' ? rawName : 'Valued Guest';
+                        const formattedName = rawName || 'Valued Guest';
                         const propName = r.propertyName || r.propertyId?.title || r.title || 'Property';
 
                         return `
@@ -490,7 +455,7 @@
                                 <td class="py-3.5 font-black text-teal-700">₹${r.totalPrice || r.payout || r.price || 0}</td>
                                 <td class="py-3.5"><span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-100">${text.statusConf}</span></td>
                                 <td class="py-3.5 text-right">
-                                    <button onclick="openMessageModal('${formattedName}', '${propName.replace(/'/g, "\\'")}')" class="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto">
+                                    <button onclick="openMessageModal('${formattedName.replace(/'/g, "\\'")}', '${propName.replace(/'/g, "\\'")}')" class="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto">
                                         <i class="fa-regular fa-comment-dots"></i> ${text.msgBtn}
                                     </button>
                                 </td>
@@ -520,14 +485,13 @@
                 }
 
                 const hostProperties = properties.filter(p => p.hostEmail === currentUser.email || p.ownerEmail === currentUser.email || p.userEmail === currentUser.email);
-                const displayProperties = hostProperties;
-                statListingsVal.textContent = `${displayProperties.length} Properties`;
-                fetchHostReservations(displayProperties);
+                statListingsVal.textContent = `${hostProperties.length} Properties`;
+                fetchHostReservations(hostProperties);
 
-                if (displayProperties.length === 0) {
+                if (hostProperties.length === 0) {
                     grid.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><i class="fa-solid fa-hotel text-2xl mb-2 text-gray-300"></i><p>${text.noProperties}</p></div>`;
                 } else {
-                    grid.innerHTML = displayProperties.map(p => `
+                    grid.innerHTML = hostProperties.map(p => `
                         <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex flex-col">
                             <div class="h-40 bg-gray-200 bg-cover bg-center" style="background-image: url('${resolveImageUrl(p.image || p.imageUrl || p.propertyImage)}');"></div>
                             <div class="p-4 flex-1 flex flex-col justify-between">
@@ -598,12 +562,13 @@
 
         function openMessageModal(guestName, propTitle) {
             currentActiveChatGuest = guestName || "Guest";
+            currentActiveChatPropTitle = propTitle || "Property";
             
             const nameEl = document.getElementById('msgModalGuestName');
             const propEl = document.getElementById('msgModalPropTitle');
             
             if (nameEl) nameEl.textContent = `Chat with ${currentActiveChatGuest}`;
-            if (propEl) propEl.textContent = propTitle || 'Property';
+            if (propEl) propEl.textContent = currentActiveChatPropTitle;
             
             const chatBox = document.getElementById('chatHistoryBox');
             if (chatBox) {
@@ -647,8 +612,9 @@
                         'Authorization': `Bearer ${sessionStorage.getItem('token')}`
                     },
                     body: JSON.stringify({
-                        recipient: currentActiveChatGuest,
-                        sender: currentUser.email,
+                        guestName: currentActiveChatGuest,
+                        propertyTitle: currentActiveChatPropTitle,
+                        senderName: currentUser.name || currentUser.email,
                         message: messageText
                     })
                 });
