@@ -221,6 +221,7 @@
         
         let currentActiveChatGuest = "";
         let currentActiveChatPropTitle = "";
+        let currentActiveChatGuestPhone = "";
 
         const dictionary = {
             en: { 
@@ -446,6 +447,7 @@
                         
                         const formattedName = rawName || 'Valued Guest';
                         const propName = r.propertyName || r.propertyId?.title || r.title || 'Property';
+                        const guestPhone = r.phone || r.guestPhone || r.recipientPhone || r.userPhone || '';
 
                         return `
                             <tr class="hover:bg-gray-50/55 transition">
@@ -455,7 +457,7 @@
                                 <td class="py-3.5 font-black text-teal-700">₹${r.totalPrice || r.payout || r.price || 0}</td>
                                 <td class="py-3.5"><span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-100">${text.statusConf}</span></td>
                                 <td class="py-3.5 text-right">
-                                    <button onclick="openMessageModal('${formattedName.replace(/'/g, "\\'")}', '${propName.replace(/'/g, "\\'")}')" class="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto">
+                                    <button onclick="openMessageModal('${formattedName.replace(/'/g, "\\'")}', '${propName.replace(/'/g, "\\'")}', '${guestPhone}')" class="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto">
                                         <i class="fa-regular fa-comment-dots"></i> ${text.msgBtn}
                                     </button>
                                 </td>
@@ -560,9 +562,10 @@
             }
         }
 
-        function openMessageModal(guestName, propTitle) {
+        function openMessageModal(guestName, propTitle, guestPhone) {
             currentActiveChatGuest = guestName || "Guest";
             currentActiveChatPropTitle = propTitle || "Property";
+            currentActiveChatGuestPhone = guestPhone || "";
             
             const nameEl = document.getElementById('msgModalGuestName');
             const propEl = document.getElementById('msgModalPropTitle');
@@ -605,19 +608,23 @@
             input.value = '';
 
             try {
-                await fetch(`${BACKEND_URL}/api/messages`, {
+                const response = await fetch(`${BACKEND_URL}/api/messages`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${sessionStorage.getItem('token')}`
                     },
                     body: JSON.stringify({
+                        recipientPhone: currentActiveChatGuestPhone,
                         guestName: currentActiveChatGuest,
                         propertyTitle: currentActiveChatPropTitle,
                         senderName: currentUser.name || currentUser.email,
                         message: messageText
                     })
                 });
+
+                const result = await response.json();
+                console.log("Message response:", result);
             } catch (err) {
                 console.error('Failed to send message to backend:', err);
             }
