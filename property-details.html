@@ -67,7 +67,7 @@
             </div>
         </div>
 
-        <!-- Dynamic Image Gallery Grid Container (UPDATED) -->
+        <!-- Dynamic Image Gallery Grid Container -->
         <div class="w-full mb-8 sm:mb-10">
             <div id="imageGalleryGrid" class="flex overflow-x-auto snap-x snap-mandatory gap-3 md:grid md:grid-cols-4 md:grid-rows-2 h-[280px] sm:h-[350px] md:h-[450px] pb-2 md:pb-0 scrollbar-hide">
                 <!-- Injected dynamically via script -->
@@ -169,16 +169,18 @@
         let isSaved = false;
 
         function handleShareProperty() {
+            // Clean URL before sharing to prevent URI_TOO_LONG errors for shared users
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.search.split('&image=')[0];
             const shareData = {
                 title: document.title || 'StayGuwahati Homestay',
                 text: 'Check out this amazing local stay on StayGuwahati!',
-                url: window.location.href
+                url: cleanUrl
             };
 
             if (navigator.share) {
                 navigator.share(shareData).catch((err) => console.log('Error sharing:', err));
             } else {
-                navigator.clipboard.writeText(window.location.href)
+                navigator.clipboard.writeText(cleanUrl)
                     .then(() => alert('Property link copied to your clipboard!'))
                     .catch(() => alert('Could not copy link automatically. Please manually copy the URL.'));
             }
@@ -225,9 +227,29 @@
             const propertyId = urlParams.get('id');
             const titleParam = urlParams.get('title');
 
+            // --- URI_TOO_LONG Prevention Fix ---
+            // If the current query string is unnaturally long (e.g. > 500 chars due to encoded base64 images), strip out bloated params in the browser state
+            if (window.location.search.length > 500) {
+                const cleanSearch = propertyId ? `?id=${encodeURIComponent(propertyId)}` : (titleParam ? `?title=${encodeURIComponent(titleParam)}` : '');
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + cleanSearch;
+                window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+            }
+
             let property = null;
 
-            if (propertyId && propertyId !== 'default') {
+            // 1. Try Session Storage (Prevents needing long query parameters in URL)
+            const cachedProp = sessionStorage.getItem("selectedProperty");
+            if (cachedProp) {
+                try {
+                    const parsed = JSON.parse(cachedProp);
+                    if (!propertyId || parsed.id === propertyId || parsed._id === propertyId) {
+                        property = parsed;
+                    }
+                } catch(e) {}
+            }
+
+            // 2. Fetch from Backend API
+            if (!property && propertyId && propertyId !== 'default') {
                 try {
                     const response = await fetch(`${BACKEND_URL}/api/homestays/${propertyId}`);
                     if (response.ok) {
@@ -239,11 +261,13 @@
                 }
             }
 
+            // 3. Fallback to Local Storage
             if (!property) {
                 const localProps = JSON.parse(localStorage.getItem("userProperties")) || [];
                 property = localProps.find(p => p.id === propertyId || p._id === propertyId || p.title === titleParam);
             }
 
+            // 4. Default Fallback
             if (!property) {
                 property = {
                     id: propertyId || 'default',
@@ -256,7 +280,8 @@
                 };
 
                 const singleImg = urlParams.get('image');
-                if (singleImg && singleImg !== "null" && singleImg !== "") {
+                // Guard against huge string lengths in image param
+                if (singleImg && singleImg !== "null" && singleImg !== "" && singleImg.length < 1000) {
                     let cleanImg = decodeURIComponent(singleImg);
                     if (cleanImg.startsWith('/uploads')) cleanImg = `${BACKEND_URL}${cleanImg}`;
                     property.images.push(cleanImg);
@@ -301,7 +326,7 @@
                 `).join('');
             }
 
-            // Render Image Gallery Grid Layout (UPDATED LOGIC)
+            // Render Image Gallery Grid Layout
             const imgGrid = document.getElementById('imageGalleryGrid');
             const totalImages = property.images.length;
             const mainImg = property.images[0];
@@ -330,22 +355,22 @@
                 const img4 = property.images[3] || mainImg;
 
                 galleryHTML = `
-                    <!-- Image 1: Main (Left half on desktop) -->
+                    <!-- Image 1: Main -->
                     <div class="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group hover-zoom">
                         <img id="mainGalleryImg" src="${mainImg}" class="w-full h-full object-cover transition-transform duration-500 ease-out" alt="Main Property View">
                     </div>
                     
-                    <!-- Image 2: Mobile swipe item | Desktop top-mid -->
+                    <!-- Image 2 -->
                     <div class="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:row-start-1 md:col-span-1 md:row-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img2}'">
                         <img src="${img2}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
                     </div>
 
-                    <!-- Image 3: Mobile swipe item | Desktop bottom-mid -->
+                    <!-- Image 3 -->
                     <div class="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:row-start-2 md:col-span-1 md:row-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img3}'">
                         <img src="${img3}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
                     </div>
 
-                    <!-- Image 4: Mobile swipe item | Desktop far-right tall -->
+                    <!-- Image 4 -->
                     <div class="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-4 md:row-start-1 md:col-span-1 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative hover-zoom cursor-pointer" onclick="document.getElementById('mainGalleryImg').src='${img4}'">
                         <img src="${img4}" class="w-full h-full object-cover transition-transform duration-500 ease-out">
                         <div class="absolute bottom-4 right-4 bg-white/95 backdrop-blur text-slate-900 px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-[10px] md:text-xs font-bold shadow-md border border-slate-200/50 pointer-events-none flex items-center gap-1.5">
