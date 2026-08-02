@@ -272,171 +272,167 @@
             }
         };
 
-function resolveImageUrl(imagePath) {
-    if (!imagePath) {
-        return 'https://via.placeholder.com/400x200?text=No+Photo'; 
-    }
-    if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
-    }
-    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    return `${BACKEND_URL}/${cleanPath}`;
-}
+        function resolveImageUrl(imagePath) {
+            if (!imagePath) {
+                return 'https://via.placeholder.com/400x200?text=No+Photo'; 
+            }
+            if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+                return imagePath;
+            }
+            const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+            return `${BACKEND_URL}/${cleanPath}`;
+        }
 
-function generateBookingCard(b, statusText) {
-    const rawPhoto = 
-        b.image || 
-        b.propertyImage || 
-        b.propertyId?.image || 
-        b.propertyId?.imageUrl ||
-        (Array.isArray(b.propertyId?.images) ? b.propertyId.images[0] : null) ||
-        (Array.isArray(b.propertyId?.photos) ? b.propertyId.photos[0] : null) ||
-        b.homestayId?.image ||
-        (Array.isArray(b.homestayId?.images) ? b.homestayId.images[0] : null) ||
-        (Array.isArray(b.homestayId?.photos) ? b.homestayId.photos[0] : null) ||
-        (Array.isArray(b.images) ? b.images[0] : null);
+        function generateBookingCard(b, statusText) {
+            const rawPhoto = 
+                b.image || 
+                b.propertyImage || 
+                b.propertyId?.image || 
+                b.propertyId?.imageUrl ||
+                (Array.isArray(b.propertyId?.images) ? b.propertyId.images[0] : null) ||
+                (Array.isArray(b.propertyId?.photos) ? b.propertyId.photos[0] : null) ||
+                b.homestayId?.image ||
+                (Array.isArray(b.homestayId?.images) ? b.homestayId.images[0] : null) ||
+                (Array.isArray(b.homestayId?.photos) ? b.homestayId.photos[0] : null) ||
+                (Array.isArray(b.images) ? b.images[0] : null);
 
-    const image = resolveImageUrl(rawPhoto);
+            const image = resolveImageUrl(rawPhoto);
 
-    const title =
-        b.propertyName ||
-        b.propertyId?.title ||
-        b.homestayId?.title ||
-        b.title ||
-        "StayGuwahati Property";
+            const title =
+                b.propertyName ||
+                b.propertyId?.title ||
+                b.homestayId?.title ||
+                b.title ||
+                "StayGuwahati Property";
 
-    const location =
-        b.location ||
-        b.propertyId?.location ||
-        b.homestayId?.location ||
-        "Guwahati";
+            const location =
+                b.location ||
+                b.propertyId?.location ||
+                b.homestayId?.location ||
+                "Guwahati";
 
-    const price =
-        b.totalPrice ||
-        b.price ||
-        b.propertyId?.price ||
-        b.homestayId?.price ||
-        0;
+            const price =
+                b.totalPrice ||
+                b.price ||
+                b.propertyId?.price ||
+                b.homestayId?.price ||
+                0;
 
-    const dates =
-        b.dates ||
-        `${b.checkInDate || b.checkIn || ""} → ${b.checkOutDate || b.checkOut || ""}`;
+            const dates =
+                b.dates ||
+                `${b.checkInDate || b.checkIn || ""} → ${b.checkOutDate || b.checkOut || ""}`;
 
-    return `
-        <div class="group bg-white border border-gray-200/80 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
-            <!-- Image Header with Floating Badge -->
-            <div class="relative w-full h-48 bg-gray-100 overflow-hidden">
-                <img 
-                    src="${image}" 
-                    alt="${title}" 
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onerror="this.onerror=null; this.src='https://via.placeholder.com/400x250?text=No+Preview';"
-                />
-                <span class="absolute top-3 left-3 px-3 py-1 text-[11px] font-semibold rounded-full bg-white/95 backdrop-blur-md border border-gray-200/80 text-teal-800 shadow-sm">
-                    ${statusText}
-                </span>
-            </div>
-
-            <!-- Card Body -->
-            <div class="p-5 flex flex-col flex-grow justify-between gap-3">
-                <div>
-                    <div class="flex items-center gap-1.5 text-xs text-teal-600 font-medium mb-1">
-                        <i class="fa-solid fa-location-dot text-[11px]"></i>
-                        <span>${location}</span>
-                    </div>
-                    <h3 class="font-bold text-gray-900 text-base group-hover:text-teal-700 transition-colors line-clamp-1">
-                        ${title}
-                    </h3>
-                    <p class="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
-                        <i class="fa-regular fa-calendar text-gray-400"></i>
-                        <span>${dates}</span>
-                    </p>
-                </div>
-
-                <!-- Card Footer -->
-                <div class="pt-3 border-t border-gray-100 flex items-center justify-between mt-auto">
-                    <div>
-                        <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Total Paid</span>
-                        <span class="text-base font-extrabold text-teal-800">₹${price}</span>
+            return `
+                <div class="group bg-white border border-gray-200/80 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
+                    <!-- Image Header with Floating Badge -->
+                    <div class="relative w-full h-48 bg-gray-100 overflow-hidden">
+                        <img 
+                            src="${image}" 
+                            alt="${title}" 
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            onerror="this.onerror=null; this.src='https://via.placeholder.com/400x250?text=No+Preview';"
+                        />
+                        <span class="absolute top-3 left-3 px-3 py-1 text-[11px] font-semibold rounded-full bg-white/95 backdrop-blur-md border border-gray-200/80 text-teal-800 shadow-sm">
+                            ${statusText}
+                        </span>
                     </div>
 
-                    <button onclick="openReceiptModal()" 
-                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-800 transition-colors group/btn">
-                        <span>View Receipt</span>
-                        <i class="fa-solid fa-arrow-right text-[10px] group-hover/btn:translate-x-0.5 transition-transform"></i>
-                    </button>
+                    <!-- Card Body -->
+                    <div class="p-5 flex flex-col flex-grow justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-xs text-teal-600 font-medium mb-1">
+                                <i class="fa-solid fa-location-dot text-[11px]"></i>
+                                <span>${location}</span>
+                            </div>
+                            <h3 class="font-bold text-gray-900 text-base group-hover:text-teal-700 transition-colors line-clamp-1">
+                                ${title}
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
+                                <i class="fa-regular fa-calendar text-gray-400"></i>
+                                <span>${dates}</span>
+                            </p>
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="pt-3 border-t border-gray-100 flex items-center justify-between mt-auto">
+                            <div>
+                                <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Total Paid</span>
+                                <span class="text-base font-extrabold text-teal-800">₹${price}</span>
+                            </div>
+
+                            <button onclick="openReceiptModal()" 
+                                class="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-800 transition-colors group/btn">
+                                <span>View Receipt</span>
+                                <i class="fa-solid fa-arrow-right text-[10px] group-hover/btn:translate-x-0.5 transition-transform"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    `;
-}
-       async function fetchTravelerBookings() {
-    const text = dictionary[currentLang] || dictionary.en;
-    const bookingsContainer = document.getElementById("bookingsContainer");
-    const historyContainer = document.getElementById("historyContainer"); 
-
-    // Show loading spinner
-    bookingsContainer.innerHTML = `<p class="text-xs text-gray-400 col-span-full text-center py-6"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your bookings...</p>`;
-
-    try {
-        const userEmail = (currentUser.email || '').toLowerCase().trim();
-
-        // Updated API request passing the user email query parameter
-        const res = await fetch(`${BACKEND_URL}/api/bookings?email=${encodeURIComponent(userEmail)}`);
-        let userBookings = [];
-        
-        if (res.ok) {
-            const data = await res.json();
-            let rawBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-            
-            // Case-insensitive check across common email field keys
-            userBookings = rawBookings.filter(b => {
-                const bEmail = (b.email || b.guestEmail || b.userEmail || '').toLowerCase().trim();
-                return bEmail === userEmail;
-            });
+            `;
         }
 
-        // Separate bookings into "Upcoming" and "Past" based on today's date
-        const today = new Date();
-        const upcomingBookings = [];
-        const pastBookings = [];
+        async function fetchTravelerBookings() {
+            const text = dictionary[currentLang] || dictionary.en;
+            const bookingsContainer = document.getElementById("bookingsContainer");
+            const historyContainer = document.getElementById("historyContainer"); 
 
-        userBookings.forEach(b => {
-            const checkInDate = new Date(
-  b.checkInDate ||
-  b.checkIn ||
-  (b.dates ? b.dates.split(' to ')[0] : null) ||
-  b.createdAt
-);
-            
-            if (checkInDate >= today) {
-                upcomingBookings.push(b);
-            } else {
-                pastBookings.push(b);
+            // Show loading spinner
+            bookingsContainer.innerHTML = `<p class="text-xs text-gray-400 col-span-full text-center py-6"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your bookings...</p>`;
+
+            try {
+                const userEmail = (currentUser.email || '').toLowerCase().trim();
+
+                const res = await fetch(`${BACKEND_URL}/api/bookings?email=${encodeURIComponent(userEmail)}`);
+                let userBookings = [];
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    let rawBookings = data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+                    
+                    userBookings = rawBookings.filter(b => {
+                        const bEmail = (b.email || b.guestEmail || b.userEmail || '').toLowerCase().trim();
+                        return bEmail === userEmail;
+                    });
+                }
+
+                const today = new Date();
+                const upcomingBookings = [];
+                const pastBookings = [];
+
+                userBookings.forEach(b => {
+                    const checkInDate = new Date(
+                        b.checkInDate ||
+                        b.checkIn ||
+                        (b.dates ? b.dates.split(' to ')[0] : null) ||
+                        b.createdAt
+                    );
+                    
+                    if (checkInDate >= today) {
+                        upcomingBookings.push(b);
+                    } else {
+                        pastBookings.push(b);
+                    }
+                });
+
+                if (upcomingBookings.length === 0) {
+                    bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><i class="fa-solid fa-plane-slash text-2xl mb-2 text-gray-300"></i><p>${text.noBookings}</p></div>`;
+                } else {
+                    bookingsContainer.innerHTML = upcomingBookings.map(b => generateBookingCard(b, text.upcoming)).join('');
+                }
+
+                if (historyContainer) {
+                    if (pastBookings.length === 0) {
+                        historyContainer.innerHTML = `<div class="bg-gray-50 border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noHistory}</p></div>`;
+                    } else {
+                        historyContainer.innerHTML = pastBookings.map(b => generateBookingCard(b, text.completed)).join('');
+                    }
+                }
+
+            } catch (err) {
+                console.error("Failed to load traveler bookings:", err);
+                bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noBookings}</p></div>`;
             }
-        });
-
-        // Render: Your Bookings & Trips (Upcoming)
-        if (upcomingBookings.length === 0) {
-            bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><i class="fa-solid fa-plane-slash text-2xl mb-2 text-gray-300"></i><p>${text.noBookings}</p></div>`;
-        } else {
-            bookingsContainer.innerHTML = upcomingBookings.map(b => generateBookingCard(b, text.upcoming)).join('');
         }
-
-        // Render: Past Trips History
-        if (historyContainer) {
-            if (pastBookings.length === 0) {
-                historyContainer.innerHTML = `<div class="bg-gray-50 border border-gray-100 p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noHistory}</p></div>`;
-            } else {
-                historyContainer.innerHTML = pastBookings.map(b => generateBookingCard(b, text.completed)).join('');
-            }
-        }
-
-    } catch (err) {
-        console.error("Failed to load traveler bookings:", err);
-        bookingsContainer.innerHTML = `<div class="col-span-full bg-white border border-gray-100 p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm"><p>${text.noBookings}</p></div>`;
-    }
-}
 
         async function fetchHostReservations(hostProperties) {
             const tableBody = document.getElementById("hostReservationsTableBody");
@@ -603,22 +599,62 @@ function generateBookingCard(b, statusText) {
         function openMessageModal(guestName, propTitle) {
             currentActiveChatGuest = guestName || "Guest";
             
-            // Safely set modal text fields
             const nameEl = document.getElementById('msgModalGuestName');
             const propEl = document.getElementById('msgModalPropTitle');
             
             if (nameEl) nameEl.textContent = `Chat with ${currentActiveChatGuest}`;
             if (propEl) propEl.textContent = propTitle || 'Property';
             
-            // Clear previous chat history box or show empty state
             const chatBox = document.getElementById('chatHistoryBox');
             if (chatBox) {
                 chatBox.innerHTML = `<p class="text-gray-400 text-center py-4">Conversation started with ${currentActiveChatGuest}.</p>`;
             }
 
-            // Open modal
             const modal = document.getElementById('messageModal');
             if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeMessageModal() {
+            const modal = document.getElementById('messageModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function sendGuestMessage(event) {
+            event.preventDefault();
+            
+            const input = document.getElementById('chatInput');
+            const chatBox = document.getElementById('chatHistoryBox');
+            const messageText = input.value.trim();
+
+            if (!messageText) return;
+
+            const messageBubble = document.createElement('div');
+            messageBubble.className = 'flex justify-end my-1.5';
+            messageBubble.innerHTML = `
+                <div class="bg-teal-600 text-white px-3 py-2 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm">
+                    <p class="text-xs font-medium">${messageText}</p>
+                </div>
+            `;
+            chatBox.appendChild(messageBubble);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            input.value = '';
+
+            try {
+                await fetch(`${BACKEND_URL}/api/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        recipient: currentActiveChatGuest,
+                        sender: currentUser.email,
+                        message: messageText
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to send message to backend:', err);
+            }
         }
 
         function openReceiptModal() {
