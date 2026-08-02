@@ -59,11 +59,11 @@
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans h-screen flex flex-col overflow-hidden antialiased">
 
-    <!-- Header Navigation -->
-    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-50 shrink-0">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+    <!-- Re-aligned Header Navigation -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shrink-0">
+        <div class="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             
-            <!-- Logo -->
+            <!-- 1. Logo (Left) -->
             <div class="flex items-center gap-2.5 cursor-pointer group" onclick="window.location.href='index.html'">
                 <div class="w-9 h-9 bg-teal-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-teal-600/20 group-hover:bg-teal-700 transition">
                     <i class="fa-solid fa-house-chimney-window text-base"></i>
@@ -71,17 +71,23 @@
                 <span class="text-xl font-black tracking-tight text-slate-900">Stay<span class="text-teal-600">Guwahati</span></span>
             </div>
 
-            <!-- Links -->
+            <!-- 2. Centered Nav Links (Middle) -->
             <nav class="hidden md:flex items-center gap-8 text-sm font-semibold h-full">
-                <a href="index.html" class="text-slate-500 hover:text-teal-600 transition flex items-center h-full">Home</a>
-                <a href="dashboard.html" class="text-slate-500 hover:text-teal-600 transition flex items-center h-full">Dashboard</a>
-                <a href="map.html" class="text-teal-600 border-b-2 border-teal-600 transition flex items-center h-full font-bold">Live Map</a>
+                <a href="index.html" class="text-slate-500 hover:text-teal-600 transition flex items-center h-full border-b-2 border-transparent">
+                    Home
+                </a>
+                <a href="dashboard.html" class="text-slate-500 hover:text-teal-600 transition flex items-center h-full border-b-2 border-transparent">
+                    Dashboard
+                </a>
+                <a href="map.html" class="text-teal-600 border-b-2 border-teal-600 transition flex items-center h-full font-bold">
+                    Live Map
+                </a>
             </nav>
 
-            <!-- User CTA / Profile -->
+            <!-- 3. Action CTA (Right) -->
             <div class="flex items-center gap-3">
-                <a href="dashboard.html" class="hidden sm:flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">
-                    <i class="fa-solid fa-plus text-teal-600"></i> List Your Stay
+                <a href="dashboard.html" class="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm">
+                    <i class="fa-solid fa-plus text-[10px]"></i> List Your Stay
                 </a>
             </div>
             
@@ -90,7 +96,7 @@
 
     <!-- Interactive Filter Toolbar -->
     <section class="bg-white border-b border-slate-200 px-4 py-2.5 z-40 shrink-0 shadow-sm">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div class="w-full px-0 sm:px-2 flex flex-wrap items-center justify-between gap-3">
             
             <!-- Search & Filter inputs -->
             <div class="flex items-center gap-2.5 flex-1 min-w-[260px] max-w-md">
@@ -164,7 +170,6 @@
         function initializeMap() {
             map = L.map('map', { zoomControl: false }).setView([26.1445, 91.7362], 13);
             
-            // Modern CartoDB Voyager tiles for high-end look
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap &copy; CARTO',
                 subdomains: 'abcd',
@@ -291,7 +296,6 @@
                     <div onmouseenter="highlightMarker('${propId}', true)" onmouseleave="highlightMarker('${propId}', false)"
                          class="group bg-white border border-slate-200/80 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-teal-300 flex flex-col">
                         
-                        <!-- Thumbnail Image Wrapper -->
                         <div class="relative h-48 overflow-hidden bg-slate-100" onclick="window.focusOnProperty(${stay.lat}, ${stay.lng}, '${propId}')">
                             <img src="${img}" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" alt="${stay.title}">
                             
@@ -304,7 +308,6 @@
                             </button>
                         </div>
 
-                        <!-- Info Content -->
                         <div class="p-4 flex-1 flex flex-col justify-between" onclick="window.viewPropertyDetails('${propId}')">
                             <div>
                                 <div class="flex justify-between items-center text-xs text-slate-500 font-semibold mb-1">
@@ -343,7 +346,6 @@
                 const propId = stay.id || stay._id || '';
                 const priceFormatted = `₹${parseInt(stay.pricePerNight || stay.price || 1500).toLocaleString('en-IN')}`;
 
-                // Custom DivIcon badge HTML
                 const customIcon = L.divIcon({
                     className: 'custom-leaflet-marker',
                     html: `<div class="price-badge-marker" id="marker-${propId}">${priceFormatted}</div>`,
@@ -377,7 +379,6 @@
                 loadedProperties = JSON.parse(localStorage.getItem("userProperties")) || [];
             }
 
-            // Fallback default sample data if API/storage empty
             if (loadedProperties.length === 0) {
                 loadedProperties = [{
                     id: 'sample-1',
