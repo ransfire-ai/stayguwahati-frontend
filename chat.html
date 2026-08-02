@@ -1,16 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full w-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Chat with Host | StayGuwahati</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Lock HTML/Body to prevent touch bounce and blank space on mobile browsers */
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-dvh flex items-center justify-center p-0 sm:p-4 antialiased selection:bg-teal-100">
+<body class="bg-gray-100 h-full w-full flex items-center justify-center p-0 sm:p-4 antialiased selection:bg-teal-100">
 
-    <!-- Container: Fullscreen on mobile (100dvh), centered card on tablet/desktop -->
-    <div class="bg-white w-full h-[100dvh] sm:h-[620px] sm:max-w-md flex flex-col sm:rounded-2xl sm:shadow-2xl sm:border border-gray-100 overflow-hidden">
+    <!-- Container: Edge-to-edge full screen on mobile, elegant card on tablet/desktop -->
+    <div class="fixed inset-0 sm:relative sm:inset-auto bg-white w-full h-full sm:h-[620px] sm:max-w-md flex flex-col sm:rounded-2xl sm:shadow-2xl sm:border border-gray-100 overflow-hidden">
         
         <!-- Header -->
         <div class="bg-teal-700 text-white px-4 py-3 sm:py-4 flex items-center justify-between shrink-0 shadow-sm">
@@ -23,7 +33,7 @@
                     <p id="propertySub" class="text-xs text-teal-100 opacity-90">Green Villa</p>
                 </div>
             </div>
-            <div class="flex items-center gap-1">
+            <div class="flex items-center gap-1.5">
                 <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse"></span>
                 <span class="text-[11px] text-teal-100 font-medium">Online</span>
             </div>
