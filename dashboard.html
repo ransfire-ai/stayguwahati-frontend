@@ -222,6 +222,8 @@
         let currentActiveChatGuest = "";
         let currentActiveChatPropTitle = "";
         let currentActiveChatGuestPhone = "";
+        let chatPollInterval = null;
+        let lastDashboardMsgCount = 0;
 
         const dictionary = {
             en: { 
@@ -257,6 +259,12 @@
             }
             const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
             return `${BACKEND_URL}/${cleanPath}`;
+        }
+
+        function escapeHTML(str) {
+            return str ? str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            ) : '';
         }
 
         function generateBookingCard(b, statusText) {
@@ -562,53 +570,103 @@
             }
         }
 
+        // Live Chat Functions
+        async function fetchHostMessages() {
+            if (!currentActiveChatGuest || !currentActiveChatPropTitle) return;
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/messages?propertyTitle=${encodeURIComponent(currentActiveChatPropTitle)}&guestName=${encodeURIComponent(currentActiveChatGuest)}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && Array.isArray(result.data)) {
+                        if (result.data.length !== lastDashboardMsgCount) {
+                            renderDashboardChatMessages(result.data);
+                            lastDashboardMsgCount = result.data.length;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching modal messages:", err);
+            }
+        }
+
+        function renderDashboardChatMessages(messages) {
+            const chatBox = document.getElementById('chatHistoryBox');
+            if (!chatBox) return;
+            chatBox.innerHTML = '';
+
+            if (messages.length === 0) {
+                chatBox.innerHTML = `<p class="text-gray-400 text-center py-4">Conversation started with ${escapeHTML(currentActiveChatGuest)}.</p>`;
+                return;
+            }
+
+            const currentSenderName = currentUser.name || currentUser.email || 'Host';
+
+            messages.forEach(msg => {
+                const isSelf = msg.senderName === currentSenderName || msg.senderName === 'Host';
+                const bubbleWrapper = document.createElement('div');
+                bubbleWrapper.className = isSelf ? 'flex justify-end my-1.5' : 'flex justify-start my-1.5';
+
+                if (isSelf) {
+                    bubbleWrapper.innerHTML = `
+                        <div class="bg-teal-600 text-white px-3 py-2 rounded-2xl rounded-tr-none max-w-[80%] shadow-xs">
+                            <p class="text-xs font-medium break-words">${escapeHTML(msg.message)}</p>
+                        </div>
+                    `;
+                } else {
+                    bubbleWrapper.innerHTML = `
+                        <div class="bg-white text-gray-800 border border-gray-200 px-3 py-2 rounded-2xl rounded-tl-none max-w-[80%] shadow-xs">
+                            <p class="text-[10px] font-bold text-teal-700 mb-0.5">${escapeHTML(msg.senderName || currentActiveChatGuest)}</p>
+                            <p class="text-xs font-medium break-words">${escapeHTML(msg.message)}</p>
+                        </div>
+                    `;
+                }
+                chatBox.appendChild(bubbleWrapper);
+            });
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
         function openMessageModal(guestName, propTitle, guestPhone) {
             currentActiveChatGuest = guestName || "Guest";
             currentActiveChatPropTitle = propTitle || "Property";
             currentActiveChatGuestPhone = guestPhone || "";
+            lastDashboardMsgCount = 0;
             
             const nameEl = document.getElementById('msgModalGuestName');
             const propEl = document.getElementById('msgModalPropTitle');
             
             if (nameEl) nameEl.textContent = `Chat with ${currentActiveChatGuest}`;
             if (propEl) propEl.textContent = currentActiveChatPropTitle;
-            
-            const chatBox = document.getElementById('chatHistoryBox');
-            if (chatBox) {
-                chatBox.innerHTML = `<p class="text-gray-400 text-center py-4">Conversation started with ${currentActiveChatGuest}.</p>`;
-            }
 
             const modal = document.getElementById('messageModal');
             if (modal) modal.classList.remove('hidden');
+
+            // Initial fetch & start 1.5s live polling
+            fetchHostMessages();
+            if (chatPollInterval) clearInterval(chatPollInterval);
+            chatPollInterval = setInterval(fetchHostMessages, 1500);
         }
 
         function closeMessageModal() {
             const modal = document.getElementById('messageModal');
             if (modal) modal.classList.add('hidden');
+            if (chatPollInterval) {
+                clearInterval(chatPollInterval);
+                chatPollInterval = null;
+            }
         }
 
         async function sendGuestMessage(event) {
             event.preventDefault();
             
             const input = document.getElementById('chatInput');
-            const chatBox = document.getElementById('chatHistoryBox');
             const messageText = input.value.trim();
 
             if (!messageText) return;
-
-            const messageBubble = document.createElement('div');
-            messageBubble.className = 'flex justify-end my-1.5';
-            messageBubble.innerHTML = `
-                <div class="bg-teal-600 text-white px-3 py-2 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm">
-                    <p class="text-xs font-medium">${messageText}</p>
-                </div>
-            `;
-            chatBox.appendChild(messageBubble);
-            chatBox.scrollTop = chatBox.scrollHeight;
             input.value = '';
 
             try {
-                const response = await fetch(`${BACKEND_URL}/api/messages`, {
+                await fetch(`${BACKEND_URL}/api/messages`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -618,13 +676,13 @@
                         recipientPhone: currentActiveChatGuestPhone,
                         guestName: currentActiveChatGuest,
                         propertyTitle: currentActiveChatPropTitle,
-                        senderName: currentUser.name || currentUser.email,
+                        senderName: currentUser.name || currentUser.email || 'Host',
                         message: messageText
                     })
                 });
 
-                const result = await response.json();
-                console.log("Message response:", result);
+                // Instantly re-fetch to update history box without waiting
+                fetchHostMessages();
             } catch (err) {
                 console.error('Failed to send message to backend:', err);
             }
