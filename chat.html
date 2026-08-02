@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Host | StayGuwahati</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-lg border border-gray-100 flex flex-col h-[550px] overflow-hidden">
+        <!-- Header -->
+        <div class="bg-teal-700 text-white p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold">
+                <i class="fa-solid fa-house-chimney"></i>
+            </div>
+            <div>
+                <h1 id="hostTitle" class="font-bold text-sm">StayGuwahati Host Chat</h1>
+                <p id="propertySub" class="text-xs text-teal-100">Green Villa</p>
+            </div>
+        </div>
+
+        <!-- Chat History -->
+        <div id="chatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50 text-xs">
+            <div class="bg-white p-3 rounded-xl border border-gray-200 text-gray-700 shadow-xs max-w-[85%]">
+                <p>Hello! Welcome to StayGuwahati. How can we help you today?</p>
+            </div>
+        </div>
+
+        <!-- Message Input -->
+        <form onsubmit="sendMessage(event)" class="p-3 bg-white border-t border-gray-100 flex gap-2">
+            <input type="text" id="chatInput" placeholder="Type your reply here..." class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-teal-600 font-medium" required>
+            <button type="submit" class="bg-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-teal-800 transition">
+                Send
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const guestName = urlParams.get('guest') || 'Guest';
+        const property = urlParams.get('property') || 'StayGuwahati';
+
+        document.getElementById('propertySub').textContent = property;
+
+        function sendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const chatBox = document.getElementById('chatBox');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            // Add user message bubble
+            const bubble = document.createElement('div');
+            bubble.className = 'flex justify-end';
+            bubble.innerHTML = `<div class="bg-teal-700 text-white p-3 rounded-xl max-w-[85%] shadow-xs"><p>${msg}</p></div>`;
+            chatBox.appendChild(bubble);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            input.value = '';
+
+            // Send reply to backend database
+            fetch('https://stayguwahati-backend.onrender.com/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    senderName: guestName,
+                    propertyTitle: property,
+                    message: msg
+                })
+            }).catch(err => console.error(err));
+        }
+    </script>
+</body>
+</html>
