@@ -87,6 +87,7 @@
     <script>
         let map;
         let markerGroup;
+        let loadedProperties = [];
         const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
         function initializeMap() {
@@ -119,44 +120,47 @@
             if (window.innerWidth < 1024) {
                 switchMobileView('map');
             }
-            if (map) {
+            if (map && lat && lng) {
                 map.flyTo([lat, lng], 16, { duration: 1.5 }); 
             }
         };
 
-        window.viewPropertyDetails = function(id, title, price, locality, image) {
-            const params = new URLSearchParams({
-                id: id,
-                title: title,
-                price: price,
-                locality: locality,
-                image: image
-            });
-            window.location.href = `property-details.html?${params.toString()}`;
+        window.viewPropertyDetails = function(propId) {
+            // Retrieve full property object from in-memory cache
+            const property = loadedProperties.find(p => (p.id || p._id || '') === propId);
+            
+            if (property) {
+                // Store in sessionStorage to avoid URI_TOO_LONG issues with heavy image payloads
+                sessionStorage.setItem('selectedProperty', JSON.stringify(property));
+            }
+            
+            // Navigate using clean URL without bloated parameters
+            window.location.href = `property-details.html?id=${encodeURIComponent(propId)}`;
         };
 
         function renderCards(properties) {
             const grid = document.getElementById("homestayGrid");
             const countLabel = document.getElementById("resultCount");
             countLabel.textContent = `Showing ${properties.length} verified stays in Guwahati`;
+            
             if (properties.length === 0) { 
                 grid.innerHTML = `<div class="text-center py-20 text-gray-400 font-medium">No stays found.</div>`; 
                 return; 
             }
+
             grid.innerHTML = properties.map(stay => {
                 let img = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400";
                 if (stay.images && stay.images.length > 0) {
                     img = stay.images[0].startsWith('/uploads') ? `${BACKEND_URL}${stay.images[0]}` : stay.images[0];
                 }
                 const propId = stay.id || stay._id || '';
-                const encodedImg = encodeURIComponent(img);
 
                 return `
                     <div class="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg transition-all cursor-pointer hover:border-teal-200">
                         <div class="h-40 overflow-hidden" onclick="window.focusOnProperty(${stay.lat}, ${stay.lng}, '${propId}')">
                             <img src="${img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
                         </div>
-                        <div class="p-4" onclick="window.viewPropertyDetails('${propId}', '${encodeURIComponent(stay.title)}', '${stay.pricePerNight}', '${encodeURIComponent(stay.locality || 'Guwahati')}', '${encodedImg}')">
+                        <div class="p-4" onclick="window.viewPropertyDetails('${propId}')">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <span class="text-[10px] font-bold text-teal-600 uppercase tracking-widest">${stay.locality || 'Guwahati'}</span>
@@ -165,7 +169,7 @@
                                 <span class="bg-teal-50 text-teal-700 text-[10px] px-2 py-0.5 rounded font-bold">VERIFIED</span>
                             </div>
                             <div class="mt-4 flex items-center justify-between">
-                                <span class="text-lg font-black text-gray-900">₹${stay.pricePerNight} <span class="text-xs font-normal text-gray-400">/ night</span></span>
+                                <span class="text-lg font-black text-gray-900">₹${stay.pricePerNight || stay.price || 1500} <span class="text-xs font-normal text-gray-400">/ night</span></span>
                                 <span class="text-xs font-bold text-teal-600 group-hover:underline">View Details &rarr;</span>
                             </div>
                         </div>
@@ -176,14 +180,15 @@
         function plotMapMarkers(properties) {
             markerGroup.clearLayers();
             properties.forEach(stay => {
+                if (!stay.lat || !stay.lng) return;
+                
                 const marker = L.circleMarker([stay.lat, stay.lng], { radius: 8, fillColor: "#0d9488", color: "#fff", weight: 2, fillOpacity: 1 });
                 const propId = stay.id || stay._id || '';
-                let img = (stay.images && stay.images.length > 0) ? (stay.images[0].startsWith('/uploads') ? `${BACKEND_URL}${stay.images[0]}` : stay.images[0]) : '';
                 
                 marker.bindPopup(`
                     <div style="text-align: center;">
-                        <b>${stay.title}</b><br>₹${stay.pricePerNight} per night<br>
-                        <button onclick="window.viewPropertyDetails('${propId}', '${encodeURIComponent(stay.title)}', '${stay.pricePerNight}', '${encodeURIComponent(stay.locality || 'Guwahati')}', '${encodeURIComponent(img)}')"" style="margin-top:5px; background:#0d9488; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">View Property</button>
+                        <b>${stay.title}</b><br>₹${stay.pricePerNight || stay.price || 1500} per night<br>
+                        <button onclick="window.viewPropertyDetails('${propId}')" style="margin-top:6px; background:#0d9488; color:white; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">View Property</button>
                     </div>
                 `);
                 marker.addTo(markerGroup);
@@ -194,14 +199,24 @@
             initializeMap();
             try {
                 const res = await fetch(`${BACKEND_URL}/api/homestays`);
-                const data = await res.json();
-                const props = data.data || [];
-                renderCards(props);
-                plotMapMarkers(props);
-            } catch (err) { console.error("Fetch error:", err); }
+                if (res.ok) {
+                    const data = await res.json();
+                    loadedProperties = data.data || data || [];
+                } else {
+                    console.warn("Backend API response not OK, checking local properties...");
+                    loadedProperties = JSON.parse(localStorage.getItem("userProperties")) || [];
+                }
+            } catch (err) { 
+                console.error("Fetch error, checking localStorage fallback:", err); 
+                loadedProperties = JSON.parse(localStorage.getItem("userProperties")) || [];
+            }
+
+            renderCards(loadedProperties);
+            plotMapMarkers(loadedProperties);
         }
+
         document.addEventListener("DOMContentLoaded", init);
     </script>
-<script src="lang-manager.js"></script>
+    <script src="lang-manager.js"></script>
 </body>
 </html>
