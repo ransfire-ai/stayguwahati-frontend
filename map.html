@@ -3,19 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StayGuwahati | Discovery Map</title>
-    <!-- Favicon inline fix -->
+    <title>StayGuwahati | Live Discovery Map</title>
+    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; } 
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        /* Mobile View Toggle Styling & Responsive Fixes */
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; } 
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+        /* Custom Airbnb-style Map Price Badge Markers */
+        .price-badge-marker {
+            background: #ffffff;
+            color: #0f172a;
+            font-weight: 800;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .price-badge-marker:hover, .price-badge-marker.active-pin {
+            background: #0d9488;
+            color: #ffffff;
+            border-color: #0d9488;
+            transform: scale(1.15);
+            z-index: 9999 !important;
+            box-shadow: 0 8px 20px rgba(13, 148, 136, 0.35);
+        }
+
+        /* Responsive Mobile Switching */
         @media (max-width: 1023px) {
             body.show-map #listPanel { display: none; }
             body.show-map #mapPanel { display: block !important; }
@@ -28,71 +57,120 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans h-screen flex flex-col overflow-hidden">
+<body class="bg-slate-50 text-slate-900 font-sans h-screen flex flex-col overflow-hidden antialiased">
 
-    <header class="bg-white shadow-sm sticky top-0 z-50 shrink-0">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Header Navigation -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-50 shrink-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             
-            <!-- Logo (Clickable to return Home) -->
-            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
-                <i class="fa-solid fa-house-chimney text-teal-600 text-2xl"></i>
-                <span class="text-xl font-bold text-teal-800">StayGuwahati</span>
+            <!-- Logo -->
+            <div class="flex items-center gap-2.5 cursor-pointer group" onclick="window.location.href='index.html'">
+                <div class="w-9 h-9 bg-teal-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-teal-600/20 group-hover:bg-teal-700 transition">
+                    <i class="fa-solid fa-house-chimney-window text-base"></i>
+                </div>
+                <span class="text-xl font-black tracking-tight text-slate-900">Stay<span class="text-teal-600">Guwahati</span></span>
             </div>
 
-            <!-- Navigation Links -->
-            <nav class="hidden sm:flex items-center gap-6 text-sm font-medium h-full">
-                <a href="index.html" class="text-gray-500 hover:text-teal-600 transition flex items-center h-full">
-                    Home
-                </a>
-                <a href="dashboard.html" class="text-gray-500 hover:text-teal-600 transition flex items-center h-full">
-                    Dashboard
-                </a>
-                <!-- Active Tab styling -->
-                <a href="map.html" class="text-teal-600 border-b-2 border-teal-600 transition flex items-center h-full">
-                    Live Map
-                </a>
+            <!-- Links -->
+            <nav class="hidden md:flex items-center gap-8 text-sm font-semibold h-full">
+                <a href="index.html" class="text-slate-500 hover:text-teal-600 transition flex items-center h-full">Home</a>
+                <a href="dashboard.html" class="text-slate-500 hover:text-teal-600 transition flex items-center h-full">Dashboard</a>
+                <a href="map.html" class="text-teal-600 border-b-2 border-teal-600 transition flex items-center h-full font-bold">Live Map</a>
             </nav>
 
-            <!-- Right Button Spacer -->
-            <div></div>
+            <!-- User CTA / Profile -->
+            <div class="flex items-center gap-3">
+                <a href="dashboard.html" class="hidden sm:flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">
+                    <i class="fa-solid fa-plus text-teal-600"></i> List Your Stay
+                </a>
+            </div>
             
         </div>
     </header>
 
-    <!-- Mobile View Switcher Bar (Visible only on mobile screens) -->
-    <div class="lg:hidden flex bg-white border-b border-gray-200 p-2.5 z-40 shrink-0 justify-center">
-        <div class="bg-gray-100 p-1 rounded-xl flex w-full max-w-xs shadow-inner">
+    <!-- Interactive Filter Toolbar -->
+    <section class="bg-white border-b border-slate-200 px-4 py-2.5 z-40 shrink-0 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            
+            <!-- Search & Filter inputs -->
+            <div class="flex items-center gap-2.5 flex-1 min-w-[260px] max-w-md">
+                <div class="relative w-full">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input id="searchInput" type="text" oninput="handleSearchFilter()" placeholder="Search locality or homestay name..." class="w-full pl-9 pr-4 py-2 text-xs font-semibold bg-slate-100/80 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition">
+                </div>
+            </div>
+
+            <!-- Sort Dropdown & Quick Chips -->
+            <div class="flex items-center gap-2 overflow-x-auto scrollbar-hide py-0.5">
+                <select id="sortSelect" onchange="handleSearchFilter()" class="bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer hover:bg-slate-200/70 transition">
+                    <option value="recommended">Sort: Recommended</option>
+                    <option value="low-high">Price: Low to High</option>
+                    <option value="high-low">Price: High to Low</option>
+                </select>
+
+                <button onclick="toggleQuickFilter('verified')" id="btnFilterVerified" class="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-shield-check text-emerald-600"></i> Verified Only
+                </button>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Mobile View Switcher Bar -->
+    <div class="lg:hidden flex bg-white border-b border-slate-200 p-2 z-40 shrink-0 justify-center">
+        <div class="bg-slate-100 p-1 rounded-xl flex w-full max-w-xs shadow-inner">
             <button id="showListBtn" onclick="switchMobileView('list')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-teal-600 text-white transition shadow-sm flex items-center justify-center gap-1.5">
                 <i class="fa-solid fa-list"></i> List View
             </button>
-            <button id="showMapBtn" onclick="switchMobileView('map')" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-map"></i> Map View
+            <button id="showMapBtn" onclick="switchMobileView('map')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-map-location-dot"></i> Map View
             </button>
         </div>
     </div>
 
+    <!-- Main Content Area -->
     <main class="flex-1 flex overflow-hidden relative">
-        <div id="listPanel" class="w-full lg:w-1/3 flex flex-col border-r border-gray-200 bg-white h-full overflow-hidden">
-            <div class="p-6 border-b border-gray-100 shrink-0">
-                <h1 class="text-2xl font-black text-gray-900">Explore Stays</h1>
-                <p id="resultCount" class="text-gray-500 text-sm mt-1">Loading availability...</p>
+        
+        <!-- Left Sidebar Listing Grid -->
+        <div id="listPanel" class="w-full lg:w-[480px] xl:w-[520px] flex flex-col border-r border-slate-200/80 bg-white h-full overflow-hidden shrink-0">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+                <div>
+                    <h1 class="text-lg font-black text-slate-900 tracking-tight">Explore Stays</h1>
+                    <p id="resultCount" class="text-slate-500 text-xs mt-0.5 font-medium">Finding available properties...</p>
+                </div>
+                <span class="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-lg">Guwahati, AS</span>
             </div>
-            <div id="homestayGrid" class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar"></div>
+
+            <!-- Stays Cards Stack -->
+            <div id="homestayGrid" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 custom-scrollbar"></div>
         </div>
-        <div id="mapPanel" class="w-full lg:w-2/3 relative bg-gray-200 h-full">
+
+        <!-- Right Interactive Map View -->
+        <div id="mapPanel" class="w-full flex-1 relative bg-slate-200 h-full">
             <div id="map" class="h-full w-full"></div>
         </div>
+
     </main>
 
     <script>
         let map;
         let markerGroup;
         let loadedProperties = [];
+        let filteredProperties = [];
+        let activeMarkersMap = {};
+        let activeFilterVerified = false;
         const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
         function initializeMap() {
             map = L.map('map', { zoomControl: false }).setView([26.1445, 91.7362], 13);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
+            
+            // Modern CartoDB Voyager tiles for high-end look
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
             L.control.zoom({ position: 'bottomright' }).addTo(map);
             markerGroup = L.layerGroup().addTo(map);
         }
@@ -104,94 +182,183 @@
             if (view === 'list') {
                 document.body.classList.remove('show-map');
                 showListBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-teal-600 text-white transition shadow-sm flex items-center justify-center gap-1.5";
-                showMapBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center gap-1.5";
+                showMapBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5";
             } else {
                 document.body.classList.add('show-map');
                 showMapBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-teal-600 text-white transition shadow-sm flex items-center justify-center gap-1.5";
-                showListBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-600 hover:text-gray-900 transition flex items-center justify-center gap-1.5";
+                showListBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5";
                 if (map) {
                     setTimeout(() => { map.invalidateSize(); }, 150);
                 }
             }
         }
 
+        window.highlightMarker = function(propId, highlight) {
+            const markerEl = activeMarkersMap[propId];
+            if (markerEl && markerEl._icon) {
+                const badge = markerEl._icon.querySelector('.price-badge-marker');
+                if (badge) {
+                    if (highlight) badge.classList.add('active-pin');
+                    else badge.classList.remove('active-pin');
+                }
+            }
+        };
+
         window.focusOnProperty = function(lat, lng, id) { 
-            // On mobile, automatically switch to map view when clicking image to focus
             if (window.innerWidth < 1024) {
                 switchMobileView('map');
             }
             if (map && lat && lng) {
-                map.flyTo([lat, lng], 16, { duration: 1.5 }); 
+                map.flyTo([lat, lng], 15, { duration: 1.2 }); 
+                highlightMarker(id, true);
             }
         };
 
         window.viewPropertyDetails = function(propId) {
-            // Retrieve full property object from in-memory cache
             const property = loadedProperties.find(p => (p.id || p._id || '') === propId);
-            
             if (property) {
-                // Store in sessionStorage to avoid URI_TOO_LONG issues with heavy image payloads
                 sessionStorage.setItem('selectedProperty', JSON.stringify(property));
             }
-            
-            // Navigate using clean URL without bloated parameters
             window.location.href = `property-details.html?id=${encodeURIComponent(propId)}`;
         };
+
+        function toggleQuickFilter(type) {
+            if (type === 'verified') {
+                activeFilterVerified = !activeFilterVerified;
+                const btn = document.getElementById('btnFilterVerified');
+                if (activeFilterVerified) {
+                    btn.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
+                    btn.classList.remove('bg-slate-100', 'text-slate-700', 'border-slate-200');
+                } else {
+                    btn.classList.remove('bg-teal-600', 'text-white', 'border-teal-600');
+                    btn.classList.add('bg-slate-100', 'text-slate-700', 'border-slate-200');
+                }
+            }
+            handleSearchFilter();
+        }
+
+        function handleSearchFilter() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const sortBy = document.getElementById('sortSelect').value;
+
+            filteredProperties = loadedProperties.filter(stay => {
+                const titleMatch = (stay.title || '').toLowerCase().includes(query);
+                const localityMatch = (stay.locality || '').toLowerCase().includes(query);
+                const isMatch = titleMatch || localityMatch;
+
+                if (activeFilterVerified) {
+                    return isMatch && (stay.verified !== false);
+                }
+                return isMatch;
+            });
+
+            if (sortBy === 'low-high') {
+                filteredProperties.sort((a, b) => (a.pricePerNight || a.price || 0) - (b.pricePerNight || b.price || 0));
+            } else if (sortBy === 'high-low') {
+                filteredProperties.sort((a, b) => (b.pricePerNight || b.price || 0) - (a.pricePerNight || a.price || 0));
+            }
+
+            renderCards(filteredProperties);
+            plotMapMarkers(filteredProperties);
+        }
 
         function renderCards(properties) {
             const grid = document.getElementById("homestayGrid");
             const countLabel = document.getElementById("resultCount");
-            countLabel.textContent = `Showing ${properties.length} verified stays in Guwahati`;
+            countLabel.textContent = `Showing ${properties.length} verified stay${properties.length === 1 ? '' : 's'} in Guwahati`;
             
             if (properties.length === 0) { 
-                grid.innerHTML = `<div class="text-center py-20 text-gray-400 font-medium">No stays found.</div>`; 
+                grid.innerHTML = `
+                    <div class="text-center py-16 px-4">
+                        <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                            <i class="fa-solid fa-house-chimney-crack"></i>
+                        </div>
+                        <p class="text-slate-800 font-bold text-sm">No stays match your criteria</p>
+                        <p class="text-slate-400 text-xs mt-1">Try clearing filters or adjusting your search term.</p>
+                    </div>`; 
                 return; 
             }
 
             grid.innerHTML = properties.map(stay => {
-                let img = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400";
+                let img = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500";
                 if (stay.images && stay.images.length > 0) {
                     img = stay.images[0].startsWith('/uploads') ? `${BACKEND_URL}${stay.images[0]}` : stay.images[0];
                 }
                 const propId = stay.id || stay._id || '';
+                const price = parseInt(stay.pricePerNight || stay.price || 1500).toLocaleString('en-IN');
 
                 return `
-                    <div class="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-lg transition-all cursor-pointer hover:border-teal-200">
-                        <div class="h-40 overflow-hidden" onclick="window.focusOnProperty(${stay.lat}, ${stay.lng}, '${propId}')">
-                            <img src="${img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                    <div onmouseenter="highlightMarker('${propId}', true)" onmouseleave="highlightMarker('${propId}', false)"
+                         class="group bg-white border border-slate-200/80 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-teal-300 flex flex-col">
+                        
+                        <!-- Thumbnail Image Wrapper -->
+                        <div class="relative h-48 overflow-hidden bg-slate-100" onclick="window.focusOnProperty(${stay.lat}, ${stay.lng}, '${propId}')">
+                            <img src="${img}" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" alt="${stay.title}">
+                            
+                            <div class="absolute top-3 left-3 bg-white/90 backdrop-blur text-slate-800 text-[10px] font-black px-2.5 py-1 rounded-lg shadow-sm border border-white/50 flex items-center gap-1">
+                                <i class="fa-solid fa-shield-check text-teal-600"></i> VERIFIED
+                            </div>
+
+                            <button onclick="event.stopPropagation();" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur hover:bg-white text-slate-600 hover:text-rose-600 flex items-center justify-center transition shadow-sm">
+                                <i class="fa-regular fa-heart text-xs"></i>
+                            </button>
                         </div>
-                        <div class="p-4" onclick="window.viewPropertyDetails('${propId}')">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <span class="text-[10px] font-bold text-teal-600 uppercase tracking-widest">${stay.locality || 'Guwahati'}</span>
-                                    <h3 class="font-bold text-gray-900 mt-0.5">${stay.title}</h3>
+
+                        <!-- Info Content -->
+                        <div class="p-4 flex-1 flex flex-col justify-between" onclick="window.viewPropertyDetails('${propId}')">
+                            <div>
+                                <div class="flex justify-between items-center text-xs text-slate-500 font-semibold mb-1">
+                                    <span class="text-teal-600 font-bold uppercase tracking-wider text-[10px]">
+                                        <i class="fa-solid fa-location-dot"></i> ${stay.locality || 'Guwahati'}
+                                    </span>
+                                    <span class="flex items-center gap-1 text-slate-700 font-bold">
+                                        <i class="fa-solid fa-star text-amber-400 text-[11px]"></i> 4.9 <span class="text-slate-400 font-normal">(12)</span>
+                                    </span>
                                 </div>
-                                <span class="bg-teal-50 text-teal-700 text-[10px] px-2 py-0.5 rounded font-bold">VERIFIED</span>
+                                <h3 class="font-bold text-slate-900 text-base group-hover:text-teal-600 transition line-clamp-1">${stay.title}</h3>
                             </div>
-                            <div class="mt-4 flex items-center justify-between">
-                                <span class="text-lg font-black text-gray-900">₹${stay.pricePerNight || stay.price || 1500} <span class="text-xs font-normal text-gray-400">/ night</span></span>
-                                <span class="text-xs font-bold text-teal-600 group-hover:underline">View Details &rarr;</span>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <span class="text-lg font-black text-slate-900">₹${price}</span>
+                                    <span class="text-xs text-slate-400 font-medium">/ night</span>
+                                </div>
+                                <span class="text-xs font-bold text-teal-600 group-hover:translate-x-1 transition-transform duration-200 inline-flex items-center gap-1">
+                                    View Details <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                                </span>
                             </div>
                         </div>
+
                     </div>`;
             }).join('');
         }
 
         function plotMapMarkers(properties) {
             markerGroup.clearLayers();
+            activeMarkersMap = {};
+
             properties.forEach(stay => {
                 if (!stay.lat || !stay.lng) return;
-                
-                const marker = L.circleMarker([stay.lat, stay.lng], { radius: 8, fillColor: "#0d9488", color: "#fff", weight: 2, fillOpacity: 1 });
+
                 const propId = stay.id || stay._id || '';
-                
-                marker.bindPopup(`
-                    <div style="text-align: center;">
-                        <b>${stay.title}</b><br>₹${stay.pricePerNight || stay.price || 1500} per night<br>
-                        <button onclick="window.viewPropertyDetails('${propId}')" style="margin-top:6px; background:#0d9488; color:white; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">View Property</button>
-                    </div>
-                `);
+                const priceFormatted = `₹${parseInt(stay.pricePerNight || stay.price || 1500).toLocaleString('en-IN')}`;
+
+                // Custom DivIcon badge HTML
+                const customIcon = L.divIcon({
+                    className: 'custom-leaflet-marker',
+                    html: `<div class="price-badge-marker" id="marker-${propId}">${priceFormatted}</div>`,
+                    iconSize: [60, 30],
+                    iconAnchor: [30, 15]
+                });
+
+                const marker = L.marker([stay.lat, stay.lng], { icon: customIcon });
+
+                marker.on('click', () => {
+                    window.viewPropertyDetails(propId);
+                });
+
                 marker.addTo(markerGroup);
+                activeMarkersMap[propId] = marker;
             });
         }
 
@@ -203,16 +370,30 @@
                     const data = await res.json();
                     loadedProperties = data.data || data || [];
                 } else {
-                    console.warn("Backend API response not OK, checking local properties...");
                     loadedProperties = JSON.parse(localStorage.getItem("userProperties")) || [];
                 }
             } catch (err) { 
-                console.error("Fetch error, checking localStorage fallback:", err); 
+                console.error("Fetch error, defaulting to local storage:", err); 
                 loadedProperties = JSON.parse(localStorage.getItem("userProperties")) || [];
             }
 
-            renderCards(loadedProperties);
-            plotMapMarkers(loadedProperties);
+            // Fallback default sample data if API/storage empty
+            if (loadedProperties.length === 0) {
+                loadedProperties = [{
+                    id: 'sample-1',
+                    title: 'Green Villa',
+                    pricePerNight: 1600,
+                    locality: 'Bhangagarh',
+                    lat: 26.1550,
+                    lng: 91.7600,
+                    images: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500'],
+                    verified: true
+                }];
+            }
+
+            filteredProperties = [...loadedProperties];
+            renderCards(filteredProperties);
+            plotMapMarkers(filteredProperties);
         }
 
         document.addEventListener("DOMContentLoaded", init);
