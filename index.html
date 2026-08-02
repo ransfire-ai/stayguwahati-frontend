@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="page_title">StayGuwahati | Find Your Perfect Homestay</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -167,7 +166,7 @@
     </section>
 
     <script>
-        // Mobile Menu Toggle
+        // Mobile Navigation Toggle
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const mobileMenu = document.getElementById('mobileMenu');
         if (mobileMenuBtn && mobileMenu) {
@@ -188,6 +187,7 @@
             }
         }
 
+        // Safe Session-Storage Booking Redirect to avoid long URLs
         function handleReserveSpace(id, title, price, locality, image) {
             const bookingData = {
                 id: id,
@@ -199,97 +199,6 @@
             sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
             window.location.href = 'book-stay.html';
         }
-
-        // Fetch & Render Homestays Logic
-        async function loadHomestays() {
-            const grid = document.getElementById('homestayGrid');
-            const countElem = document.getElementById('propertyCount');
-
-            // Fallback default sample data if backend API is not available
-            const defaultHomestays = [
-                {
-                    id: '1',
-                    title: 'Brahmaputra Riverside Retreat',
-                    locality: 'Uzan Bazar',
-                    price: 2200,
-                    description: 'Serene homestay featuring scenic river views, peaceful library nook, and traditional Assamese tea.',
-                    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500'
-                },
-                {
-                    id: '2',
-                    title: 'Paltan Transit Nest',
-                    locality: 'Paltan Bazar',
-                    price: 1800,
-                    description: 'Modern executive room located right near main transportation hubs and vibrant markets.',
-                    image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500'
-                },
-                {
-                    id: '3',
-                    title: 'Ganeshguri Commercial Luxury Suite',
-                    locality: 'Ganeshguri',
-                    price: 2500,
-                    description: 'Stylish apartment with high-speed WiFi, modern kitchenette, and easy access to shopping centers.',
-                    image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500'
-                }
-            ];
-
-            try {
-                let properties = [];
-                
-                try {
-                    // Try to fetch from custom API or local listings
-                    const response = await fetch('/api/properties');
-                    if (response.ok) {
-                        properties = await response.json();
-                    } else {
-                        properties = defaultHomestays;
-                    }
-                } catch (e) {
-                    // Fallback to sample listings if API request fails
-                    properties = defaultHomestays;
-                }
-
-                if (countElem) countElem.textContent = properties.length;
-
-                if (properties.length === 0) {
-                    grid.innerHTML = `
-                        <div class="col-span-full text-center py-12 text-slate-500">
-                            <p class="text-sm font-medium">No active homestay listings found at the moment.</p>
-                        </div>`;
-                    return;
-                }
-
-                grid.innerHTML = properties.map(item => `
-                    <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
-                        <div class="h-48 overflow-hidden relative">
-                            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                        </div>
-                        <div class="p-5">
-                            <span class="text-xs font-semibold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-md">${item.locality}</span>
-                            <h3 class="font-bold text-lg text-slate-900 mt-2">${item.title}</h3>
-                            <p class="text-xs sm:text-sm text-slate-500 mt-1">${item.description || ''}</p>
-                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                                <span class="text-base font-extrabold text-slate-900">₹${item.price} <span class="text-xs font-normal text-slate-500">/ night</span></span>
-                                <button onclick="handleReserveSpace('${item.id}', '${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.locality.replace(/'/g, "\\'")}', '${item.image}')" class="bg-teal-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-teal-700 transition">
-                                    Book Stay
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                console.error('Error fetching homestay listings:', error);
-                grid.innerHTML = `
-                    <div class="col-span-full text-center py-12 text-red-500">
-                        <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
-                        <p class="text-sm font-medium">Failed to connect to property database. Please try refreshing.</p>
-                    </div>`;
-            }
-        }
-
-        // Initialize script on DOM Ready
-        document.addEventListener('DOMContentLoaded', loadHomestays);
 
         const translations = {
             en: {
@@ -349,9 +258,211 @@
                 pipeline_loading: "ডাটাবেচ পাইপলাইনৰ সৈতে সংযোগ কৰা হৈছে..."
             },
             hi: {
-                page_title: "StayGuwahati | अपना आदर्श होमस्टे खोजें"
+                page_title: "StayGuwahati | अपना आदर्श होमस्टे खोजें",
+                nav_brand: "StayGuwahati",
+                nav_home: "होम",
+                nav_list_property: "प्रॉपर्टी लिस्ट करें",
+                nav_explore_map: "मैप व्यू देखें",
+                nav_support: "सहायता",
+                nav_sign_in: "साइन इन करें",
+                nav_dashboard: "मेरा डैशबोर्ड",
+                hero_tag: "प्रीमियम स्थानीय सत्यापन",
+                hero_title: "गुवाहाटी भर में चुनिंदा शानदार होमस्टे खोजें",
+                hero_subtitle: "अस्पताल जैसे ठंडे होटलों को छोड़ें। उजान बाजार, पलटन बाजार जैसे प्रामाणिक इलाकों में भरोसेमंद स्थानीय मेजबानों के साथ रहें।",
+                hero_btn: "लाइव प्रॉपर्टीज खोजें",
+                sec1_title: "लोकप्रिय इलाके",
+                sec1_subtitle: "शहर के आसपास रहने के लिए रणनीतिक स्थानों की खोज करें।",
+                loc1_title: "उजान बाजार",
+                loc1_desc: "ऐतिहासिक नदी किनारे का आकर्षण, सांस्कृतिक केंद्र और शांत कैफे।",
+                loc2_title: "पलटन बाजार",
+                loc2_desc: "पारगमन लिंक और सक्रिय बाजारों के पास केंद्रीय रूप से स्थित।",
+                loc3_title: "गणेशगुरी",
+                loc3_desc: "फूड कोर्ट और बुटीक शॉपिंग से भरा जीवंत व्यावसायिक केंद्र।",
+                explore_link: "प्रविष्टियां देखें \u2192",
+                sec2_title: "सत्यापित स्थानीय होमस्टे",
+                sec2_subtitle: "स्वच्छता, सुरक्षा और गर्मजोशी के लिए चुने गए सत्यापित होमस्टे।",
+                showing_text: "कुल",
+                active_options_text: "सक्रिय प्रॉपर्टी विकल्प उपलब्ध हैं",
+                pipeline_loading: "डेटाबेस पाइपलाइन से कनेक्ट किया जा रहा है..."
             }
         };
+
+        function applyTranslations(lang) {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    const icon = el.querySelector('i');
+                    if (icon) {
+                        el.innerHTML = '';
+                        el.appendChild(icon);
+                        el.append(' ' + translations[lang][key]);
+                    } else {
+                        el.textContent = translations[lang][key];
+                    }
+                }
+            });
+            document.documentElement.lang = lang;
+        }
+
+        // Sync desktop and mobile language selectors
+        const langSelector = document.getElementById('langSelector');
+        const langSelectorMobile = document.getElementById('langSelectorMobile');
+
+        function handleLanguageChange(selectedLang) {
+            if (langSelector) langSelector.value = selectedLang;
+            if (langSelectorMobile) langSelectorMobile.value = selectedLang;
+            applyTranslations(selectedLang);
+            localStorage.setItem('preferredLang', selectedLang);
+        }
+
+        if (langSelector) {
+            langSelector.addEventListener('change', (e) => handleLanguageChange(e.target.value));
+        }
+        if (langSelectorMobile) {
+            langSelectorMobile.addEventListener('change', (e) => handleLanguageChange(e.target.value));
+        }
+
+        const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+
+        function resolveImageUrl(imagePath) {
+            if (!imagePath) {
+                return 'assets/placeholder.jpg'; 
+            }
+            if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+                return imagePath;
+            }
+            const backendUrl = 'https://stayguwahati-backend.onrender.com';
+            const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+            
+            return `${backendUrl}/${cleanPath}`;
+        }
+
+        async function loadVerifiedHomestays() {
+            const grid = document.getElementById("homestayGrid");
+            const countLabel = document.getElementById("propertyCount");
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedLocation = urlParams.get('location');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/homestays`);
+                let properties = await response.json();
+
+                if (properties && properties.data) {
+                    properties = properties.data;
+                }
+
+                if (selectedLocation) {
+                    properties = properties.filter(stay => 
+                        stay.locality && stay.locality.toLowerCase().trim() === selectedLocation.toLowerCase().trim()
+                    );
+                }
+
+                countLabel.textContent = properties.length;
+
+                if (!properties || properties.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full text-center py-16 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                            <i class="fa-solid fa-hotel text-4xl text-slate-300 mb-3"></i>
+                            <p class="font-semibold text-slate-700 text-sm">No properties available in this neighborhood</p>
+                            <p class="text-slate-400 text-xs mt-1">Check back later or view our alternative neighborhood choices.</p>
+                            <a href="index.html" class="inline-block mt-4 text-xs sm:text-sm font-bold text-teal-600 hover:underline">&larr; Show All Listings</a>
+                        </div>`;
+                    return;
+                }
+
+                grid.innerHTML = "";
+                properties.forEach(stay => {
+                    let img = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600";
+                    if (stay.images && stay.images.length > 0) {
+                        img = resolveImageUrl(stay.images[0]);
+                    }
+
+                    const rating = stay.rating || (4.3 + Math.random() * 0.6).toFixed(1);
+                    const reviews = stay.reviewsCount || Math.floor(15 + Math.random() * 80);
+                    
+                    const tags = stay.tags || ["Premium Linens", "Wi-Fi", "Great Location"];
+                    const tagsHTML = tags.map(tag => 
+                        `<span class="bg-slate-100 text-slate-600 text-[10px] sm:text-xs px-2.5 py-1 rounded-md font-medium">${tag}</span>`
+                    ).join('');
+
+                    const propertyId = stay._id || stay.id || '';
+                    const detailUrl = `property-details.html?id=${propertyId}&title=${encodeURIComponent(stay.title)}`;
+
+                    const safeTitle = (stay.title || '').replace(/'/g, "\\'");
+                    const safeLocality = (stay.locality || 'Guwahati').replace(/'/g, "\\'");
+                    const safeImage = (img || '').replace(/'/g, "\\'");
+
+                    grid.innerHTML += `
+                    <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between group">
+                        <a href="${detailUrl}" class="relative overflow-hidden aspect-[4/3] bg-slate-100 block cursor-pointer">
+                            <img src="${img}" alt="${stay.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <div class="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-gray-900 shadow-sm flex items-center gap-1">
+                                <i class="fa-solid fa-star text-amber-500"></i> ${rating} (${reviews})
+                            </div>
+                        </a>
+                        <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-teal-600 tracking-wide uppercase">
+                                    <i class="fa-solid fa-location-dot"></i> ${stay.locality || 'Guwahati'}, GUWAHATI
+                                </div>
+                                <h3 class="font-bold text-base sm:text-lg text-slate-900 mt-1 group-hover:text-teal-600 transition truncate">
+                                    <a href="${detailUrl}">${stay.title}</a>
+                                </h3>
+                                <div class="flex flex-wrap gap-1.5 mt-2.5">
+                                    ${tagsHTML}
+                                </div>
+                            </div>
+                            <div class="mt-5 sm:mt-6 pt-3.5 sm:pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <span class="text-lg sm:text-xl font-extrabold text-slate-900">₹${stay.pricePerNight}</span>
+                                    <span class="text-[10px] sm:text-xs text-slate-400 block -mt-0.5">/ night value</span>
+                                </div>
+                                <button onclick="handleReserveSpace('${propertyId}', '${safeTitle}', ${stay.pricePerNight}, '${safeLocality}', '${safeImage}')" class="bg-slate-900 hover:bg-teal-600 text-white px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-sm">
+                                    Reserve Space
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+
+            } catch (error) {
+                console.error("Failed to sync listing data grid pipeline:", error);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadVerifiedHomestays();
+
+            const savedLang = localStorage.getItem('preferredLang') || 'en';
+            if (langSelector) langSelector.value = savedLang;
+            if (langSelectorMobile) langSelectorMobile.value = savedLang;
+            applyTranslations(savedLang);
+
+            const currentUser = JSON.parse(sessionStorage.getItem("userProfile"));
+            const signInBtn = document.getElementById("authSignInBtn");
+            const dashboardBtn = document.getElementById("authDashboardBtn");
+            const avatarCircle = document.getElementById("userAvatarCircle");
+
+            const mobileSignInBtn = document.getElementById("mobileAuthSignInBtn");
+            const mobileDashboardBtn = document.getElementById("mobileAuthDashboardBtn");
+            const mobileAvatarCircle = document.getElementById("mobileUserAvatarCircle");
+
+            if (currentUser) {
+                if (signInBtn) signInBtn.classList.add("hidden");
+                if (dashboardBtn) dashboardBtn.classList.remove("hidden");
+                if (currentUser?.name && avatarCircle) {
+                    avatarCircle.textContent = currentUser.name.charAt(0).toUpperCase();
+                }
+
+                if (mobileSignInBtn) mobileSignInBtn.classList.add("hidden");
+                if (mobileDashboardBtn) mobileDashboardBtn.classList.remove("hidden");
+                if (currentUser?.name && mobileAvatarCircle) {
+                    mobileAvatarCircle.textContent = currentUser.name.charAt(0).toUpperCase();
+                }
+            }
+        });
     </script>
+    <script src="lang-manager.js"></script>
 </body>
 </html>
