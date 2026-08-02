@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="page_title">StayGuwahati | Find Your Perfect Homestay</title>
-<!-- Favicon inline fix -->
+    <!-- Favicon inline fix -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans">
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between">
 
     <nav class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
@@ -78,6 +78,9 @@
             </a>
             <a href="support.html" class="block text-slate-600 hover:text-teal-600 font-medium py-1.5 text-sm border-b border-gray-100">
                 <i class="fa-solid fa-headset mr-2 text-teal-600"></i><span data-i18n="nav_support">Support</span>
+            </a>
+            <a href="privacy.html" class="block text-slate-600 hover:text-teal-600 font-medium py-1.5 text-sm border-b border-gray-100">
+                <i class="fa-solid fa-user-shield mr-2 text-teal-600"></i><span>Privacy Policy</span>
             </a>
             <div class="pt-3">
                 <div id="mobileAuthContainer">
@@ -167,6 +170,16 @@
             </div>
         </div>
     </section>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 px-4 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>&copy; 2026 StayGuwahati. All rights reserved.</div>
+            <div class="flex gap-4">
+                <a href="privacy.html" class="text-slate-600 hover:text-teal-600 font-medium transition">Privacy Policy</a>
+            </div>
+        </div>
+    </footer>
 
     <script>
         // Mobile Navigation Toggle
