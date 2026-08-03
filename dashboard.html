@@ -141,7 +141,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
                     <p id="statIncomeLabel" class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Monthly Income</p>
-                    <p class="text-lg sm:text-xl font-black text-slate-900 mt-1">₹0</p>
+                    <p id="statIncomeVal" class="text-lg sm:text-xl font-black text-slate-900 mt-1">₹0</p>
                 </div>
                 <div class="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
                     <p id="statListingsLabel" class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Active Listings</p>
@@ -433,6 +433,7 @@
 
         async function fetchHostReservations(hostProperties) {
             const tableBody = document.getElementById("hostReservationsTableBody");
+            const statIncomeVal = document.getElementById("statIncomeVal");
             const text = dictionary[currentLang] || dictionary.en;
             tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-xs text-gray-400"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading pipeline reservations...</td></tr>`;
 
@@ -451,6 +452,24 @@
                            b.hostEmail === currentUser.email || 
                            b.ownerEmail === currentUser.email;
                 });
+
+                // --- DYNAMIC CALCULATION LOGIC FOR MONTHLY INCOME ---
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+
+                const monthlyEarnings = hostReservations.reduce((sum, r) => {
+                    const bookingDate = new Date(r.checkInDate || r.checkIn || r.createdAt || (r.dates ? r.dates.split(' to ')[0] : null));
+                    const isThisMonth = !isNaN(bookingDate) && bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear;
+                    const payout = Number(r.totalPrice || r.payout || r.price || 0);
+
+                    return isThisMonth ? sum + payout : sum;
+                }, 0);
+
+                if (statIncomeVal) {
+                    statIncomeVal.textContent = `₹${monthlyEarnings.toLocaleString('en-IN')}`;
+                }
+                // ----------------------------------------------------
 
                 if (hostReservations.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-xs text-gray-400">${text.noReservations}</td></tr>`;
@@ -493,6 +512,7 @@
             } catch (err) {
                 console.error("Failed to load host reservations:", err);
                 tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-xs text-gray-400">${text.noReservations}</td></tr>`;
+                if (statIncomeVal) statIncomeVal.textContent = "₹0";
             }
         }
 
