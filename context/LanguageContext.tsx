@@ -1,0 +1,97 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+// 🌍 Global Translation Data Dictionary
+export const translations = {
+  en: {
+    navHome: "Home",
+    navProperty: "List Property",
+    navMap: "Explore Map View",
+    navSupport: "Support",
+    navSignIn: "Sign In",
+    navDashboardText: "My Dashboard",
+    heroTag: "Premium Local Verifications",
+    heroTitle: "Find Handpicked Homestays Across Guwahati",
+    heroSubtitle: "Skip the clinical hotels. Stay in authentic neighborhoods with trusted local hosts around Uzan Bazar, Paltan Bazar, and beyond.",
+    loginTitle: "Welcome Back",
+    loginSubtitle: "Access your individual profile pipeline dashboards",
+    lblEmail: "Email Address",
+    lblPassword: "Password",
+  },
+  as: {
+    navHome: "হোম",
+    navProperty: "সম্পত্তি তালিকাভুক্ত কৰক",
+    navMap: "মানচিত্ৰ চাওক",
+    navSupport: "সহায়তা",
+    navSignIn: "ছাইন ইন",
+    navDashboardText: "মোৰ ডেশ্বব’ৰ্ড",
+    heroTag: "প্ৰিমিয়াম স্থানীয় প্ৰমাণীকৰণ",
+    heroTitle: "গুৱাহাটীৰ নিৰ্বাচিত হোমষ্টে বিচাৰক",
+    heroSubtitle: "হোটেল বাদ দিয়ক। উজান বজাৰ, পল্টন বজাৰ আৰু অন্যান্য অঞ্চলৰ বিশ্বাসী স্থানীয় লোকৰ সৈতে থাকক।",
+    loginTitle: "স্বাগতম",
+    loginSubtitle: "আপোনাৰ প্ৰ’ফাইল ডেশ্বব’ৰ্ডত প্ৰৱেশ কৰক",
+    lblEmail: "ইমেইল ঠিকনা",
+    lblPassword: "পাছৱৰ্ড",
+  },
+  hi: {
+    navHome: "होम",
+    navProperty: "प्रॉपर्टी जोड़ें",
+    navMap: "नक्शा देखें",
+    navSupport: "सहायता",
+    navSignIn: "साइन इन",
+    navDashboardText: "मेरा डैशबोर्ड",
+    heroTag: "प्रीमियम स्थानीय सत्यापन",
+    heroTitle: "गुवाहाटी में बेहतरीन होमस्टे खोजें",
+    heroSubtitle: "साधारण होटलों को छोड़ें। उज़ान बाज़ार, पलटन बाज़ार और अन्य स्थानों पर भरोसेमंद स्थानीय मेज़बानों के साथ रहें।",
+    loginTitle: "स्वागत है",
+    loginSubtitle: "अपने प्रोफाइल डैशबोर्ड तक पहुंचें",
+    lblEmail: "ईमेल पता",
+    lblPassword: "पासवर्ड",
+  },
+} as const;
+
+export type Language = keyof typeof translations;
+export type TranslationKeys = keyof typeof translations['en'];
+
+interface LanguageContextType {
+  lang: Language;
+  setLang: (lang: Language) => void;
+  t: (key: TranslationKeys) => string;
+}
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [lang, setLangState] = useState<Language>('en');
+
+  useEffect(() => {
+    const savedLang = (localStorage.getItem('preferredLang') as Language) || 'en';
+    if (translations[savedLang]) {
+      setLangState(savedLang);
+    }
+  }, []);
+
+  const setLang = (newLang: Language) => {
+    setLangState(newLang);
+    localStorage.setItem('preferredLang', newLang);
+  };
+
+  const t = (key: TranslationKeys): string => {
+    return translations[lang]?.[key] || translations.en[key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+}
