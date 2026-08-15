@@ -56,7 +56,7 @@ const DEFAULT_HOMESTAY: HomestayDetail = {
   images: [
     'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1000',
   ],
-  hostName: 'Emily Ahmed',
+  hostName: 'Moitreyee Devi',
   hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
 };
 
@@ -129,7 +129,7 @@ function BookStayContent() {
               ? item.images
               : item.image ? [item.image] : DEFAULT_HOMESTAY.images,
             image: item.image || (Array.isArray(item.images) ? item.images[0] : ''),
-            hostName: item.hostName || item.host?.name || 'Emily Ahmed',
+            hostName: item.hostName || item.host?.name || DEFAULT_HOMESTAY.hostName,
             hostAvatar: item.hostAvatar || item.host?.avatar || DEFAULT_HOMESTAY.hostAvatar,
           };
           setHomestay(mapped);
@@ -447,12 +447,13 @@ function BookStayContent() {
               </span>
               <span className="text-xs text-slate-500 font-medium">/ night</span>
             </div>
-            
+
             <button
+              type="button"
               onClick={() => setIsMobileModalOpen(true)}
-              className="text-[10px] text-teal-700 font-bold underline text-left block hover:text-teal-900 transition mt-0.5"
+              className="text-[11px] text-teal-600 font-bold underline text-left block hover:text-teal-700 transition mt-0.5 cursor-pointer"
             >
-              {nights} {nights === 1 ? 'night' : 'nights'} · {guests} {guests === 1 ? 'guest' : 'guests'} ({checkIn} to {checkOut})
+              {nights} {nights === 1 ? 'night' : 'nights'} · {guests} {guests === 1 ? 'guest' : 'guests'}
             </button>
           </div>
 
@@ -472,8 +473,9 @@ function BookStayContent() {
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900">Select Dates & Guests</h3>
               <button
+                type="button"
                 onClick={() => setIsMobileModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -488,7 +490,7 @@ function BookStayContent() {
                   type="date"
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
-                  className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none"
+                  className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
                 />
               </div>
               <div className="border border-slate-300 rounded-xl p-2.5">
@@ -500,7 +502,7 @@ function BookStayContent() {
                   min={checkIn}
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
-                  className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none"
+                  className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
                 />
               </div>
             </div>
@@ -512,7 +514,7 @@ function BookStayContent() {
               <select
                 value={guests}
                 onChange={(e) => setGuests(Number(e.target.value))}
-                className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none"
+                className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
               >
                 <option value={1}>1 guest</option>
                 <option value={2}>2 guests</option>
@@ -528,8 +530,9 @@ function BookStayContent() {
             </div>
 
             <button
+              type="button"
               onClick={() => setIsMobileModalOpen(false)}
-              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md"
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md cursor-pointer"
             >
               Done
             </button>
@@ -553,4 +556,3 @@ export default function BookStayPage() {
     </Suspense>
   );
 }
-```[cite: 5]
