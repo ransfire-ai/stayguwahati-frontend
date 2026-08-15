@@ -60,6 +60,18 @@ const DEFAULT_HOMESTAY: HomestayDetail = {
   hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
 };
 
+// Helper functions for dynamic dates
+const getTodayString = () => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
+const getFutureDateString = (daysToAdd: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysToAdd);
+  return date.toISOString().split('T')[0];
+};
+
 function BookStayContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -71,10 +83,10 @@ function BookStayContent() {
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
 
-  // Dynamic booking selection states
-  const [checkIn, setCheckIn] = useState('2026-08-12');
-  const [checkOut, setCheckOut] = useState('2026-08-14');
-  const [guests, setGuests] = useState(2);
+  // Dynamic booking selection states initialized to today and 2 days later
+  const [checkIn, setCheckIn] = useState(searchParams.get('checkIn') || getTodayString());
+  const [checkOut, setCheckOut] = useState(searchParams.get('checkOut') || getFutureDateString(2));
+  const [guests, setGuests] = useState(Number(searchParams.get('guests')) || 2);
 
   // Calculate night count dynamically
   const calculateNights = () => {
@@ -374,8 +386,17 @@ function BookStayContent() {
                     </span>
                     <input
                       type="date"
+                      min={getTodayString()}
                       value={checkIn}
-                      onChange={(e) => setCheckIn(e.target.value)}
+                      onChange={(e) => {
+                        const newCheckIn = e.target.value;
+                        setCheckIn(newCheckIn);
+                        if (newCheckIn >= checkOut) {
+                          const nextDay = new Date(newCheckIn);
+                          nextDay.setDate(nextDay.getDate() + 1);
+                          setCheckOut(nextDay.toISOString().split('T')[0]);
+                        }
+                      }}
                       className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
                     />
                   </label>
@@ -488,8 +509,17 @@ function BookStayContent() {
                 </label>
                 <input
                   type="date"
+                  min={getTodayString()}
                   value={checkIn}
-                  onChange={(e) => setCheckIn(e.target.value)}
+                  onChange={(e) => {
+                    const newCheckIn = e.target.value;
+                    setCheckIn(newCheckIn);
+                    if (newCheckIn >= checkOut) {
+                      const nextDay = new Date(newCheckIn);
+                      nextDay.setDate(nextDay.getDate() + 1);
+                      setCheckOut(nextDay.toISOString().split('T')[0]);
+                    }
+                  }}
                   className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
                 />
               </div>
