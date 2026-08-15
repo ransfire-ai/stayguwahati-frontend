@@ -450,7 +450,7 @@ export default function LiveMapPage() {
                               📍 {stay.locality || 'Guwahati'}
                             </span>
                             <span className="flex items-center gap-1 text-slate-700 font-bold">
-                              ⭐ 4.9 <span class="text-slate-400 font-normal">(12)</span>
+                              ⭐ 4.9 <span className="text-slate-400 font-normal">(12)</span>
                             </span>
                           </div>
                           <h3 className="font-bold text-slate-900 text-base group-hover:text-teal-600 transition line-clamp-1">

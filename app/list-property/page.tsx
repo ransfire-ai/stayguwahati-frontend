@@ -114,7 +114,7 @@ export default function ListPropertyPage() {
     if (currentUser.avatar) setHostPhoto(currentUser.avatar);
   }, []);
 
-  const handleLangChange = (e: React.ChangeEvent<SELECTElement>) => {
+  const handleLangChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value as 'en' | 'as' | 'hi';
     setCurrentLang(lang);
     localStorage.setItem('preferredLanguage', lang);
