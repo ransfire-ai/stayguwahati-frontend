@@ -476,3 +476,4 @@ export default function BookStayPage() {
     </Suspense>
   );
 }
+```[cite: 5]
