@@ -37,7 +37,7 @@ export default function PrivacyPolicyPage() {
 
           <div className="space-y-6 text-gray-700 text-sm sm:text-base">
             <section>
-              <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                 1. Introduction
               </h2>
               <p className="leading-relaxed">
