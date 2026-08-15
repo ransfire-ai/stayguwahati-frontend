@@ -69,6 +69,7 @@ function BookStayContent() {
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
 
   // Dynamic booking selection states
   const [checkIn, setCheckIn] = useState('2026-08-12');
@@ -446,9 +447,13 @@ function BookStayContent() {
               </span>
               <span className="text-xs text-slate-500 font-medium">/ night</span>
             </div>
-            <p className="text-[10px] text-slate-500 font-medium underline">
-              {nights} {nights === 1 ? 'night' : 'nights'} · {guests} {guests === 1 ? 'guest' : 'guests'}
-            </p>
+            
+            <button
+              onClick={() => setIsMobileModalOpen(true)}
+              className="text-[10px] text-teal-700 font-bold underline text-left block hover:text-teal-900 transition mt-0.5"
+            >
+              {nights} {nights === 1 ? 'night' : 'nights'} · {guests} {guests === 1 ? 'guest' : 'guests'} ({checkIn} to {checkOut})
+            </button>
           </div>
 
           <Link
@@ -459,6 +464,78 @@ function BookStayContent() {
           </Link>
         </div>
       </div>
+
+      {/* Mobile Date & Guest Selection Modal */}
+      {isMobileModalOpen && (
+        <div className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-0">
+          <div className="bg-white w-full rounded-t-3xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-slate-900">Select Dates & Guests</h3>
+              <button
+                onClick={() => setIsMobileModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="border border-slate-300 rounded-xl p-2.5">
+                <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1">
+                  CHECK-IN
+                </label>
+                <input
+                  type="date"
+                  value={checkIn}
+                  onChange={(e) => setCheckIn(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none"
+                />
+              </div>
+              <div className="border border-slate-300 rounded-xl p-2.5">
+                <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1">
+                  CHECKOUT
+                </label>
+                <input
+                  type="date"
+                  min={checkIn}
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="border border-slate-300 rounded-xl p-2.5">
+              <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1">
+                GUESTS
+              </label>
+              <select
+                value={guests}
+                onChange={(e) => setGuests(Number(e.target.value))}
+                className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none"
+              >
+                <option value={1}>1 guest</option>
+                <option value={2}>2 guests</option>
+                <option value={3}>3 guests</option>
+                <option value={4}>4 guests</option>
+                <option value={5}>5+ guests</option>
+              </select>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+              <span>Total for {nights} {nights === 1 ? 'night' : 'nights'}</span>
+              <span className="font-bold text-slate-900 text-sm">₹{totalPrice}</span>
+            </div>
+
+            <button
+              onClick={() => setIsMobileModalOpen(false)}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
