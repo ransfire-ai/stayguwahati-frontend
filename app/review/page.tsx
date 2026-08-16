@@ -8,6 +8,7 @@ function ReviewContent() {
     const token = searchParams.get('token');
     
     const [rating, setRating] = useState(5);
+    const [comment, setComment] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -21,7 +22,7 @@ function ReviewContent() {
             const response = await fetch('https://stayguwahati-backend.onrender.com/api/reviews', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, rating })
+                body: JSON.stringify({ token, rating, comment })
             });
 
             const data = await response.json();
@@ -61,6 +62,26 @@ function ReviewContent() {
                             <option value={2}>⭐⭐ (2/5) - Poor</option>
                             <option value={1}>⭐ (1/5) - Terrible</option>
                         </select>
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#334155' }}>Your Review / Feedback</label>
+                        <textarea
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            placeholder="Share details about your stay, hospitality, or amenities..."
+                            rows={4}
+                            style={{ 
+                                width: '100%', 
+                                padding: '10px', 
+                                borderRadius: '6px', 
+                                border: '1px solid #cbd5e1', 
+                                fontFamily: 'inherit',
+                                fontSize: '14px',
+                                resize: 'vertical',
+                                boxSizing: 'border-box'
+                            }}
+                        />
                     </div>
 
                     {error && <p style={{ color: '#ef4444', fontSize: '14px', marginBottom: '15px' }}>{error}</p>}
