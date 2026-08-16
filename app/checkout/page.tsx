@@ -116,26 +116,34 @@ function CheckoutContent() {
     setErrorBanner(null);
 
     try {
-      await fetch(`${BACKEND_URL}/api/bookings`, {
+      const res = await fetch(`${BACKEND_URL}/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           propertyId,
+          propertyName: activeProperty.title,
+          guestEmail: email,
           guestInfo: { fullName, email, phone, specialRequests },
           checkIn,
           checkOut,
+          dates: `${checkIn} to ${checkOut}`,
           guests,
-          totalAmount: grandTotal,
+          nights,
+          totalPrice: grandTotal,
         }),
-      }).catch(() => {
-        // Fallback gracefully if backend booking endpoint isn't active
       });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to save booking on the server.');
+      }
 
       setSuccess(true);
     } catch (err: any) {
-      setErrorBanner(err.message || 'Booking submission failed. Please try again.');
+      setErrorBanner(err.message || 'Booking submission failed. Please check your connection or backend server.');
     } finally {
       setIsSubmitting(false);
     }
