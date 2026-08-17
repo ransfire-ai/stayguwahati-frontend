@@ -23,6 +23,14 @@ interface PropertyData {
   host?: PropertyHost;
 }
 
+interface Review {
+  _id: string;
+  guestName?: string;
+  rating: number;
+  comment?: string;
+  createdAt?: string;
+}
+
 function PropertyDetailsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,6 +38,9 @@ function PropertyDetailsContent() {
   const [property, setProperty] = useState<PropertyData | null>(null);
   const [selectedMainImage, setSelectedMainImage] = useState<string>('');
   const [isSaved, setIsSaved] = useState(false);
+  
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
@@ -120,6 +131,33 @@ function PropertyDetailsContent() {
     }
 
     loadProperty();
+  }, [searchParams]);
+
+  // Dynamic reviews fetcher
+  useEffect(() => {
+    const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+    const propertyId = searchParams.get('id');
+
+    if (!propertyId) {
+      setReviewsLoading(false);
+      return;
+    }
+
+    async function fetchReviews() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/reviews?propertyId=${propertyId}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setReviews(data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching reviews:', err);
+      } finally {
+        setReviewsLoading(false);
+      }
+    }
+
+    fetchReviews();
   }, [searchParams]);
 
   const handleShareProperty = () => {
@@ -357,27 +395,43 @@ function PropertyDetailsContent() {
             </div>
           )}
 
-          {/* Reviews Section */}
+          {/* Dynamic Reviews Section */}
           <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
               <span className="text-teal-600">💬</span> Verified Guest Reviews
             </h2>
-            <div className="space-y-4">
-              <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-slate-900 text-xs sm:text-sm">
-                    Ananya Bora
-                  </span>
-                  <span className="text-[10px] sm:text-xs text-slate-400 font-medium">
-                    June 2026
-                  </span>
-                </div>
-                <div className="text-amber-400 text-xs mb-2">★★★★★</div>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Incredibly clean space and highly authentic neighborhood vibe. Responsive hosting structure!
-                </p>
+            {reviewsLoading ? (
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">Loading reviews...</p>
+            ) : reviews.length === 0 ? (
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">No reviews yet for this property.</p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((rev) => (
+                  <div key={rev._id} className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                        {rev.guestName || 'Verified Guest'}
+                      </span>
+                      <span className="text-[10px] sm:text-xs text-slate-400 font-medium">
+                        {rev.createdAt
+                          ? new Date(rev.createdAt).toLocaleDateString('en-US', {
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : 'Recent'}
+                      </span>
+                    </div>
+                    <div className="text-amber-400 text-xs mb-2">
+                      {'★'.repeat(rev.rating)}
+                      {'☆'.repeat(5 - rev.rating)}
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {rev.comment || 'No comment provided.'}
+                    </p>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
 
