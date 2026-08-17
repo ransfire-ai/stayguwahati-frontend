@@ -688,7 +688,7 @@ export default function DashboardPage() {
           {currentRole === 'host' && (
             <div className="w-full sm:w-auto">
               <Link
-                href="/add-property"
+                href="/list-property"
                 className="w-full sm:w-auto bg-slate-900 hover:bg-teal-600 text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
