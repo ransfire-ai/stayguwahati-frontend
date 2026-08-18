@@ -223,7 +223,7 @@ export default function LoginPage() {
                 />
                 <span>{t.rem}</span>
               </label>
-              <Link href="/reset-password" className="text-teal-600 font-bold hover:underline">
+              <Link href="/forgot-password" className="text-teal-600 font-bold hover:underline">
                 {t.forg}
               </Link>
             </div>
