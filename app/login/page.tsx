@@ -69,18 +69,22 @@ export default function LoginPage() {
     const savedLang = (localStorage.getItem('preferredLanguage') as Language) || 'en';
     setCurrentLang(savedLang);
 
-    // Auto-redirect if already logged in based on role
-    const token = sessionStorage.getItem('token') || sessionStorage.getItem('authToken');
-    const userProfile = sessionStorage.getItem('userProfile');
+    // Check both localStorage and sessionStorage for existing sessions
+    const token =
+      sessionStorage.getItem('token') ||
+      localStorage.getItem('token') ||
+      sessionStorage.getItem('authToken') ||
+      localStorage.getItem('authToken');
 
-    if (token && userProfile) {
+    const userProfileStr =
+      sessionStorage.getItem('userProfile') || localStorage.getItem('userProfile');
+
+    if (token && userProfileStr) {
       try {
-        const user = JSON.parse(userProfile);
-        const isAdmin =
-          user.role === 'admin' ||
-          user.role === 'ADMIN' ||
-          user.isAdmin === true ||
-          user.type === 'admin';
+        const user = JSON.parse(userProfileStr);
+        const userRole = String(user.role || user.type || '').toLowerCase();
+        const isAdmin = userRole === 'admin' || user.isAdmin === true || user.isAdmin === 'true';
+
         router.push(isAdmin ? '/admin' : '/dashboard');
       } catch (e) {
         router.push('/dashboard');
@@ -107,26 +111,29 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      if (response.ok && (data.token || data.accessToken)) {
-        const token = data.token || data.accessToken;
-        const user = data.user || data.profile;
+      if (response.ok && (data.token || data.accessToken || data.data?.token)) {
+        const token = data.token || data.accessToken || data.data?.token;
+        const user = data.user || data.profile || data.data?.user || data.data || {};
 
+        // Store tokens across BOTH localStorage and sessionStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('userProfile', JSON.stringify(user));
         sessionStorage.setItem('token', token);
         sessionStorage.setItem('userProfile', JSON.stringify(user));
 
-        const isAdmin =
-          user.role === 'admin' ||
-          user.role === 'ADMIN' ||
-          user.isAdmin === true ||
-          user.type === 'admin';
+        // Robust role detection logic
+        const userRole = String(user.role || user.type || '').toLowerCase();
+        const isAdmin = userRole === 'admin' || user.isAdmin === true || user.isAdmin === 'true';
 
-        const userRole = isAdmin ? 'admin' : 'traveler';
-        sessionStorage.setItem('activeDashboardRole', userRole);
+        const activeRole = isAdmin ? 'admin' : 'traveler';
+        localStorage.setItem('activeDashboardRole', activeRole);
+        sessionStorage.setItem('activeDashboardRole', activeRole);
 
+        // Force full refresh navigation to guarantee state clean load
         if (isAdmin) {
-          router.push('/admin');
+          window.location.href = '/admin';
         } else {
-          router.push('/dashboard');
+          window.location.href = '/dashboard';
         }
       } else {
         setErrorMessage(data.message || t.invalidCreds);
