@@ -57,13 +57,15 @@ const dictionary = {
   }
 };
 
+// Aligned with backend Mongoose enum values
 const localities = [
-  'Amingaon', 'Azara / Airport Area', 'Bamunimaidam', 'Basistha', 'Beltola',
+  'Amingaon', 'Azara', 'Bamunimaidam', 'Basistha', 'Beltola',
   'Bhangagarh', 'Borjhar', 'Chandmari', 'Christian Basti', 'Dispur',
   'Ganeshguri', 'Geetanagar', 'GS Road', 'Jalukbari', 'Kahilipara',
-  'Khanapara', 'Kharghuli', 'Lal Ganesh', 'Lokhra', 'Maligaon',
-  'Narengi', 'Paltan Bazar', 'Pan Bazar', 'Rehabari', 'Rukminigaon',
-  'Silpukhuri', 'Six Mile', 'Supermarket Area', 'Ulubari', 'Uzan Bazar', 'Zoo Road (R.G. Baruah Road)'
+  'Kamakhya', 'Khanapara', 'Kharghuli', 'Lal Ganesh', 'Lokhra',
+  'Maligaon', 'Narengi', 'Paltan Bazar', 'Pan Bazar', 'Rehabari',
+  'Rukminigaon', 'Silpukhuri', 'Six Mile', 'Supermarket', 'Ulubari',
+  'Uzan Bazar', 'Zoo Road'
 ];
 
 const standardAmenities = [
@@ -198,24 +200,27 @@ export default function ListPropertyPage() {
     try {
       const base64Images = await convertFilesToBase64(selectedFiles);
 
+      // Matches backend Mongoose Schema structure
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
         locality,
         pricePerNight: Number(price),
         bedrooms: Number(bedrooms),
-        amenities: selectedAmenities,
+        features: selectedAmenities,
         images: base64Images,
         lat: Number(lat),
         lng: Number(lng),
-        owner: hostName.trim(),
-        hostPhoto: hostPhoto || '',
-        phone: hostPhone.trim(),
-        email: userEmail,
-        status: 'Pending'
+        host: {
+          name: hostName.trim(),
+          email: userEmail.trim(),
+          phone: hostPhone.trim(),
+          avatar: hostPhoto || '',
+        },
+        status: 'pending'
       };
 
-      // Save locally
+      // Save locally as fallback
       const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
       localProps.push(newProperty);
       localStorage.setItem('userProperties', JSON.stringify(localProps));
