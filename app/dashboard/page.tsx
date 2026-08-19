@@ -258,16 +258,15 @@ export default function DashboardPage() {
 
   const t = dictionary[currentLang] || dictionary.en;
 
-  // Mount/Auth Check
+  // Mount/Auth Check (Blocking alert removed for smooth redirection)
   useEffect(() => {
-    const token = sessionStorage.getItem('token');
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     if (!token) {
-      alert('Secure Area: Please log in to access the Dashboard.');
       router.replace('/login');
       return;
     }
 
-    const savedProfile = sessionStorage.getItem('userProfile');
+    const savedProfile = sessionStorage.getItem('userProfile') || localStorage.getItem('userProfile');
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile);
@@ -284,6 +283,15 @@ export default function DashboardPage() {
     const savedLang = (localStorage.getItem('preferredLanguage') as Language) || 'en';
     setCurrentLang(savedLang);
   }, [router]);
+
+  // Unified Logout Handler
+  const handleLogOut = () => {
+    sessionStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('userProfile');
+    localStorage.removeItem('activeDashboardRole');
+    router.replace('/login');
+  };
 
   // Fetch traveler bookings
   const fetchTravelerBookings = async () => {
@@ -425,12 +433,6 @@ export default function DashboardPage() {
     localStorage.setItem('preferredLanguage', lang);
   };
 
-  // Log Out
-  const handleLogOut = () => {
-    sessionStorage.clear();
-    router.replace('/login');
-  };
-
   // Save Profile
   const saveProfileChanges = () => {
     const newName = editProfileName.trim();
@@ -438,6 +440,7 @@ export default function DashboardPage() {
       const updated = { ...currentUser, name: newName };
       setCurrentUser(updated);
       sessionStorage.setItem('userProfile', JSON.stringify(updated));
+      localStorage.setItem('userProfile', JSON.stringify(updated));
       alert('Profile updated successfully!');
     }
   };
@@ -504,11 +507,12 @@ export default function DashboardPage() {
     setChatInputText('');
 
     try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       await fetch(`${BACKEND_URL}/api/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionStorage.getItem('token')}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           recipientPhone: activeChat.guestPhone,
@@ -617,7 +621,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={handleLogOut}
-                className="text-gray-400 hover:text-rose-600 text-sm p-1 transition"
+                className="text-gray-400 hover:text-rose-600 text-sm p-1 transition cursor-pointer"
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4" />
@@ -663,7 +667,7 @@ export default function DashboardPage() {
               <span className="text-xs font-bold text-gray-700">{currentUser.name || 'User'}</span>
               <button
                 onClick={handleLogOut}
-                className="text-gray-400 hover:text-rose-600 text-sm pl-1 transition"
+                className="text-gray-400 hover:text-rose-600 text-sm pl-1 transition cursor-pointer"
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4" />
