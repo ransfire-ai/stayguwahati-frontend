@@ -7,6 +7,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 interface PropertyHost {
   name: string;
   phone?: string;
+  avatar?: string;
+  photo?: string;
+  image?: string;
+  profileImage?: string;
+  profilePicture?: string;
 }
 
 interface PropertyData {
@@ -31,6 +36,24 @@ interface Review {
   createdAt?: string;
 }
 
+const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+
+const getHostAvatarUrl = (host?: PropertyHost) => {
+  if (!host) return null;
+  const rawPath =
+    host.avatar ||
+    host.photo ||
+    host.image ||
+    host.profileImage ||
+    host.profilePicture;
+
+  if (!rawPath) return null;
+  if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+    return rawPath;
+  }
+  return `${BACKEND_URL}${rawPath.startsWith('/') ? '' : '/'}${rawPath}`;
+};
+
 function PropertyDetailsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,12 +61,11 @@ function PropertyDetailsContent() {
   const [property, setProperty] = useState<PropertyData | null>(null);
   const [selectedMainImage, setSelectedMainImage] = useState<string>('');
   const [isSaved, setIsSaved] = useState(false);
-  
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
     const propertyId = searchParams.get('id');
     const titleParam = searchParams.get('title');
 
@@ -135,7 +157,6 @@ function PropertyDetailsContent() {
 
   // Dynamic reviews fetcher
   useEffect(() => {
-    const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
     const propertyId = searchParams.get('id');
 
     if (!propertyId) {
@@ -214,6 +235,7 @@ function PropertyDetailsContent() {
   const img2 = property.images[1] || selectedMainImage;
   const img3 = property.images[2] || selectedMainImage;
   const img4 = property.images[3] || selectedMainImage;
+  const hostAvatarUrl = getHostAvatarUrl(property.host);
 
   return (
     <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8 flex-1">
@@ -373,15 +395,27 @@ function PropertyDetailsContent() {
             </div>
           </div>
 
-          {/* Host Details Box */}
+          {/* Host Details Box with Dynamic Photo Fetching */}
           {property.host && property.host.name && (
             <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
               <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
                 Hosted by
               </h3>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center font-bold text-lg shrink-0">
-                  👤
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-teal-50 border border-teal-100 shrink-0 flex items-center justify-center relative">
+                  {hostAvatarUrl ? (
+                    <img
+                      src={hostAvatarUrl}
+                      alt={property.host.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <span className="text-lg font-bold text-teal-700 select-none">
+                    {property.host.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm sm:text-base">
