@@ -57,7 +57,6 @@ const dictionary = {
   }
 };
 
-// Aligned with backend Mongoose enum values
 const localities = [
   'Amingaon', 'Azara', 'Bamunimaidam', 'Basistha', 'Beltola',
   'Bhangagarh', 'Borjhar', 'Chandmari', 'Christian Basti', 'Dispur',
@@ -113,7 +112,9 @@ export default function ListPropertyPage() {
     const currentUser = JSON.parse(localStorage.getItem('userProfile') || '{}');
     if (currentUser.name) setHostName(currentUser.name);
     if (currentUser.email) setUserEmail(currentUser.email);
-    if (currentUser.avatar) setHostPhoto(currentUser.avatar);
+    if (currentUser.avatar || currentUser.photo || currentUser.image) {
+      setHostPhoto(currentUser.avatar || currentUser.photo || currentUser.image);
+    }
   }, []);
 
   const handleLangChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -159,19 +160,9 @@ export default function ListPropertyPage() {
       setImageError(null);
     }
 
-    const previewUrls: string[] = [];
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          previewUrls.push(event.target.result as string);
-          if (previewUrls.length === files.length) {
-            setPreviews([...previewUrls]);
-          }
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    // Instant synchronous preview generation
+    const previewUrls = files.map((file) => URL.createObjectURL(file));
+    setPreviews(previewUrls);
   };
 
   const convertFilesToBase64 = (files: File[]): Promise<string[]> => {
@@ -198,9 +189,36 @@ export default function ListPropertyPage() {
     setSubmitting(true);
 
     try {
-      const base64Images = await convertFilesToBase64(selectedFiles);
+      let uploadedImageUrls: string[] = [];
 
-      // Matches backend Mongoose Schema structure
+      // 1. Attempt Multipart Upload to API endpoint
+      try {
+        const formData = new FormData();
+        selectedFiles.forEach((file) => formData.append('photos', file));
+
+        const uploadRes = await fetch(`${API_BASE_URL}/api/upload-images`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          if (uploadData.success && Array.isArray(uploadData.images)) {
+            uploadedImageUrls = uploadData.images;
+          }
+        }
+      } catch (uploadErr) {
+        console.warn('Image upload endpoint unavailable, falling back to base64 encoding.');
+      }
+
+      // 2. Fallback to base64 encoding if backend upload endpoint is offline
+      if (uploadedImageUrls.length === 0) {
+        uploadedImageUrls = await convertFilesToBase64(selectedFiles);
+      }
+
+      const avatarValue = hostPhoto || '';
+
+      // 3. Construct payload matching backend model structures
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
@@ -208,14 +226,20 @@ export default function ListPropertyPage() {
         pricePerNight: Number(price),
         bedrooms: Number(bedrooms),
         features: selectedAmenities,
-        images: base64Images,
+        images: uploadedImageUrls,
+        photos: uploadedImageUrls,
+        imageUrl: uploadedImageUrls[0] || '',
         lat: Number(lat),
         lng: Number(lng),
+        hostAvatar: avatarValue,
+        hostImage: avatarValue,
         host: {
           name: hostName.trim(),
           email: userEmail.trim(),
           phone: hostPhone.trim(),
-          avatar: hostPhoto || '',
+          avatar: avatarValue,
+          image: avatarValue,
+          photo: avatarValue,
         },
         status: 'pending'
       };
@@ -225,7 +249,7 @@ export default function ListPropertyPage() {
       localProps.push(newProperty);
       localStorage.setItem('userProperties', JSON.stringify(localProps));
 
-      // Post to backend
+      // Post listing to backend
       try {
         await fetch(`${API_BASE_URL}/api/homestays`, {
           method: 'POST',
