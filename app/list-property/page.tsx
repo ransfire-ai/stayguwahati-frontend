@@ -190,9 +190,9 @@ export default function ListPropertyPage() {
 
     try {
       let uploadedImageUrls: string[] = [];
-      let uploadedHostAvatarUrl: string = '';
+      let uploadedHostAvatarUrl = '';
 
-      // 1. Upload Host Profile Avatar first if a new file was explicitly selected
+      // 1. Upload Host Profile Avatar if a new file was explicitly selected
       if (hostPhotoFile) {
         const avatarFormData = new FormData();
         avatarFormData.append('photos', hostPhotoFile);
@@ -202,26 +202,33 @@ export default function ListPropertyPage() {
           body: avatarFormData,
         });
 
-        if (avatarRes.ok) {
-          const avatarData = await avatarRes.json();
-          const rawAvatarUrl = avatarData.images?.[0] || avatarData.urls?.[0] || '';
-          if (rawAvatarUrl) {
-            uploadedHostAvatarUrl = rawAvatarUrl.startsWith('/') ? `${API_BASE_URL}${rawAvatarUrl}` : rawAvatarUrl;
-          }
+        if (!avatarRes.ok) {
+          throw new Error(`Host profile photo upload failed with status ${avatarRes.status}.`);
         }
-      }
 
-      // 2. If no new file uploaded, check if there is an existing valid host photo URL
-      if (!uploadedHostAvatarUrl && hostPhoto && !hostPhoto.startsWith('blob:') && !hostPhoto.startsWith('data:')) {
+        const avatarData = await avatarRes.json();
+        const rawAvatarUrl = 
+          avatarData.images?.[0] || 
+          avatarData.urls?.[0] || 
+          avatarData.url || 
+          avatarData.image || 
+          avatarData.filePath || 
+          avatarData.file?.url || '';
+
+        if (!rawAvatarUrl) {
+          throw new Error('Host photo upload succeeded but returned no valid URL.');
+        }
+
+        uploadedHostAvatarUrl = rawAvatarUrl.startsWith('/') ? `${API_BASE_URL}${rawAvatarUrl}` : rawAvatarUrl;
+      } else if (hostPhoto && !hostPhoto.startsWith('blob:') && !hostPhoto.startsWith('data:')) {
+        // Use existing non-blob host photo URL if available
         uploadedHostAvatarUrl = hostPhoto;
-      }
-
-      // 3. Fallback to generated initials avatar only if no photo was uploaded or provided
-      if (!uploadedHostAvatarUrl) {
+      } else {
+        // Fallback to generated initials avatar only if no photo was uploaded or provided
         uploadedHostAvatarUrl = generatedDefaultAvatar;
       }
 
-      // 4. Upload Property Images to Backend Upload Endpoint
+      // 2. Upload Property Images to Backend Upload Endpoint
       const formData = new FormData();
       selectedFiles.forEach((file) => formData.append('photos', file));
 
@@ -253,7 +260,7 @@ export default function ListPropertyPage() {
       const parsedLat = Number(lat);
       const parsedLng = Number(lng);
 
-      // 5. Construct clean property object matching backend schema rules
+      // 3. Construct clean property object matching backend schema rules
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
@@ -272,7 +279,7 @@ export default function ListPropertyPage() {
         status: 'pending'
       };
 
-      // 6. LocalStorage Backup
+      // 4. LocalStorage Backup
       try {
         const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
         localProps.push(newProperty);
@@ -281,7 +288,7 @@ export default function ListPropertyPage() {
         console.warn('LocalStorage backup skipped:', storageError);
       }
 
-      // 7. Post Listing JSON to backend API
+      // 5. Post Listing JSON to backend API
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
 
       const response = await fetch(`${API_BASE_URL}/api/homestays`, {
