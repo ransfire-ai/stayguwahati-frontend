@@ -190,7 +190,6 @@ export default function ListPropertyPage() {
 
     try {
       let uploadedImageUrls: string[] = [];
-      // Keep existing URL if it's not a temporary blob (handles relative paths or Data URIs)
       let uploadedHostAvatarUrl: string = typeof hostPhoto === 'string' && !hostPhoto.startsWith('blob:') ? hostPhoto : '';
 
       // 1. Upload Property Images to Backend Upload Endpoint
@@ -236,36 +235,23 @@ export default function ListPropertyPage() {
       const parsedLat = Number(lat);
       const parsedLng = Number(lng);
 
-      // 3. Construct clean property object using hosted HTTP URLs
+      // 3. Construct clean property object precisely matching Homestay.js schema rules[cite: 8]
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
-        locality,
-        location: locality,
+        locality: locality,
         pricePerNight: parsedPrice,
-        price: parsedPrice,
-        bedrooms: Number(bedrooms) || 1,
-        features: selectedAmenities,
-        amenities: selectedAmenities,
-        images: uploadedImageUrls,
-        photos: uploadedImageUrls,
-        imageUrl: uploadedImageUrls[0] || '',
         lat: isNaN(parsedLat) ? 26.1445 : parsedLat,
         lng: isNaN(parsedLng) ? 91.7362 : parsedLng,
-        hostName: hostName.trim(),
-        hostPhone: hostPhone.trim(),
-        hostAvatar: uploadedHostAvatarUrl,
-        hostImage: uploadedHostAvatarUrl,
+        images: uploadedImageUrls,
+        features: selectedAmenities,
         host: {
           name: hostName.trim(),
           email: userEmail.trim() || 'user@example.com',
           phone: hostPhone.trim(),
-          avatar: uploadedHostAvatarUrl,
-          image: uploadedHostAvatarUrl,
-          photo: uploadedHostAvatarUrl,
+          avatar: uploadedHostAvatarUrl || undefined,
         },
-        status: 'pending',
-        isApproved: false,
+        status: 'pending'
       };
 
       // 4. LocalStorage Backup
