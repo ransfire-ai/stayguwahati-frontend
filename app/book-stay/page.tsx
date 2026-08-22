@@ -57,7 +57,17 @@ const DEFAULT_HOMESTAY: HomestayDetail = {
     'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1000',
   ],
   hostName: 'Moitreyee Devi',
-  hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+  hostAvatar: '',
+};
+
+// Helper function to resolve avatar with dynamic fallback generator
+const getSafeHostAvatar = (rawAvatar?: string, hostName?: string) => {
+  const clean = (rawAvatar || '').trim();
+  if (clean !== '') {
+    return resolveImageUrl(clean);
+  }
+  const formattedName = encodeURIComponent(hostName || 'Host');
+  return `https://ui-avatars.com/api/?name=${formattedName}&background=0d9488&color=fff&size=128`;
 };
 
 // Helper functions for dynamic dates
@@ -154,7 +164,7 @@ function BookStayContent() {
               item.host?.profilePic ||
               item.host?.hostAvatar ||
               item.host?.picture ||
-              DEFAULT_HOMESTAY.hostAvatar,
+              '',
           };
           setHomestay(mapped);
         } else {
@@ -189,6 +199,9 @@ function BookStayContent() {
       : activeHomestay.image;
 
   const primaryImage = resolveImageUrl(rawImg || DEFAULT_HOMESTAY.images![0]);
+  const fallbackAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    activeHomestay.hostName || 'Host'
+  )}&background=0d9488&color=fff&size=128`;
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 font-sans pb-28 sm:pb-12">
@@ -287,17 +300,15 @@ function BookStayContent() {
 
             {/* Host Section */}
             <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
-              <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
-                <Image
+              <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-teal-50 shrink-0">
+                <img
                   src={
                     avatarError
-                      ? DEFAULT_HOMESTAY.hostAvatar!
-                      : resolveImageUrl(activeHomestay.hostAvatar || DEFAULT_HOMESTAY.hostAvatar!)
+                      ? fallbackAvatarUrl
+                      : getSafeHostAvatar(activeHomestay.hostAvatar, activeHomestay.hostName)
                   }
                   alt={activeHomestay.hostName || 'Host'}
-                  fill
-                  sizes="48px"
-                  className="object-cover"
+                  className="w-full h-full object-cover"
                   onError={() => setAvatarError(true)}
                 />
               </div>
