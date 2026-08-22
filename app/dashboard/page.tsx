@@ -941,11 +941,29 @@ export default function DashboardPage() {
                             {p.location || p.city || p.address || 'Guwahati'}
                           </p>
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
-                          <span>
-                            Price: <strong>₹{p.price || 0} / night</strong>
-                          </span>
-                          <span className="text-teal-600 font-bold">Active</span>
+                        <div className="mt-4 pt-3 border-t border-gray-50">
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>
+                              Price: <strong>₹{p.price || 0} / night</strong>
+                            </span>
+                            <span className="text-teal-600 font-bold">Active</span>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            <Link
+                              href={`/edit-property?id=${p._id || p.id || ''}`}
+                              className="inline-flex items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-xs font-bold text-teal-700 transition hover:bg-teal-600 hover:text-white"
+                            >
+                              Edit Listing
+                            </Link>
+
+                            <Link
+                              href={`/book-stay?id=${p._id || p.id || ''}`}
+                              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-teal-600"
+                            >
+                              View Listing
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </div>
