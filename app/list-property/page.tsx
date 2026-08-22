@@ -115,22 +115,20 @@ export default function ListPropertyPage() {
       if (currentUser.name) setHostName(currentUser.name);
       if (currentUser.email) setUserEmail(currentUser.email);
       if (currentUser.avatar || currentUser.photo || currentUser.image) {
-        setHostPhoto(currentUser.avatar || currentUser.photo || currentUser.image);
+        const rawProfileAvatar = currentUser.avatar || currentUser.photo || currentUser.image;
+        setHostPhoto(rawProfileAvatar.startsWith('/') ? `${API_BASE_URL}${rawProfileAvatar}` : rawProfileAvatar);
       }
     } catch (e) {
       console.warn('Failed to parse user profile from localStorage:', e);
     }
-  }, []);
+  }, [API_BASE_URL]);
 
   // Cleanup Object URLs to prevent memory leaks
   useEffect(() => {
     return () => {
       previews.forEach((preview) => URL.revokeObjectURL(preview));
-      if (hostPhoto && hostPhoto.startsWith('blob:')) {
-        URL.revokeObjectURL(hostPhoto);
-      }
     };
-  }, [previews, hostPhoto]);
+  }, [previews]);
 
   const handleLangChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value as 'en' | 'as' | 'hi';
@@ -157,7 +155,6 @@ export default function ListPropertyPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
-    // Prevent wiping state if the user cancels the file dialog
     if (files.length === 0) return;
 
     setSelectedFiles(files);
@@ -190,7 +187,12 @@ export default function ListPropertyPage() {
 
     try {
       let uploadedImageUrls: string[] = [];
-      let uploadedHostAvatarUrl: string = typeof hostPhoto === 'string' && !hostPhoto.startsWith('blob:') ? hostPhoto : '';
+      let uploadedHostAvatarUrl: string = '';
+
+      // Handle existing host photo if it's already a valid HTTP URL
+      if (hostPhoto && !hostPhoto.startsWith('blob:') && !hostPhoto.startsWith('data:')) {
+        uploadedHostAvatarUrl = hostPhoto;
+      }
 
       // 1. Upload Property Images to Backend Upload Endpoint
       const formData = new FormData();
@@ -216,7 +218,12 @@ export default function ListPropertyPage() {
         throw new Error('Image upload succeeded but returned no valid URLs.');
       }
 
-      // 2. Upload Host Profile Avatar if new file was selected
+      // Ensure property image URLs are absolute
+      uploadedImageUrls = uploadedImageUrls.map((imgUrl) => 
+        imgUrl.startsWith('/') ? `${API_BASE_URL}${imgUrl}` : imgUrl
+      );
+
+      // 2. Upload Host Profile Avatar if a new file was selected
       if (hostPhotoFile) {
         const avatarFormData = new FormData();
         avatarFormData.append('photos', hostPhotoFile);
@@ -228,14 +235,17 @@ export default function ListPropertyPage() {
 
         if (avatarRes.ok) {
           const avatarData = await avatarRes.json();
-          uploadedHostAvatarUrl = avatarData.images?.[0] || avatarData.urls?.[0] || '';
+          const rawAvatarUrl = avatarData.images?.[0] || avatarData.urls?.[0] || '';
+          if (rawAvatarUrl) {
+            uploadedHostAvatarUrl = rawAvatarUrl.startsWith('/') ? `${API_BASE_URL}${rawAvatarUrl}` : rawAvatarUrl;
+          }
         }
       }
 
       const parsedLat = Number(lat);
       const parsedLng = Number(lng);
 
-      // 3. Construct clean property object precisely matching Homestay.js schema rules[cite: 8]
+      // 3. Construct clean property object matching backend schema rules[cite: 8]
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
