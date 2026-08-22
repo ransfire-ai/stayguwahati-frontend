@@ -109,11 +109,15 @@ export default function ListPropertyPage() {
     const savedLang = (localStorage.getItem('preferredLanguage') as 'en' | 'as' | 'hi') || 'en';
     setCurrentLang(savedLang);
 
-    const currentUser = JSON.parse(localStorage.getItem('userProfile') || '{}');
-    if (currentUser.name) setHostName(currentUser.name);
-    if (currentUser.email) setUserEmail(currentUser.email);
-    if (currentUser.avatar || currentUser.photo || currentUser.image) {
-      setHostPhoto(currentUser.avatar || currentUser.photo || currentUser.image);
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      if (currentUser.name) setHostName(currentUser.name);
+      if (currentUser.email) setUserEmail(currentUser.email);
+      if (currentUser.avatar || currentUser.photo || currentUser.image) {
+        setHostPhoto(currentUser.avatar || currentUser.photo || currentUser.image);
+      }
+    } catch (e) {
+      console.warn('Failed to parse user profile from localStorage:', e);
     }
   }, []);
 
@@ -160,7 +164,6 @@ export default function ListPropertyPage() {
       setImageError(null);
     }
 
-    // Instant synchronous preview generation
     const previewUrls = files.map((file) => URL.createObjectURL(file));
     setPreviews(previewUrls);
   };
@@ -218,7 +221,7 @@ export default function ListPropertyPage() {
 
       const avatarValue = hostPhoto || '';
 
-      // 3. Construct payload matching backend model structures
+      // 3. Construct main payload
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
@@ -244,12 +247,33 @@ export default function ListPropertyPage() {
         status: 'pending'
       };
 
-      // Save locally as fallback
-      const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
-      localProps.push(newProperty);
-      localStorage.setItem('userProperties', JSON.stringify(localProps));
+      // 4. Safely save to LocalStorage (strip heavy Base64 data to avoid QuotaExceededError)
+      try {
+        const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
+        
+        const safePropertyForStorage = {
+          ...newProperty,
+          // Strip out raw base64 data URIs before local storage caching
+          images: newProperty.images.map(img => img.startsWith('data:') ? '' : img),
+          photos: newProperty.photos.map(img => img.startsWith('data:') ? '' : img),
+          imageUrl: newProperty.imageUrl.startsWith('data:') ? '' : newProperty.imageUrl,
+          hostAvatar: avatarValue.startsWith('data:') ? '' : avatarValue,
+          hostImage: avatarValue.startsWith('data:') ? '' : avatarValue,
+          host: {
+            ...newProperty.host,
+            avatar: avatarValue.startsWith('data:') ? '' : avatarValue,
+            image: avatarValue.startsWith('data:') ? '' : avatarValue,
+            photo: avatarValue.startsWith('data:') ? '' : avatarValue,
+          }
+        };
 
-      // Post listing to backend
+        localProps.push(safePropertyForStorage);
+        localStorage.setItem('userProperties', JSON.stringify(localProps));
+      } catch (storageError) {
+        console.warn('LocalStorage quota exceeded or full. Skipping local backup:', storageError);
+      }
+
+      // 5. Post listing to backend API
       try {
         await fetch(`${API_BASE_URL}/api/homestays`, {
           method: 'POST',
@@ -257,7 +281,7 @@ export default function ListPropertyPage() {
           body: JSON.stringify(newProperty)
         });
       } catch (err) {
-        console.warn('Backend offline, saved to localStorage fallback.');
+        console.warn('Backend offline, continuing with UI response.');
       }
 
       alert(t.success);
