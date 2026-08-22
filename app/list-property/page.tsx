@@ -95,6 +95,7 @@ export default function ListPropertyPage() {
   const [hostPhone, setHostPhone] = useState('');
   const [userEmail, setUserEmail] = useState('user@example.com');
   const [hostPhoto, setHostPhoto] = useState<string | null>(null);
+  const [hostPhotoFile, setHostPhotoFile] = useState<File | null>(null);
 
   // Property Image Handling State
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -138,13 +139,8 @@ export default function ListPropertyPage() {
   const handleHostPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setHostPhoto(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+      setHostPhotoFile(file);
+      setHostPhoto(URL.createObjectURL(file));
     }
   };
 
@@ -168,19 +164,6 @@ export default function ListPropertyPage() {
     setPreviews(previewUrls);
   };
 
-  const convertFilesToBase64 = (files: File[]): Promise<string[]> => {
-    return Promise.all(
-      files.map((file) => {
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = (error) => reject(error);
-          reader.readAsDataURL(file);
-        });
-      })
-    );
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -199,39 +182,52 @@ export default function ListPropertyPage() {
 
     try {
       let uploadedImageUrls: string[] = [];
+      let uploadedHostAvatarUrl: string = typeof hostPhoto === 'string' && hostPhoto.startsWith('http') ? hostPhoto : '';
 
-      // 1. Attempt Multipart Upload to API endpoint
-      try {
-        const formData = new FormData();
-        selectedFiles.forEach((file) => formData.append('photos', file));
+      // 1. Upload Property Images to Backend Upload Endpoint
+      const formData = new FormData();
+      selectedFiles.forEach((file) => formData.append('photos', file));
 
-        const uploadRes = await fetch(`${API_BASE_URL}/api/upload-images`, {
+      const uploadRes = await fetch(`${API_BASE_URL}/api/upload-images`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error(`Property image upload failed with status ${uploadRes.status}. Please ensure image server is online.`);
+      }
+
+      const uploadData = await uploadRes.json();
+      if (uploadData.success && Array.isArray(uploadData.images)) {
+        uploadedImageUrls = uploadData.images;
+      } else if (Array.isArray(uploadData.urls)) {
+        uploadedImageUrls = uploadData.urls;
+      }
+
+      if (uploadedImageUrls.length === 0) {
+        throw new Error('Image upload succeeded but returned no valid URLs.');
+      }
+
+      // 2. Upload Host Profile Avatar if new file was selected
+      if (hostPhotoFile) {
+        const avatarFormData = new FormData();
+        avatarFormData.append('photos', hostPhotoFile);
+
+        const avatarRes = await fetch(`${API_BASE_URL}/api/upload-images`, {
           method: 'POST',
-          body: formData,
+          body: avatarFormData,
         });
 
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          if (uploadData.success && Array.isArray(uploadData.images)) {
-            uploadedImageUrls = uploadData.images;
-          } else if (Array.isArray(uploadData.urls)) {
-            uploadedImageUrls = uploadData.urls;
-          }
+        if (avatarRes.ok) {
+          const avatarData = await avatarRes.json();
+          uploadedHostAvatarUrl = avatarData.images?.[0] || avatarData.urls?.[0] || '';
         }
-      } catch (uploadErr) {
-        console.warn('Image upload endpoint unavailable, falling back to base64 encoding.');
       }
 
-      // 2. Fallback to base64 encoding if backend upload endpoint is offline
-      if (uploadedImageUrls.length === 0) {
-        uploadedImageUrls = await convertFilesToBase64(selectedFiles);
-      }
-
-      const avatarValue = hostPhoto || '';
       const parsedLat = Number(lat);
       const parsedLng = Number(lng);
 
-      // 3. Construct clean property object
+      // 3. Construct clean property object using hosted HTTP URLs
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
@@ -249,46 +245,30 @@ export default function ListPropertyPage() {
         lng: isNaN(parsedLng) ? 91.7362 : parsedLng,
         hostName: hostName.trim(),
         hostPhone: hostPhone.trim(),
-        hostAvatar: avatarValue,
-        hostImage: avatarValue,
+        hostAvatar: uploadedHostAvatarUrl,
+        hostImage: uploadedHostAvatarUrl,
         host: {
           name: hostName.trim(),
           email: userEmail.trim() || 'user@example.com',
           phone: hostPhone.trim(),
-          avatar: avatarValue,
-          image: avatarValue,
-          photo: avatarValue,
+          avatar: uploadedHostAvatarUrl,
+          image: uploadedHostAvatarUrl,
+          photo: uploadedHostAvatarUrl,
         },
         status: 'pending',
         isApproved: false,
       };
 
-      // 4. Safely save to LocalStorage (strip heavy Base64 data to avoid QuotaExceededError)
+      // 4. LocalStorage Backup
       try {
         const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
-        
-        const safePropertyForStorage = {
-          ...newProperty,
-          images: newProperty.images.map(img => img.startsWith('data:') ? '' : img),
-          photos: newProperty.photos.map(img => img.startsWith('data:') ? '' : img),
-          imageUrl: newProperty.imageUrl.startsWith('data:') ? '' : newProperty.imageUrl,
-          hostAvatar: avatarValue.startsWith('data:') ? '' : avatarValue,
-          hostImage: avatarValue.startsWith('data:') ? '' : avatarValue,
-          host: {
-            ...newProperty.host,
-            avatar: avatarValue.startsWith('data:') ? '' : avatarValue,
-            image: avatarValue.startsWith('data:') ? '' : avatarValue,
-            photo: avatarValue.startsWith('data:') ? '' : avatarValue,
-          }
-        };
-
-        localProps.push(safePropertyForStorage);
+        localProps.push(newProperty);
         localStorage.setItem('userProperties', JSON.stringify(localProps));
       } catch (storageError) {
-        console.warn('LocalStorage quota exceeded or full. Skipping local backup:', storageError);
+        console.warn('LocalStorage backup skipped:', storageError);
       }
 
-      // 5. Post listing to backend API with auth headers & explicit error parsing
+      // 5. Post Listing JSON to backend API
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
 
       const response = await fetch(`${API_BASE_URL}/api/homestays`, {
