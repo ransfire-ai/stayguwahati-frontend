@@ -122,6 +122,16 @@ export default function ListPropertyPage() {
     }
   }, []);
 
+  // Cleanup Object URLs to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview));
+      if (hostPhoto && hostPhoto.startsWith('blob:')) {
+        URL.revokeObjectURL(hostPhoto);
+      }
+    };
+  }, [previews, hostPhoto]);
+
   const handleLangChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value as 'en' | 'as' | 'hi';
     setCurrentLang(lang);
@@ -146,13 +156,11 @@ export default function ListPropertyPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setSelectedFiles(files);
+    
+    // Prevent wiping state if the user cancels the file dialog
+    if (files.length === 0) return;
 
-    if (files.length === 0) {
-      setPreviews([]);
-      setImageError(null);
-      return;
-    }
+    setSelectedFiles(files);
 
     if (files.length !== 4) {
       setImageError(`You must select exactly 4 images (currently selected: ${files.length}).`);
@@ -182,7 +190,8 @@ export default function ListPropertyPage() {
 
     try {
       let uploadedImageUrls: string[] = [];
-      let uploadedHostAvatarUrl: string = typeof hostPhoto === 'string' && hostPhoto.startsWith('http') ? hostPhoto : '';
+      // Keep existing URL if it's not a temporary blob (handles relative paths or Data URIs)
+      let uploadedHostAvatarUrl: string = typeof hostPhoto === 'string' && !hostPhoto.startsWith('blob:') ? hostPhoto : '';
 
       // 1. Upload Property Images to Backend Upload Endpoint
       const formData = new FormData();
@@ -327,6 +336,7 @@ export default function ListPropertyPage() {
               <option value="hi">हिंदी (Hindi)</option>
             </select>
             <button
+              type="button"
               onClick={() => router.push('/dashboard')}
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-1.5 rounded-xl text-xs transition"
             >
@@ -405,7 +415,7 @@ export default function ListPropertyPage() {
                 <p className="text-gray-400 text-xs">Select how many bedrooms are available for guests.</p>
               </div>
 
-              <div className="flex items-center gap-3 bg-white p-1.5 border border-gray-200 rounded-xl shadow-xs">
+              <div className="flex items-center gap-3 bg-white p-1.5 border border-gray-200 rounded-xl shadow-sm">
                 <button
                   type="button"
                   onClick={() => setBedrooms((prev) => Math.max(1, prev - 1))}
@@ -442,7 +452,7 @@ export default function ListPropertyPage() {
                       onClick={() => handleAmenityToggle(item.label)}
                       className={`flex items-center gap-2 p-3 rounded-xl border text-left transition font-medium cursor-pointer ${
                         isChecked
-                          ? 'border-teal-600 bg-teal-50/60 text-teal-900 shadow-xs'
+                          ? 'border-teal-600 bg-teal-50/60 text-teal-900 shadow-sm'
                           : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
                       }`}
                     >
@@ -494,7 +504,7 @@ export default function ListPropertyPage() {
               {previews.length > 0 && (
                 <div className="grid grid-cols-4 gap-2 mt-3">
                   {previews.map((src, idx) => (
-                    <div key={idx} className="relative h-16 rounded-xl overflow-hidden border border-gray-200 shadow-xs">
+                    <div key={idx} className="relative h-16 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
                       <img src={src} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
@@ -551,7 +561,7 @@ export default function ListPropertyPage() {
                 <div className="flex-1">
                   <label className="block text-gray-700 font-bold mb-0.5">{t.lHostPhoto}</label>
                   <p className="text-gray-400 text-[11px] mb-2">Upload a clear photo of yourself to display on your listing badge.</p>
-                  <label className="inline-block bg-white hover:bg-gray-100 text-teal-800 font-semibold px-3 py-1.5 rounded-xl border border-gray-200 text-xs cursor-pointer shadow-2xs transition">
+                  <label className="inline-block bg-white hover:bg-gray-100 text-teal-800 font-semibold px-3 py-1.5 rounded-xl border border-gray-200 text-xs cursor-pointer shadow-sm transition">
                     Choose Photo
                     <input
                       type="file"
