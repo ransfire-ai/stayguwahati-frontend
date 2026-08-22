@@ -106,6 +106,9 @@ export default function ListPropertyPage() {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
   const t = dictionary[currentLang] || dictionary.en;
 
+  // Dynamic fallback avatar using ui-avatars.com if no photo exists
+  const generatedDefaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName || 'Host')}&background=0d9488&color=fff&size=128`;
+
   useEffect(() => {
     const savedLang = (localStorage.getItem('preferredLanguage') as 'en' | 'as' | 'hi') || 'en';
     setCurrentLang(savedLang);
@@ -189,12 +192,36 @@ export default function ListPropertyPage() {
       let uploadedImageUrls: string[] = [];
       let uploadedHostAvatarUrl: string = '';
 
-      // Handle existing host photo if it's already a valid HTTP URL
-      if (hostPhoto && !hostPhoto.startsWith('blob:') && !hostPhoto.startsWith('data:')) {
+      // 1. Upload Host Profile Avatar first if a new file was explicitly selected
+      if (hostPhotoFile) {
+        const avatarFormData = new FormData();
+        avatarFormData.append('photos', hostPhotoFile);
+
+        const avatarRes = await fetch(`${API_BASE_URL}/api/upload-images`, {
+          method: 'POST',
+          body: avatarFormData,
+        });
+
+        if (avatarRes.ok) {
+          const avatarData = await avatarRes.json();
+          const rawAvatarUrl = avatarData.images?.[0] || avatarData.urls?.[0] || '';
+          if (rawAvatarUrl) {
+            uploadedHostAvatarUrl = rawAvatarUrl.startsWith('/') ? `${API_BASE_URL}${rawAvatarUrl}` : rawAvatarUrl;
+          }
+        }
+      }
+
+      // 2. If no new file uploaded, check if there is an existing valid host photo URL
+      if (!uploadedHostAvatarUrl && hostPhoto && !hostPhoto.startsWith('blob:') && !hostPhoto.startsWith('data:')) {
         uploadedHostAvatarUrl = hostPhoto;
       }
 
-      // 1. Upload Property Images to Backend Upload Endpoint
+      // 3. Fallback to generated initials avatar only if no photo was uploaded or provided
+      if (!uploadedHostAvatarUrl) {
+        uploadedHostAvatarUrl = generatedDefaultAvatar;
+      }
+
+      // 4. Upload Property Images to Backend Upload Endpoint
       const formData = new FormData();
       selectedFiles.forEach((file) => formData.append('photos', file));
 
@@ -223,29 +250,10 @@ export default function ListPropertyPage() {
         imgUrl.startsWith('/') ? `${API_BASE_URL}${imgUrl}` : imgUrl
       );
 
-      // 2. Upload Host Profile Avatar if a new file was selected
-      if (hostPhotoFile) {
-        const avatarFormData = new FormData();
-        avatarFormData.append('photos', hostPhotoFile);
-
-        const avatarRes = await fetch(`${API_BASE_URL}/api/upload-images`, {
-          method: 'POST',
-          body: avatarFormData,
-        });
-
-        if (avatarRes.ok) {
-          const avatarData = await avatarRes.json();
-          const rawAvatarUrl = avatarData.images?.[0] || avatarData.urls?.[0] || '';
-          if (rawAvatarUrl) {
-            uploadedHostAvatarUrl = rawAvatarUrl.startsWith('/') ? `${API_BASE_URL}${rawAvatarUrl}` : rawAvatarUrl;
-          }
-        }
-      }
-
       const parsedLat = Number(lat);
       const parsedLng = Number(lng);
 
-      // 3. Construct clean property object matching backend schema rules[cite: 8]
+      // 5. Construct clean property object matching backend schema rules
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
@@ -259,12 +267,12 @@ export default function ListPropertyPage() {
           name: hostName.trim(),
           email: userEmail.trim() || 'user@example.com',
           phone: hostPhone.trim(),
-          avatar: uploadedHostAvatarUrl || undefined,
+          avatar: uploadedHostAvatarUrl,
         },
         status: 'pending'
       };
 
-      // 4. LocalStorage Backup
+      // 6. LocalStorage Backup
       try {
         const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
         localProps.push(newProperty);
@@ -273,7 +281,7 @@ export default function ListPropertyPage() {
         console.warn('LocalStorage backup skipped:', storageError);
       }
 
-      // 5. Post Listing JSON to backend API
+      // 7. Post Listing JSON to backend API
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
 
       const response = await fetch(`${API_BASE_URL}/api/homestays`, {
@@ -547,16 +555,16 @@ export default function ListPropertyPage() {
               
               {/* Host Photo Upload UI */}
               <div className="mb-4 flex items-center gap-4 p-3 border border-gray-100 bg-slate-50/50 rounded-2xl">
-                <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200 shrink-0 border-2 border-white shadow-sm flex items-center justify-center text-gray-400">
-                  {hostPhoto ? (
-                    <img src={hostPhoto} alt="Host Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-2xl">👤</span>
-                  )}
+                <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200 shrink-0 border-2 border-white shadow-sm flex items-center justify-center">
+                  <img 
+                    src={hostPhoto || generatedDefaultAvatar} 
+                    alt="Host Avatar" 
+                    className="w-full h-full object-cover" 
+                  />
                 </div>
                 <div className="flex-1">
                   <label className="block text-gray-700 font-bold mb-0.5">{t.lHostPhoto}</label>
-                  <p className="text-gray-400 text-[11px] mb-2">Upload a clear photo of yourself to display on your listing badge.</p>
+                  <p className="text-gray-400 text-[11px] mb-2">Upload a photo, or we will automatically generate an initial avatar from your name.</p>
                   <label className="inline-block bg-white hover:bg-gray-100 text-teal-800 font-semibold px-3 py-1.5 rounded-xl border border-gray-200 text-xs cursor-pointer shadow-sm transition">
                     Choose Photo
                     <input
