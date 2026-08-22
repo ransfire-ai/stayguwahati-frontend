@@ -25,7 +25,7 @@ interface PropertyData {
   images: string[];
   features?: string[];
   amenities?: string[];
-  host?: PropertyHost;
+  host?: PropertyHost | string;
 }
 
 interface Review {
@@ -38,8 +38,24 @@ interface Review {
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
-const getHostAvatarUrl = (host?: PropertyHost) => {
+const getHostAvatarUrl = (host?: PropertyHost | string) => {
   if (!host) return null;
+
+  // Handle case where host is stored simply as a string name
+  if (typeof host === 'string') {
+    try {
+      const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      if (userProfile.name === host && (userProfile.avatar || userProfile.photo || userProfile.image)) {
+        const raw = userProfile.avatar || userProfile.photo || userProfile.image;
+        return raw.startsWith('http') ? raw : `${BACKEND_URL}${raw.startsWith('/') ? '' : '/'}${raw}`;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+    const formattedName = encodeURIComponent(host);
+    return `https://ui-avatars.com/api/?name=${formattedName}&background=0d9488&color=fff&size=128`;
+  }
+
   const rawPath = (
     host.avatar ||
     host.photo ||
@@ -49,8 +65,20 @@ const getHostAvatarUrl = (host?: PropertyHost) => {
     ''
   ).trim();
 
-  // If avatar URL is missing or empty, generate fallback initial avatar URL
+  // If avatar URL is missing, check userProfile in localStorage as a fallback
   if (!rawPath) {
+    try {
+      const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      if (userProfile.name && host.name && userProfile.name.toLowerCase() === host.name.toLowerCase()) {
+        const profileAvatar = userProfile.avatar || userProfile.photo || userProfile.image;
+        if (profileAvatar) {
+          return profileAvatar.startsWith('http') ? profileAvatar : `${BACKEND_URL}${profileAvatar.startsWith('/') ? '' : '/'}${profileAvatar}`;
+        }
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+
     const formattedName = encodeURIComponent(host.name || 'Host');
     return `https://ui-avatars.com/api/?name=${formattedName}&background=0d9488&color=fff&size=128`;
   }
@@ -179,10 +207,10 @@ function PropertyDetailsContent() {
           setReviews(data.data);
         }
       } catch (err) {
-  console.error('Error fetching reviews:', err);
-} finally {
-  setReviewsLoading(false);
-}
+        console.error('Error fetching reviews:', err);
+      } finally {
+        setReviewsLoading(false);
+      }
     }
 
     fetchReviews();
@@ -243,8 +271,9 @@ function PropertyDetailsContent() {
   const img3 = property.images[2] || selectedMainImage;
   const img4 = property.images[3] || selectedMainImage;
   
-  // Safe avatar URL generation with fallback
   const hostAvatarUrl = getHostAvatarUrl(property.host);
+  const hostName = typeof property.host === 'object' && property.host !== null ? property.host.name : (typeof property.host === 'string' ? property.host : 'Host');
+  const hostPhone = typeof property.host === 'object' && property.host !== null ? (property.host.phone || 'Verified Host') : 'Verified Host';
 
   return (
     <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8 flex-1">
@@ -405,7 +434,7 @@ function PropertyDetailsContent() {
           </div>
 
           {/* Host Details Box with Dynamic Fallback Handling */}
-          {property.host && property.host.name && (
+          {property.host && (
             <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
               <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
                 Hosted by
@@ -416,15 +445,14 @@ function PropertyDetailsContent() {
                     src={
                       hostAvatarUrl ||
                       `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        property.host.name
+                        hostName
                       )}&background=0d9488&color=fff&size=128`
                     }
-                    alt={property.host.name}
+                    alt={hostName}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      // Fallback dynamically to UI-Avatars if Cloudinary/remote image link breaks
                       const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        property.host?.name || 'Host'
+                        hostName || 'Host'
                       )}&background=0d9488&color=fff&size=128`;
                       if (e.currentTarget.src !== fallback) {
                         e.currentTarget.src = fallback;
@@ -434,10 +462,10 @@ function PropertyDetailsContent() {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm sm:text-base">
-                    {property.host.name}
+                    {hostName}
                   </h4>
                   <p className="text-xs text-slate-500 font-medium">
-                    {property.host.phone || 'Verified Host'}
+                    {hostPhone}
                   </p>
                 </div>
               </div>
