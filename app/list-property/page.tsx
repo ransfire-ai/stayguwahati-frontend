@@ -189,6 +189,12 @@ export default function ListPropertyPage() {
       return;
     }
 
+    const parsedPrice = Number(price);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      alert('Please enter a valid price per night.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -208,6 +214,8 @@ export default function ListPropertyPage() {
           const uploadData = await uploadRes.json();
           if (uploadData.success && Array.isArray(uploadData.images)) {
             uploadedImageUrls = uploadData.images;
+          } else if (Array.isArray(uploadData.urls)) {
+            uploadedImageUrls = uploadData.urls;
           }
         }
       } catch (uploadErr) {
@@ -220,30 +228,32 @@ export default function ListPropertyPage() {
       }
 
       const avatarValue = hostPhoto || '';
+      const parsedLat = Number(lat);
+      const parsedLng = Number(lng);
 
-      // 3. Construct unified property object with top-level and nested aliases
+      // 3. Construct clean property object
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
         locality,
         location: locality,
-        pricePerNight: Number(price),
-        price: Number(price),
-        bedrooms: Number(bedrooms),
+        pricePerNight: parsedPrice,
+        price: parsedPrice,
+        bedrooms: Number(bedrooms) || 1,
         features: selectedAmenities,
         amenities: selectedAmenities,
         images: uploadedImageUrls,
         photos: uploadedImageUrls,
         imageUrl: uploadedImageUrls[0] || '',
-        lat: Number(lat),
-        lng: Number(lng),
+        lat: isNaN(parsedLat) ? 26.1445 : parsedLat,
+        lng: isNaN(parsedLng) ? 91.7362 : parsedLng,
         hostName: hostName.trim(),
         hostPhone: hostPhone.trim(),
         hostAvatar: avatarValue,
         hostImage: avatarValue,
         host: {
           name: hostName.trim(),
-          email: userEmail.trim(),
+          email: userEmail.trim() || 'user@example.com',
           phone: hostPhone.trim(),
           avatar: avatarValue,
           image: avatarValue,
@@ -278,7 +288,7 @@ export default function ListPropertyPage() {
         console.warn('LocalStorage quota exceeded or full. Skipping local backup:', storageError);
       }
 
-      // 5. Post listing to backend API with response checking & auth headers
+      // 5. Post listing to backend API with auth headers & explicit error parsing
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
 
       const response = await fetch(`${API_BASE_URL}/api/homestays`, {
@@ -292,7 +302,15 @@ export default function ListPropertyPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Server responded with status ${response.status}`);
+        let detailMsg = errorData.message || errorData.error || `Server responded with status ${response.status}`;
+        
+        if (Array.isArray(errorData.errors)) {
+          detailMsg += `: ${errorData.errors.map((e: any) => e.message || e.msg || JSON.stringify(e)).join(', ')}`;
+        } else if (typeof errorData.errors === 'object' && errorData.errors !== null) {
+          detailMsg += `: ${JSON.stringify(errorData.errors)}`;
+        }
+        
+        throw new Error(detailMsg);
       }
 
       alert(t.success);
