@@ -82,6 +82,7 @@ function BookStayContent() {
   const [isLiked, setIsLiked] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
 
   // Dynamic booking selection states initialized to today and 2 days later
   const [checkIn, setCheckIn] = useState(searchParams.get('checkIn') || getTodayString());
@@ -103,6 +104,7 @@ function BookStayContent() {
   useEffect(() => {
     async function fetchHomestayData() {
       setLoading(true);
+      setAvatarError(false);
 
       try {
         let endpoint = id
@@ -142,7 +144,17 @@ function BookStayContent() {
               : item.image ? [item.image] : DEFAULT_HOMESTAY.images,
             image: item.image || (Array.isArray(item.images) ? item.images[0] : ''),
             hostName: item.hostName || item.host?.name || DEFAULT_HOMESTAY.hostName,
-            hostAvatar: item.hostAvatar || item.host?.avatar || DEFAULT_HOMESTAY.hostAvatar,
+            hostAvatar:
+              item.hostAvatar ||
+              item.hostPic ||
+              item.profilePic ||
+              item.hostPhoto ||
+              item.host?.avatar ||
+              item.host?.image ||
+              item.host?.profilePic ||
+              item.host?.hostAvatar ||
+              item.host?.picture ||
+              DEFAULT_HOMESTAY.hostAvatar,
           };
           setHomestay(mapped);
         } else {
@@ -277,11 +289,16 @@ function BookStayContent() {
             <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
               <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
                 <Image
-                  src={resolveImageUrl(activeHomestay.hostAvatar || DEFAULT_HOMESTAY.hostAvatar!)}
+                  src={
+                    avatarError
+                      ? DEFAULT_HOMESTAY.hostAvatar!
+                      : resolveImageUrl(activeHomestay.hostAvatar || DEFAULT_HOMESTAY.hostAvatar!)
+                  }
                   alt={activeHomestay.hostName || 'Host'}
                   fill
                   sizes="48px"
                   className="object-cover"
+                  onError={() => setAvatarError(true)}
                 />
               </div>
               <div>
