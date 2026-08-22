@@ -41,45 +41,39 @@ const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 const getHostAvatarUrl = (host?: PropertyHost | string) => {
   if (!host) return null;
 
-  // Handle case where host is stored simply as a string name
+  let name = 'Host';
+  let rawPath = '';
+
   if (typeof host === 'string') {
-    try {
-      const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-      if (userProfile.name === host && (userProfile.avatar || userProfile.photo || userProfile.image)) {
-        const raw = userProfile.avatar || userProfile.photo || userProfile.image;
-        return raw.startsWith('http') ? raw : `${BACKEND_URL}${raw.startsWith('/') ? '' : '/'}${raw}`;
-      }
-    } catch (e) {
-      console.warn(e);
-    }
-    const formattedName = encodeURIComponent(host);
-    return `https://ui-avatars.com/api/?name=${formattedName}&background=0d9488&color=fff&size=128`;
+    name = host;
+  } else {
+    name = host.name || 'Host';
+    rawPath = (
+      host.avatar ||
+      host.photo ||
+      host.image ||
+      host.profileImage ||
+      host.profilePicture ||
+      ''
+    ).trim();
   }
 
-  const rawPath = (
-    host.avatar ||
-    host.photo ||
-    host.image ||
-    host.profileImage ||
-    host.profilePicture ||
-    ''
-  ).trim();
-
-  // If avatar URL is missing, check userProfile in localStorage as a fallback
+  // Check localStorage fallback if backend didn't return an avatar path
   if (!rawPath) {
     try {
+      const localAvatar = localStorage.getItem('hostAvatar');
+      if (localAvatar) return localAvatar;
+
       const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-      if (userProfile.name && host.name && userProfile.name.toLowerCase() === host.name.toLowerCase()) {
-        const profileAvatar = userProfile.avatar || userProfile.photo || userProfile.image;
-        if (profileAvatar) {
-          return profileAvatar.startsWith('http') ? profileAvatar : `${BACKEND_URL}${profileAvatar.startsWith('/') ? '' : '/'}${profileAvatar}`;
-        }
+      const profileAvatar = userProfile.avatar || userProfile.photo || userProfile.image;
+      if (profileAvatar) {
+        return profileAvatar.startsWith('http') ? profileAvatar : `${BACKEND_URL}${profileAvatar.startsWith('/') ? '' : '/'}${profileAvatar}`;
       }
     } catch (e) {
       console.warn(e);
     }
 
-    const formattedName = encodeURIComponent(host.name || 'Host');
+    const formattedName = encodeURIComponent(name);
     return `https://ui-avatars.com/api/?name=${formattedName}&background=0d9488&color=fff&size=128`;
   }
 
@@ -163,6 +157,28 @@ function PropertyDetailsContent() {
           let cleanImg = decodeURIComponent(singleImg);
           if (cleanImg.startsWith('/uploads')) cleanImg = `${BACKEND_URL}${cleanImg}`;
           prop.images.push(cleanImg);
+        }
+      }
+
+      // Automatically attach local host avatar if backend host object is missing avatar
+      if (prop) {
+        if (typeof prop.host === 'string') {
+          prop.host = { name: prop.host };
+        }
+        if (prop.host && typeof prop.host === 'object') {
+          if (!prop.host.avatar) {
+            const localHostAvatar = localStorage.getItem('hostAvatar') || (() => {
+              try {
+                const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                return profile.avatar || profile.photo || profile.image || null;
+              } catch {
+                return null;
+              }
+            })();
+            if (localHostAvatar) {
+              prop.host.avatar = localHostAvatar;
+            }
+          }
         }
       }
 
