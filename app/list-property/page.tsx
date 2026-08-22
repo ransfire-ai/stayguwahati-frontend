@@ -11,12 +11,9 @@ const dictionary = {
     lDesc: 'DESCRIPTION',
     lLocality: 'LOCALITY (NEIGHBORHOOD)',
     lPrice: 'PRICE PER NIGHT (₹)',
-    lBedrooms: 'NUMBER OF BEDROOMS',
-    lAmenities: 'AMENITIES (WHAT THIS PLACE OFFERS)',
     lImages: 'PROPERTY IMAGES UPLOAD (EXACTLY 4)',
     lHostName: 'FULL NAME',
     lHostPhone: 'PHONE NUMBER',
-    lHostPhoto: 'HOST PROFILE PHOTO',
     btn: 'Publish Listing',
     success: 'Property listed successfully and sent for verification!',
     footer: '© 2026 StayGuwahati Platform Unified Core Engine. All rights reserved.'
@@ -28,12 +25,9 @@ const dictionary = {
     lDesc: 'বিৱৰণ',
     lLocality: 'এলাকা',
     lPrice: 'প্ৰতি ৰাতিৰ মূল্য (₹)',
-    lBedrooms: 'শোৱা কোঠা (Bedrooms)',
-    lAmenities: 'সুবিধাসমূহ (এই স্থানত কি কি পোৱা যায়)',
     lImages: 'সম্পত্তিৰ ছবি আপলোড কৰক (ঠিক ৪ খন)',
     lHostName: 'সম্পূৰ্ণ নাম',
     lHostPhone: 'ফোন নম্বৰ',
-    lHostPhoto: 'হোষ্টৰ প্ৰফাইল ফটো',
     btn: 'তালিকা প্ৰকাশ কৰক',
     success: 'সম্পত্তি সফলতাৰে তালিকাভুক্ত কৰা হৈছে!',
     footer: '© ২০২৬ ষ্টেগুৱাহাটী প্লেটফৰ্ম ইউনিফাইড কোৰ ইঞ্জিন। সৰ্বস্বত্ব সংৰক্ষিত।'
@@ -45,12 +39,9 @@ const dictionary = {
     lDesc: 'विवरण',
     lLocality: 'स्थान',
     lPrice: 'प्रति रात्रि मूल्य (₹)',
-    lBedrooms: 'बेडरूम की संख्या',
-    lAmenities: 'सुविधाएं (इस स्थान पर क्या उपलब्ध है)',
     lImages: 'संपत्ति छवि अपलोड (ठीक 4)',
     lHostName: 'पूरा नाम',
     lHostPhone: 'फोन नंबर',
-    lHostPhoto: 'होस्ट प्रोफाइल फ़ोटो',
     btn: 'लिस्टिंग प्रकाशित करें',
     success: 'संपत्ति सफलतापूर्वक सूचीबद्ध हो गई!',
     footer: '© 2026 स्टेगुवाहाटी प्लेटफॉर्म यूनिफाइड कोर इंजन। सर्वाधिकार सुरक्षित।'
@@ -58,22 +49,12 @@ const dictionary = {
 };
 
 const localities = [
-  'Amingaon', 'Azara', 'Bamunimaidam', 'Basistha', 'Beltola',
+  'Amingaon', 'Azara / Airport Area', 'Bamunimaidam', 'Basistha', 'Beltola',
   'Bhangagarh', 'Borjhar', 'Chandmari', 'Christian Basti', 'Dispur',
   'Ganeshguri', 'Geetanagar', 'GS Road', 'Jalukbari', 'Kahilipara',
-  'Kamakhya', 'Khanapara', 'Kharghuli', 'Lal Ganesh', 'Lokhra',
-  'Maligaon', 'Narengi', 'Paltan Bazar', 'Pan Bazar', 'Rehabari',
-  'Rukminigaon', 'Silpukhuri', 'Six Mile', 'Supermarket', 'Ulubari',
-  'Uzan Bazar', 'Zoo Road'
-];
-
-const standardAmenities = [
-  { id: 'wifi', label: 'Fast wifi', icon: '📶' },
-  { id: 'tv', label: 'HDTV with Netflix', icon: '📺' },
-  { id: 'parking', label: 'Free parking', icon: '🚗' },
-  { id: 'pets', label: 'Pets allowed', icon: '🐶' },
-  { id: 'ac', label: 'Air conditioning', icon: '❄️' },
-  { id: 'kitchen', label: 'Kitchen access', icon: '🍳' },
+  'Khanapara', 'Kharghuli', 'Lal Ganesh', 'Lokhra', 'Maligaon',
+  'Narengi', 'Paltan Bazar', 'Pan Bazar', 'Rehabari', 'Rukminigaon',
+  'Silpukhuri', 'Six Mile', 'Supermarket Area', 'Ulubari', 'Uzan Bazar', 'Zoo Road (R.G. Baruah Road)'
 ];
 
 export default function ListPropertyPage() {
@@ -85,19 +66,13 @@ export default function ListPropertyPage() {
   const [description, setDescription] = useState('');
   const [locality, setLocality] = useState('');
   const [price, setPrice] = useState('');
-  const [bedrooms, setBedrooms] = useState<number>(2);
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [lat, setLat] = useState('26.1445');
   const [lng, setLng] = useState('91.7362');
-  
-  // Host Contact State
   const [hostName, setHostName] = useState('');
   const [hostPhone, setHostPhone] = useState('');
   const [userEmail, setUserEmail] = useState('user@example.com');
-  const [hostPhoto, setHostPhoto] = useState<string | null>(null);
-  const [hostPhotoFile, setHostPhotoFile] = useState<File | null>(null);
 
-  // Property Image Handling State
+  // Image Handling State
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -110,38 +85,15 @@ export default function ListPropertyPage() {
     const savedLang = (localStorage.getItem('preferredLanguage') as 'en' | 'as' | 'hi') || 'en';
     setCurrentLang(savedLang);
 
-    try {
-      const currentUser = JSON.parse(localStorage.getItem('userProfile') || '{}');
-      if (currentUser.name) setHostName(currentUser.name);
-      if (currentUser.email) setUserEmail(currentUser.email);
-      if (currentUser.avatar || currentUser.photo || currentUser.image) {
-        setHostPhoto(currentUser.avatar || currentUser.photo || currentUser.image);
-      }
-    } catch (e) {
-      console.warn('Failed to parse user profile from localStorage:', e);
-    }
+    const currentUser = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    if (currentUser.name) setHostName(currentUser.name);
+    if (currentUser.email) setUserEmail(currentUser.email);
   }, []);
 
   const handleLangChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value as 'en' | 'as' | 'hi';
     setCurrentLang(lang);
     localStorage.setItem('preferredLanguage', lang);
-  };
-
-  const handleAmenityToggle = (label: string) => {
-    if (selectedAmenities.includes(label)) {
-      setSelectedAmenities(selectedAmenities.filter((item) => item !== label));
-    } else {
-      setSelectedAmenities([...selectedAmenities, label]);
-    }
-  };
-
-  const handleHostPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setHostPhotoFile(file);
-      setHostPhoto(URL.createObjectURL(file));
-    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,8 +112,32 @@ export default function ListPropertyPage() {
       setImageError(null);
     }
 
-    const previewUrls = files.map((file) => URL.createObjectURL(file));
-    setPreviews(previewUrls);
+    const previewUrls: string[] = [];
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          previewUrls.push(event.target.result as string);
+          if (previewUrls.length === files.length) {
+            setPreviews([...previewUrls]);
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const convertFilesToBase64 = (files: File[]): Promise<string[]> => {
+    return Promise.all(
+      files.map((file) => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = (error) => reject(error);
+          reader.readAsDataURL(file);
+        });
+      })
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,132 +148,46 @@ export default function ListPropertyPage() {
       return;
     }
 
-    const parsedPrice = Number(price);
-    if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      alert('Please enter a valid price per night.');
-      return;
-    }
-
     setSubmitting(true);
 
     try {
-      let uploadedImageUrls: string[] = [];
-      let uploadedHostAvatarUrl: string = typeof hostPhoto === 'string' && hostPhoto.startsWith('http') ? hostPhoto : '';
+      const base64Images = await convertFilesToBase64(selectedFiles);
 
-      // 1. Upload Property Images to Backend Upload Endpoint
-      const formData = new FormData();
-      selectedFiles.forEach((file) => formData.append('photos', file));
-
-      const uploadRes = await fetch(`${API_BASE_URL}/api/upload-images`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error(`Property image upload failed with status ${uploadRes.status}. Please ensure image server is online.`);
-      }
-
-      const uploadData = await uploadRes.json();
-      if (uploadData.success && Array.isArray(uploadData.images)) {
-        uploadedImageUrls = uploadData.images;
-      } else if (Array.isArray(uploadData.urls)) {
-        uploadedImageUrls = uploadData.urls;
-      }
-
-      if (uploadedImageUrls.length === 0) {
-        throw new Error('Image upload succeeded but returned no valid URLs.');
-      }
-
-      // 2. Upload Host Profile Avatar if new file was selected
-      if (hostPhotoFile) {
-        const avatarFormData = new FormData();
-        avatarFormData.append('photos', hostPhotoFile);
-
-        const avatarRes = await fetch(`${API_BASE_URL}/api/upload-images`, {
-          method: 'POST',
-          body: avatarFormData,
-        });
-
-        if (avatarRes.ok) {
-          const avatarData = await avatarRes.json();
-          uploadedHostAvatarUrl = avatarData.images?.[0] || avatarData.urls?.[0] || '';
-        }
-      }
-
-      const parsedLat = Number(lat);
-      const parsedLng = Number(lng);
-
-      // 3. Construct clean property object using hosted HTTP URLs
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
         locality,
-        location: locality,
-        pricePerNight: parsedPrice,
-        price: parsedPrice,
-        bedrooms: Number(bedrooms) || 1,
-        features: selectedAmenities,
-        amenities: selectedAmenities,
-        images: uploadedImageUrls,
-        photos: uploadedImageUrls,
-        imageUrl: uploadedImageUrls[0] || '',
-        lat: isNaN(parsedLat) ? 26.1445 : parsedLat,
-        lng: isNaN(parsedLng) ? 91.7362 : parsedLng,
-        hostName: hostName.trim(),
-        hostPhone: hostPhone.trim(),
-        hostAvatar: uploadedHostAvatarUrl,
-        hostImage: uploadedHostAvatarUrl,
-        host: {
-          name: hostName.trim(),
-          email: userEmail.trim() || 'user@example.com',
-          phone: hostPhone.trim(),
-          avatar: uploadedHostAvatarUrl,
-          image: uploadedHostAvatarUrl,
-          photo: uploadedHostAvatarUrl,
-        },
-        status: 'pending',
-        isApproved: false,
+        pricePerNight: Number(price),
+        images: base64Images,
+        lat: Number(lat),
+        lng: Number(lng),
+        owner: hostName.trim(),
+        phone: hostPhone.trim(),
+        email: userEmail,
+        status: 'Pending'
       };
 
-      // 4. LocalStorage Backup
+      // Save locally
+      const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
+      localProps.push(newProperty);
+      localStorage.setItem('userProperties', JSON.stringify(localProps));
+
+      // Post to backend
       try {
-        const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
-        localProps.push(newProperty);
-        localStorage.setItem('userProperties', JSON.stringify(localProps));
-      } catch (storageError) {
-        console.warn('LocalStorage backup skipped:', storageError);
-      }
-
-      // 5. Post Listing JSON to backend API
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-
-      const response = await fetch(`${API_BASE_URL}/api/homestays`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(newProperty)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        let detailMsg = errorData.message || errorData.error || `Server responded with status ${response.status}`;
-        
-        if (Array.isArray(errorData.errors)) {
-          detailMsg += `: ${errorData.errors.map((e: any) => e.message || e.msg || JSON.stringify(e)).join(', ')}`;
-        } else if (typeof errorData.errors === 'object' && errorData.errors !== null) {
-          detailMsg += `: ${JSON.stringify(errorData.errors)}`;
-        }
-        
-        throw new Error(detailMsg);
+        await fetch(`${API_BASE_URL}/api/homestays`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProperty)
+        });
+      } catch (err) {
+        console.warn('Backend offline, saved to localStorage fallback.');
       }
 
       alert(t.success);
       router.replace('/dashboard');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error submitting listing:', error);
-      alert(`Submission failed: ${error.message || 'Server error. Please check your network connection.'}`);
+      alert('An error occurred while uploading. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -398,68 +288,6 @@ export default function ListPropertyPage() {
               </div>
             </div>
 
-            {/* Bedroom Selector Block */}
-            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div>
-                <label className="block text-gray-700 font-bold text-sm">{t.lBedrooms}</label>
-                <p className="text-gray-400 text-xs">Select how many bedrooms are available for guests.</p>
-              </div>
-
-              <div className="flex items-center gap-3 bg-white p-1.5 border border-gray-200 rounded-xl shadow-xs">
-                <button
-                  type="button"
-                  onClick={() => setBedrooms((prev) => Math.max(1, prev - 1))}
-                  className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold flex items-center justify-center text-sm transition"
-                >
-                  −
-                </button>
-                <div className="text-center min-w-[3rem]">
-                  <span className="text-base font-extrabold text-gray-900">{bedrooms}</span>
-                  <p className="text-[10px] text-gray-400 uppercase font-semibold">Bedrooms</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBedrooms((prev) => Math.min(10, prev + 1))}
-                  className="w-8 h-8 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold flex items-center justify-center text-sm transition"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            {/* Amenities Selection */}
-            <div>
-              <label className="block text-gray-400 font-medium mb-2 uppercase tracking-wide">
-                {t.lAmenities}
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {standardAmenities.map((item) => {
-                  const isChecked = selectedAmenities.includes(item.label);
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleAmenityToggle(item.label)}
-                      className={`flex items-center gap-2 p-3 rounded-xl border text-left transition font-medium cursor-pointer ${
-                        isChecked
-                          ? 'border-teal-600 bg-teal-50/60 text-teal-900 shadow-xs'
-                          : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
-                      }`}
-                    >
-                      <span className="text-sm">{item.icon}</span>
-                      <span className="text-xs truncate">{item.label}</span>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        readOnly
-                        className="ml-auto text-teal-600 rounded focus:ring-teal-500 h-3.5 w-3.5"
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* Image Upload Area */}
             <div>
               <label className="block text-gray-400 font-medium mb-1 uppercase tracking-wide">
@@ -535,34 +363,8 @@ export default function ListPropertyPage() {
               </div>
             </div>
 
-            {/* Host Profile Section */}
             <div className="pt-4 border-t border-gray-100">
-              <p className="font-bold text-gray-900 mb-3">🛡️ Host Information</p>
-              
-              {/* Host Photo Upload UI */}
-              <div className="mb-4 flex items-center gap-4 p-3 border border-gray-100 bg-slate-50/50 rounded-2xl">
-                <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200 shrink-0 border-2 border-white shadow-sm flex items-center justify-center text-gray-400">
-                  {hostPhoto ? (
-                    <img src={hostPhoto} alt="Host Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-2xl">👤</span>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <label className="block text-gray-700 font-bold mb-0.5">{t.lHostPhoto}</label>
-                  <p className="text-gray-400 text-[11px] mb-2">Upload a clear photo of yourself to display on your listing badge.</p>
-                  <label className="inline-block bg-white hover:bg-gray-100 text-teal-800 font-semibold px-3 py-1.5 rounded-xl border border-gray-200 text-xs cursor-pointer shadow-2xs transition">
-                    Choose Photo
-                    <input
-                      type="file"
-                      accept="image/png, image/jpeg, image/webp"
-                      onChange={handleHostPhotoChange}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
-
+              <p className="font-bold text-gray-900 mb-3">🛡️ Host Contact Information</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 font-medium mb-1">{t.lHostName}</label>
@@ -591,7 +393,7 @@ export default function ListPropertyPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-teal-600 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition shadow-sm mt-4 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="w-full bg-teal-600 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition shadow-sm mt-4 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               ☁️ {submitting ? 'Processing...' : t.btn}
             </button>
