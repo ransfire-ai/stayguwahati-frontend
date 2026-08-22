@@ -179,10 +179,10 @@ function PropertyDetailsContent() {
           setReviews(data.data);
         }
       } catch (err) {
-        console.error('Error fetching reviews:', err);
-      } font-medium finally {
-        setReviewsLoading(false);
-      }
+  console.error('Error fetching reviews:', err);
+} finally {
+  setReviewsLoading(false);
+}
     }
 
     fetchReviews();
