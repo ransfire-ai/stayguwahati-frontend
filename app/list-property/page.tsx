@@ -221,19 +221,24 @@ export default function ListPropertyPage() {
 
       const avatarValue = hostPhoto || '';
 
-      // 3. Construct main payload
+      // 3. Construct unified property object with top-level and nested aliases
       const newProperty = {
         title: title.trim(),
         description: description.trim(),
         locality,
+        location: locality,
         pricePerNight: Number(price),
+        price: Number(price),
         bedrooms: Number(bedrooms),
         features: selectedAmenities,
+        amenities: selectedAmenities,
         images: uploadedImageUrls,
         photos: uploadedImageUrls,
         imageUrl: uploadedImageUrls[0] || '',
         lat: Number(lat),
         lng: Number(lng),
+        hostName: hostName.trim(),
+        hostPhone: hostPhone.trim(),
         hostAvatar: avatarValue,
         hostImage: avatarValue,
         host: {
@@ -244,7 +249,8 @@ export default function ListPropertyPage() {
           image: avatarValue,
           photo: avatarValue,
         },
-        status: 'pending'
+        status: 'pending',
+        isApproved: false,
       };
 
       // 4. Safely save to LocalStorage (strip heavy Base64 data to avoid QuotaExceededError)
@@ -253,7 +259,6 @@ export default function ListPropertyPage() {
         
         const safePropertyForStorage = {
           ...newProperty,
-          // Strip out raw base64 data URIs before local storage caching
           images: newProperty.images.map(img => img.startsWith('data:') ? '' : img),
           photos: newProperty.photos.map(img => img.startsWith('data:') ? '' : img),
           imageUrl: newProperty.imageUrl.startsWith('data:') ? '' : newProperty.imageUrl,
@@ -273,22 +278,28 @@ export default function ListPropertyPage() {
         console.warn('LocalStorage quota exceeded or full. Skipping local backup:', storageError);
       }
 
-      // 5. Post listing to backend API
-      try {
-        await fetch(`${API_BASE_URL}/api/homestays`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newProperty)
-        });
-      } catch (err) {
-        console.warn('Backend offline, continuing with UI response.');
+      // 5. Post listing to backend API with response checking & auth headers
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+
+      const response = await fetch(`${API_BASE_URL}/api/homestays`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(newProperty)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Server responded with status ${response.status}`);
       }
 
       alert(t.success);
       router.replace('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting listing:', error);
-      alert('An error occurred while uploading. Please try again.');
+      alert(`Submission failed: ${error.message || 'Server error. Please check your network connection.'}`);
     } finally {
       setSubmitting(false);
     }
@@ -582,7 +593,7 @@ export default function ListPropertyPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-teal-600 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition shadow-sm mt-4 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-teal-600 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition shadow-sm mt-4 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               ☁️ {submitting ? 'Processing...' : t.btn}
             </button>
