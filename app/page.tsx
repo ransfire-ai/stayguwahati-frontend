@@ -484,17 +484,19 @@ export default function HomePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/55 to-slate-950/90" />
 
-        <div className="relative mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 sm:py-20 lg:py-24">
+        <div className="relative mx-auto max-w-6xl px-4 py-20 text-center sm:px-6 sm:py-24 lg:py-28">
           <span className="inline-flex rounded-full border border-teal-300/30 bg-teal-400/15 px-3.5 py-1 text-[10px] font-bold uppercase tracking-widest text-teal-200 sm:text-xs">
             {t.hero_tag}
           </span>
 
-          <h1 className="mx-auto mt-5 max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
-            {t.hero_title}
+          <h1 className="mx-auto mt-6 max-w-5xl text-4xl font-black leading-[1.05] tracking-[-0.03em] text-white drop-shadow-2xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-[5.25rem]">
+            Find Your Perfect Stay
+            <span className="block text-teal-300">in Guwahati</span>
           </h1>
 
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base md:text-lg">
-            {t.hero_subtitle}
+          <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-6 text-slate-200 drop-shadow sm:text-base md:text-lg md:leading-7">
+            Discover handpicked homestays, apartments and unique stays across
+            Guwahati's best neighbourhoods.
           </p>
 
           <div className="mx-auto mt-8 max-w-5xl rounded-2xl bg-white p-2 text-left shadow-2xl shadow-black/25 sm:mt-10 sm:rounded-3xl sm:p-2.5">
