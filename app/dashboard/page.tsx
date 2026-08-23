@@ -26,6 +26,14 @@ import {
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
+// Authentication/session security
+// - Closing the browser/tab logs the user out because the auth token is stored
+//   only in sessionStorage by this dashboard.
+// - Inactivity timeout logs the user out automatically after 30 minutes.
+// - Activity includes mouse, keyboard, touch, scroll and pointer interaction.
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+const INACTIVITY_CHECK_INTERVAL_MS = 60 * 1000;
+
 interface UserProfile {
   name: string;
   email: string;
@@ -275,15 +283,18 @@ export default function DashboardPage() {
 
   const t = dictionary[currentLang] || dictionary.en;
 
-  // Mount/Auth Check (Blocking alert removed for smooth redirection)
+  // Mount/Auth Check + inactivity security.
+  // Authentication is intentionally session-only: a token in localStorage is
+  // not accepted here, so closing the browser ends the login session.
   useEffect(() => {
-    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
+
     if (!token) {
       router.replace('/login');
       return;
     }
 
-    const savedProfile = sessionStorage.getItem('userProfile') || localStorage.getItem('userProfile');
+    const savedProfile = sessionStorage.getItem('userProfile');
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile);
@@ -294,19 +305,105 @@ export default function DashboardPage() {
       }
     }
 
-    const savedRole = (sessionStorage.getItem('activeDashboardRole') as 'traveler' | 'host') || 'traveler';
+    const savedRole =
+      (sessionStorage.getItem('activeDashboardRole') as 'traveler' | 'host') ||
+      'traveler';
     setCurrentRole(savedRole);
 
-    const savedLang = (localStorage.getItem('preferredLanguage') as Language) || 'en';
+    const savedLang =
+      (localStorage.getItem('preferredLanguage') as Language) || 'en';
     setCurrentLang(savedLang);
+
+    // Keep the last activity timestamp in sessionStorage so refreshes do not
+    // accidentally reset the inactivity timer.
+    const ACTIVITY_KEY = 'stayguwahati_last_activity';
+
+    const getLastActivity = () => {
+      const value = Number(sessionStorage.getItem(ACTIVITY_KEY) || '0');
+      return Number.isFinite(value) && value > 0 ? value : Date.now();
+    };
+
+    const updateActivity = () => {
+      if (sessionStorage.getItem('token')) {
+        sessionStorage.setItem(ACTIVITY_KEY, String(Date.now()));
+      }
+    };
+
+    // Establish activity immediately on a newly authenticated dashboard.
+    if (!sessionStorage.getItem(ACTIVITY_KEY)) {
+      updateActivity();
+    }
+
+    const activityEvents: Array<keyof WindowEventMap> = [
+      'mousedown',
+      'mousemove',
+      'keydown',
+      'touchstart',
+      'scroll',
+      'click',
+      'pointerdown',
+    ];
+
+    // Throttle activity writes to avoid excessive sessionStorage operations.
+    let lastRecordedActivity = getLastActivity();
+
+    const handleActivity = () => {
+      const now = Date.now();
+
+      if (now - lastRecordedActivity >= 5000) {
+        lastRecordedActivity = now;
+        updateActivity();
+      }
+    };
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, handleActivity, { passive: true });
+    });
+
+    const inactivityTimer = window.setInterval(() => {
+      const tokenStillValid = sessionStorage.getItem('token');
+
+      if (!tokenStillValid) {
+        window.clearInterval(inactivityTimer);
+        router.replace('/login');
+        return;
+      }
+
+      if (Date.now() - getLastActivity() >= INACTIVITY_TIMEOUT_MS) {
+        // Clear authentication and user session data.
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('userProfile');
+        sessionStorage.removeItem('activeDashboardRole');
+        sessionStorage.removeItem(ACTIVITY_KEY);
+
+        // Remove any legacy persistent auth data so an old login cannot
+        // silently restore the session.
+        localStorage.removeItem('token');
+        localStorage.removeItem('userProfile');
+        localStorage.removeItem('activeDashboardRole');
+
+        window.clearInterval(inactivityTimer);
+        router.replace('/login');
+      }
+    }, INACTIVITY_CHECK_INTERVAL_MS);
+
+    return () => {
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, handleActivity);
+      });
+      window.clearInterval(inactivityTimer);
+    };
   }, [router]);
 
   // Unified Logout Handler
   const handleLogOut = () => {
     sessionStorage.clear();
+
+    // Remove legacy persistent authentication data as well.
     localStorage.removeItem('token');
     localStorage.removeItem('userProfile');
     localStorage.removeItem('activeDashboardRole');
+
     router.replace('/login');
   };
 
@@ -657,7 +754,7 @@ export default function DashboardPage() {
     setChatInputText('');
 
     try {
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await fetch(`${BACKEND_URL}/api/messages`, {
         method: 'POST',
         headers: {
@@ -1041,7 +1138,7 @@ export default function DashboardPage() {
                                   <>
                                     <button
                                       onClick={async () => {
-                                        const token = sessionStorage.getItem('token') || localStorage.getItem('token') || '';
+                                        const token = sessionStorage.getItem('token') || '';
                                         if (!window.confirm(`Accept booking for ${formattedName}?`)) return;
                                         const res = await fetch(`${BACKEND_URL}/api/bookings/${r._id || r.id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: 'Confirmed' }) });
                                         const data = await res.json();
@@ -1052,7 +1149,7 @@ export default function DashboardPage() {
                                     >✓ Accept</button>
                                     <button
                                       onClick={async () => {
-                                        const token = sessionStorage.getItem('token') || localStorage.getItem('token') || '';
+                                        const token = sessionStorage.getItem('token') || '';
                                         if (!window.confirm(`Reject booking for ${formattedName}?`)) return;
                                         const res = await fetch(`${BACKEND_URL}/api/bookings/${r._id || r.id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: 'Rejected' }) });
                                         const data = await res.json();
