@@ -84,6 +84,9 @@ interface Booking {
   image?: string;
   propertyImage?: string;
   images?: string[];
+  status?: string;
+  guests?: number;
+  specialRequests?: string;
 }
 
 interface ChatMessage {
@@ -881,17 +884,45 @@ export default function DashboardPage() {
                               ₹{r.totalPrice || r.payout || r.price || 0}
                             </td>
                             <td className="py-3.5">
-                              <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[10px] font-bold border border-emerald-100">
-                                {t.statusConf}
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${String(r.status || '').toLowerCase() === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : String(r.status || '').toLowerCase() === 'rejected' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                                {r.status || 'Requested'}
                               </span>
                             </td>
                             <td className="py-3.5 text-right">
-                              <button
-                                onClick={() => openMessageModal(formattedName, propName, guestPhone)}
-                                className="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5 ml-auto"
-                              >
-                                <MessageSquare className="w-3 h-3" /> {t.msgBtn}
-                              </button>
+                              <div className="flex flex-wrap justify-end gap-2">
+                                {String(r.status || 'Requested').toLowerCase() === 'requested' && (
+                                  <>
+                                    <button
+                                      onClick={async () => {
+                                        const token = sessionStorage.getItem('token') || localStorage.getItem('token') || '';
+                                        if (!window.confirm(`Accept booking for ${formattedName}?`)) return;
+                                        const res = await fetch(`${BACKEND_URL}/api/bookings/${r._id || r.id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: 'Confirmed' }) });
+                                        const data = await res.json();
+                                        if (!res.ok || !data.success) { window.alert(data.message || 'Unable to accept booking.'); return; }
+                                        await fetchHostReservations(hostProperties);
+                                      }}
+                                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-emerald-700"
+                                    >✓ Accept</button>
+                                    <button
+                                      onClick={async () => {
+                                        const token = sessionStorage.getItem('token') || localStorage.getItem('token') || '';
+                                        if (!window.confirm(`Reject booking for ${formattedName}?`)) return;
+                                        const res = await fetch(`${BACKEND_URL}/api/bookings/${r._id || r.id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: 'Rejected' }) });
+                                        const data = await res.json();
+                                        if (!res.ok || !data.success) { window.alert(data.message || 'Unable to reject booking.'); return; }
+                                        await fetchHostReservations(hostProperties);
+                                      }}
+                                      className="rounded-lg bg-red-50 px-3 py-1.5 text-[11px] font-black text-red-700 ring-1 ring-red-200 hover:bg-red-600 hover:text-white"
+                                    >✕ Reject</button>
+                                  </>
+                                )}
+                                <button
+                                  onClick={() => openMessageModal(formattedName, propName, guestPhone)}
+                                  className="bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5"
+                                >
+                                  <MessageSquare className="w-3 h-3" /> {t.msgBtn}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -941,29 +972,11 @@ export default function DashboardPage() {
                             {p.location || p.city || p.address || 'Guwahati'}
                           </p>
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-50">
-                          <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span>
-                              Price: <strong>₹{p.price || 0} / night</strong>
-                            </span>
-                            <span className="text-teal-600 font-bold">Active</span>
-                          </div>
-
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <Link
-                              href={`/edit-property?id=${p._id || p.id || ''}`}
-                              className="inline-flex items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-xs font-bold text-teal-700 transition hover:bg-teal-600 hover:text-white"
-                            >
-                              Edit Listing
-                            </Link>
-
-                            <Link
-                              href={`/book-stay?id=${p._id || p.id || ''}`}
-                              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-teal-600"
-                            >
-                              View Listing
-                            </Link>
-                          </div>
+                        <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
+                          <span>
+                            Price: <strong>₹{p.price || 0} / night</strong>
+                          </span>
+                          <span className="text-teal-600 font-bold">Active</span>
                         </div>
                       </div>
                     </div>
