@@ -13,7 +13,7 @@ const dictionary = {
     lPrice: 'PRICE PER NIGHT (₹)',
     lBedrooms: 'NUMBER OF BEDROOMS',
     lAmenities: 'AMENITIES (WHAT THIS PLACE OFFERS)',
-    lImages: 'PROPERTY IMAGES UPLOAD (EXACTLY 4)',
+    lImages: 'PROPERTY IMAGES (EXACTLY 4)',
     lHostName: 'FULL NAME',
     lHostPhone: 'PHONE NUMBER',
     lHostPhoto: 'HOST PROFILE PHOTO',
@@ -30,7 +30,7 @@ const dictionary = {
     lPrice: 'প্ৰতি ৰাতিৰ মূল্য (₹)',
     lBedrooms: 'শোৱা কোঠা (Bedrooms)',
     lAmenities: 'সুবিধাসমূহ (এই স্থানত কি কি পোৱা যায়)',
-    lImages: 'সম্পত্তিৰ ছবি আপলোড কৰক (ঠিক ৪ খন)',
+    lImages: 'সম্পত্তিৰ ছবি (ঠিক ৪ খন)',
     lHostName: 'সম্পূৰ্ণ নাম',
     lHostPhone: 'ফোন নম্বৰ',
     lHostPhoto: 'হোষ্টৰ প্ৰফাইল ফটো',
@@ -47,7 +47,7 @@ const dictionary = {
     lPrice: 'प्रति रात्रि मूल्य (₹)',
     lBedrooms: 'बेडरूम की संख्या',
     lAmenities: 'सुविधाएं (इस स्थान पर क्या उपलब्ध है)',
-    lImages: 'संपत्ति छवि अपलोड (ठीक 4)',
+    lImages: 'संपत्ति छवियां (ठीक 4)',
     lHostName: 'पूरा नाम',
     lHostPhone: 'फोन नंबर',
     lHostPhoto: 'होस्ट प्रोफाइल फ़ोटो',
@@ -87,8 +87,10 @@ export default function ListPropertyPage() {
   const [price, setPrice] = useState('');
   const [bedrooms, setBedrooms] = useState<number>(2);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [lat, setLat] = useState('26.1445');
-  const [lng, setLng] = useState('91.7362');
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationMessage, setLocationMessage] = useState('');
   
   // Host Contact State
   const [hostName, setHostName] = useState('');
@@ -150,26 +152,136 @@ export default function ListPropertyPage() {
   const handleHostPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (hostPhoto?.startsWith('blob:')) {
+        URL.revokeObjectURL(hostPhoto);
+      }
       setHostPhotoFile(file);
       setHostPhoto(URL.createObjectURL(file));
+      e.target.value = '';
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    
+  const addPropertyImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).filter((file) =>
+      file.type.startsWith('image/')
+    );
+
     if (files.length === 0) return;
 
-    setSelectedFiles(files);
+    const remainingSlots = 4 - selectedFiles.length;
 
-    if (files.length !== 4) {
-      setImageError(`You must select exactly 4 images (currently selected: ${files.length}).`);
+    if (remainingSlots <= 0) {
+      setImageError('You already have exactly 4 images. Remove one before adding another.');
+      e.target.value = '';
+      return;
+    }
+
+    const filesToAdd = files.slice(0, remainingSlots);
+    const newPreviewUrls = filesToAdd.map((file) => URL.createObjectURL(file));
+
+    setSelectedFiles((current) => [...current, ...filesToAdd]);
+    setPreviews((current) => [...current, ...newPreviewUrls]);
+
+    const total = selectedFiles.length + filesToAdd.length;
+
+    if (files.length > remainingSlots) {
+      setImageError('Only 4 property images are allowed. Extra images were not added.');
+    } else if (total < 4) {
+      const remaining = 4 - total;
+      setImageError(`Please add ${remaining} more image${remaining === 1 ? '' : 's'}.`);
     } else {
       setImageError(null);
     }
 
-    const previewUrls = files.map((file) => URL.createObjectURL(file));
-    setPreviews(previewUrls);
+    e.target.value = '';
+  };
+
+  const removePropertyImage = (index: number) => {
+    setSelectedFiles((current) => current.filter((_, i) => i !== index));
+
+    setPreviews((current) => {
+      const removed = current[index];
+      if (removed) URL.revokeObjectURL(removed);
+      return current.filter((_, i) => i !== index);
+    });
+
+    const remaining = 4 - (selectedFiles.length - 1);
+    setImageError(
+      `Please add ${remaining} more image${remaining === 1 ? '' : 's'}.`
+    );
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationMessage(
+        'Your browser does not support GPS location. Please enter the coordinates manually.'
+      );
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationMessage('Getting your high-accuracy GPS location…');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextLat = position.coords.latitude.toFixed(6);
+        const nextLng = position.coords.longitude.toFixed(6);
+
+        setLat(nextLat);
+        setLng(nextLng);
+        setLocationMessage(
+          position.coords.accuracy
+            ? `Location selected. Approximate GPS accuracy: ${Math.round(
+                position.coords.accuracy
+              )} metres.`
+            : 'Location selected from your device GPS.'
+        );
+        setLocationLoading(false);
+      },
+      (error) => {
+        let message =
+          'Could not get your location. Please enter latitude and longitude manually.';
+
+        if (error.code === error.PERMISSION_DENIED) {
+          message =
+            'Location permission was denied. Allow location access in your browser/phone settings and try again.';
+        } else if (error.code === error.TIMEOUT) {
+          message =
+            'GPS timed out. Move outdoors or near a window and try again.';
+        }
+
+        setLocationMessage(message);
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0,
+      }
+    );
+  };
+
+  const openLocationInMaps = () => {
+    const parsedLat = Number(lat);
+    const parsedLng = Number(lng);
+
+    if (
+      !Number.isFinite(parsedLat) ||
+      parsedLat < -90 ||
+      parsedLat > 90 ||
+      !Number.isFinite(parsedLng) ||
+      parsedLng < -180 ||
+      parsedLng > 180
+    ) {
+      alert('Please enter valid latitude and longitude first.');
+      return;
+    }
+
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${parsedLat},${parsedLng}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -177,6 +289,21 @@ export default function ListPropertyPage() {
 
     if (selectedFiles.length !== 4) {
       setImageError('You must select exactly 4 images.');
+      return;
+    }
+
+    const parsedLat = Number(lat);
+    const parsedLng = Number(lng);
+
+    if (
+      !Number.isFinite(parsedLat) ||
+      parsedLat < -90 ||
+      parsedLat > 90 ||
+      !Number.isFinite(parsedLng) ||
+      parsedLng < -180 ||
+      parsedLng > 180
+    ) {
+      alert('Please select or enter a valid property latitude and longitude.');
       return;
     }
 
@@ -256,9 +383,6 @@ export default function ListPropertyPage() {
       uploadedImageUrls = uploadedImageUrls.map((imgUrl) => 
         imgUrl.startsWith('/') ? `${API_BASE_URL}${imgUrl}` : imgUrl
       );
-
-      const parsedLat = Number(lat);
-      const parsedLng = Number(lng);
 
       // 3. Construct clean property object matching backend schema rules
       const newProperty = {
@@ -487,40 +611,88 @@ export default function ListPropertyPage() {
                 {t.lImages}
               </label>
 
-              <div className={`relative border-2 border-dashed rounded-2xl p-6 transition text-center group cursor-pointer ${
-                imageError ? 'border-rose-300 bg-rose-50/30' : 'border-teal-200 hover:border-teal-500 bg-teal-50/30 hover:bg-teal-50/60'
+              <div className={`rounded-2xl p-4 sm:p-5 transition ${
+                imageError
+                  ? 'border-2 border-rose-300 bg-rose-50/30'
+                  : 'border-2 border-dashed border-teal-200 bg-teal-50/30'
               }`}>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/png, image/jpeg, image/webp"
-                  onChange={handleImageChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="flex items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 cursor-pointer transition shadow-sm">
+                    🖼️ <span>Choose from phone</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={addPropertyImages}
+                      className="hidden"
+                    />
+                  </label>
 
-                <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-                  <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 text-xl">
-                    📷
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-800 text-sm">
-                      <span className="text-teal-600 underline decoration-teal-300 underline-offset-2">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-gray-400 text-xs mt-0.5">PNG, JPG or WEBP (Exactly 4 images required)</p>
-                  </div>
+                  <label className="flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-teal-50 text-teal-800 font-bold py-3 px-4 cursor-pointer transition border border-teal-200 shadow-sm">
+                    📷 <span>Take photo with camera</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={addPropertyImages}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
-              </div>
 
-              {/* Previews */}
-              {previews.length > 0 && (
-                <div className="grid grid-cols-4 gap-2 mt-3">
-                  {previews.map((src, idx) => (
-                    <div key={idx} className="relative h-16 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                      <img src={src} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                <p className="text-center text-gray-400 text-xs mt-3">
+                  Add exactly 4 property photos. On mobile, the camera button opens the rear camera.
+                  Take one photo and repeat until all 4 are added.
+                </p>
+
+                {previews.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                    {previews.map((src, idx) => (
+                      <div
+                        key={`${src}-${idx}`}
+                        className="relative h-28 sm:h-24 rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-white"
+                      >
+                        <img
+                          src={src}
+                          alt={`Property preview ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+
+                        {idx === 0 && (
+                          <span className="absolute left-1.5 top-1.5 bg-slate-900/80 text-white text-[9px] font-bold rounded-full px-2 py-1">
+                            COVER
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => removePropertyImage(idx)}
+                          className="absolute right-1.5 top-1.5 w-7 h-7 rounded-full bg-red-600 text-white font-bold shadow flex items-center justify-center"
+                          aria-label={`Remove property image ${idx + 1}`}
+                        >
+                          ×
+                        </button>
+
+                        <span className="absolute bottom-1.5 left-1.5 bg-white/90 text-gray-700 text-[9px] font-bold rounded px-1.5 py-0.5">
+                          {idx + 1}/4
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-4 text-center">
+                    <div className="w-14 h-14 mx-auto rounded-full bg-teal-100 flex items-center justify-center text-2xl">
+                      📷
                     </div>
-                  ))}
-                </div>
-              )}
+                    <p className="font-bold text-gray-800 text-sm mt-2">
+                      Add your 4 property photos
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Bedroom, living area, exterior and bathroom photos are recommended.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {imageError && (
                 <p className="text-rose-500 text-xs mt-1.5 font-semibold">
@@ -530,30 +702,90 @@ export default function ListPropertyPage() {
 
               {selectedFiles.length > 0 && !imageError && (
                 <p className="text-teal-600 text-xs mt-1.5 font-semibold">
-                  {selectedFiles.length} image(s) selected
+                  ✓ {selectedFiles.length}/4 image(s) selected
                 </p>
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-400 font-medium mb-1">LATITUDE COORDINATE</label>
-                <input
-                  type="text"
-                  value={lat}
-                  onChange={(e) => setLat(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900"
-                />
+            {/* Exact Property Location */}
+            <div className="p-4 sm:p-5 bg-slate-50 border border-slate-100 rounded-2xl">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-lg shrink-0">
+                  📍
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">EXACT PROPERTY LOCATION</p>
+                  <p className="text-gray-400 text-xs mt-0.5">
+                    Stand at the property and use your phone GPS to automatically select its coordinates.
+                  </p>
+                </div>
               </div>
-              <div>
-                <label className="block text-gray-400 font-medium mb-1">LONGITUDE COORDINATE</label>
-                <input
-                  type="text"
-                  value={lng}
-                  onChange={(e) => setLng(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900"
-                />
+
+              <button
+                type="button"
+                onClick={useCurrentLocation}
+                disabled={locationLoading}
+                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {locationLoading ? '⏳ Getting GPS location…' : '📍 Use my current location'}
+              </button>
+
+              {locationMessage && (
+                <div className="mt-3 rounded-xl bg-teal-50 border border-teal-100 px-3 py-2.5 text-xs font-semibold text-teal-800">
+                  {locationMessage}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block text-gray-400 font-medium mb-1">
+                    LATITUDE COORDINATE
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.000001"
+                    min="-90"
+                    max="90"
+                    required
+                    value={lat}
+                    onChange={(e) => setLat(e.target.value)}
+                    placeholder="e.g. 26.144500"
+                    className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-400 font-medium mb-1">
+                    LONGITUDE COORDINATE
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.000001"
+                    min="-180"
+                    max="180"
+                    required
+                    value={lng}
+                    onChange={(e) => setLng(e.target.value)}
+                    placeholder="e.g. 91.736200"
+                    className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900 bg-white"
+                  />
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={openLocationInMaps}
+                className="w-full mt-3 bg-white hover:bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-xl border border-gray-200 transition text-xs"
+              >
+                🗺️ Verify this location on Google Maps
+              </button>
+
+              <p className="text-gray-400 text-[11px] leading-5 mt-3">
+                GPS accuracy depends on the phone and surroundings. You can manually adjust the
+                coordinates before publishing if required.
+              </p>
             </div>
 
             {/* Host Profile Section */}
