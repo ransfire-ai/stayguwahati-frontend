@@ -43,8 +43,7 @@ const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
 // StayGuwahati support WhatsApp (updated 23 Aug 2026)
 const SUPPORT_EMAIL = 'support@stayguwahati.in';
-const SUPPORT_WHATSAPP =
-  process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\\D/g, '') || '';
+const SUPPORT_WHATSAPP = '8486699452';
 
 const getWhatsAppUrl = (phone: string, message: string) => {
   const digits = phone.replace(/\\D/g, '');
@@ -691,12 +690,6 @@ function PropertyDetailsContent() {
             🎧 Contact StayGuwahati
           </a>
         </div>
-
-        {!SUPPORT_WHATSAPP && (
-          <p className="mt-3 text-[11px] text-slate-400">
-            Configure NEXT_PUBLIC_SUPPORT_WHATSAPP to enable the direct WhatsApp button.
-          </p>
-        )}
       </section>
 
     </main>
