@@ -340,10 +340,19 @@ function PropertyDetailsContent() {
 
   const sleepingItems = (
     property.sleepingArrangements || property.bedroomsDetails || []
-  ).map((item, index) => ({
-    name: item.bedroom || item.name || `Bedroom ${index + 1}`,
-    bed: item.bedType || item.beds || 'Bed details not provided',
-  }));
+  ).map((item, index) => {
+    const entry = item as {
+      bedroom?: string;
+      name?: string;
+      bedType?: string;
+      beds?: string;
+    };
+
+    return {
+      name: entry.bedroom || entry.name || `Bedroom ${index + 1}`,
+      bed: entry.bedType || entry.beds || 'Bed details not provided',
+    };
+  });
 
   const totalImages = property.images.length;
   const img2 = property.images[1] || selectedMainImage;
