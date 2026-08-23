@@ -27,6 +27,19 @@ interface PropertyData {
   images: string[];
   features?: string[];
   amenities?: string[];
+  bedrooms?: number | string;
+  bathrooms?: {
+    privateAttached?: number | string;
+    attached?: number | string;
+    private?: number | string;
+    dedicated?: number | string;
+    shared?: number | string;
+    total?: number | string;
+    count?: number | string;
+  };
+  bathroomCount?: number | string;
+  bathroomsCount?: number | string;
+  numberOfBathrooms?: number | string;
   host?: PropertyHost | string;
   cancellationPolicy?: 'flexible' | 'moderate' | 'strict' | string;
 }
@@ -115,29 +128,39 @@ function PropertyDetailsContent() {
     async function loadProperty() {
       let prop: PropertyData | null = null;
 
-      // 1. Check Session Storage
-      const cachedProp = sessionStorage.getItem('selectedProperty');
-      if (cachedProp) {
+      // 1. ALWAYS fetch the latest property from the backend first.
+      // Do not let an older selectedProperty session copy hide newly saved
+      // fields such as bathrooms.
+      if (propertyId && propertyId !== 'default') {
         try {
-          const parsed = JSON.parse(cachedProp);
-          if (!propertyId || parsed.id === propertyId || parsed._id === propertyId) {
-            prop = parsed;
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
+          const response = await fetch(
+            `${BACKEND_URL}/api/homestays/${encodeURIComponent(propertyId)}`,
+            { cache: 'no-store' }
+          );
 
-      // 2. Fetch from Backend API if not found in session
-      if (!prop && propertyId && propertyId !== 'default') {
-        try {
-          const response = await fetch(`${BACKEND_URL}/api/homestays/${propertyId}`);
           if (response.ok) {
             const json = await response.json();
             prop = json.data || json;
+          } else {
+            console.warn(`Property API returned ${response.status}`);
           }
         } catch (err) {
-          console.warn('Could not fetch property from API, checking local stores...', err);
+          console.warn('Could not fetch latest property from API, checking local stores...', err);
+        }
+      }
+
+      // 2. SessionStorage is only a fallback when the API did not return data.
+      if (!prop) {
+        const cachedProp = sessionStorage.getItem('selectedProperty');
+        if (cachedProp) {
+          try {
+            const parsed = JSON.parse(cachedProp);
+            if (!propertyId || parsed.id === propertyId || parsed._id === propertyId) {
+              prop = parsed;
+            }
+          } catch (e) {
+            console.error('Invalid cached property:', e);
+          }
         }
       }
 
@@ -172,6 +195,50 @@ function PropertyDetailsContent() {
           if (cleanImg.startsWith('/uploads')) cleanImg = `${BACKEND_URL}${cleanImg}`;
           prop.images.push(cleanImg);
         }
+      }
+
+      // Normalize bathroom information from MongoDB and older listing formats.
+      // The current List Property form stores:
+      // bathrooms: { privateAttached, dedicated, shared, total }
+      if (prop) {
+        const rawBathrooms: any =
+          prop.bathrooms && typeof prop.bathrooms === 'object'
+            ? prop.bathrooms
+            : {};
+
+        const toCount = (value: unknown): number => {
+          const n = Number(value);
+          return Number.isFinite(n) && n >= 0 ? n : 0;
+        };
+
+        const privateAttached = toCount(
+          rawBathrooms.privateAttached ??
+          rawBathrooms.attached ??
+          rawBathrooms.private ??
+          0
+        );
+
+        const dedicated = toCount(rawBathrooms.dedicated ?? 0);
+        const shared = toCount(rawBathrooms.shared ?? 0);
+
+        const explicitTotal = toCount(
+          rawBathrooms.total ??
+          rawBathrooms.count ??
+          prop.bathroomCount ??
+          prop.bathroomsCount ??
+          prop.numberOfBathrooms ??
+          0
+        );
+
+        const calculatedTotal =
+          privateAttached + dedicated + shared;
+
+        prop.bathrooms = {
+          privateAttached,
+          dedicated,
+          shared,
+          total: explicitTotal > 0 ? explicitTotal : calculatedTotal,
+        };
       }
 
       // Automatically attach local host avatar if backend host object is missing avatar
@@ -303,6 +370,30 @@ function PropertyDetailsContent() {
   const priceFormatted = parseInt(
     String(property.pricePerNight || property.price || 1500)
   ).toLocaleString('en-IN');
+
+  const bedroomCount = Number(property.bedrooms ?? 0);
+  const privateAttachedBathrooms = Number(property.bathrooms?.privateAttached ?? 0);
+  const dedicatedBathrooms = Number(property.bathrooms?.dedicated ?? 0);
+  const sharedBathrooms = Number(property.bathrooms?.shared ?? 0);
+  const bathroomTotalFromTypes =
+    privateAttachedBathrooms + dedicatedBathrooms + sharedBathrooms;
+
+  const explicitBathroomTotal = Number(
+    property.bathrooms?.total ??
+    property.bathroomCount ??
+    property.bathroomsCount ??
+    property.numberOfBathrooms ??
+    0
+  );
+
+  const bathroomCount =
+    explicitBathroomTotal > 0
+      ? explicitBathroomTotal
+      : bathroomTotalFromTypes;
+
+  const bathroomCountLabel = Number.isInteger(bathroomCount)
+    ? String(bathroomCount)
+    : bathroomCount.toFixed(1).replace(/\.0$/, '');
 
   const totalImages = property.images.length;
   const img2 = property.images[1] || selectedMainImage;
@@ -520,6 +611,65 @@ function PropertyDetailsContent() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Property Details */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-5">
+              Property Details
+            </h2>
+
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 mb-6">
+              {bedroomCount > 0 && (
+                <span className="font-semibold">
+                  {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
+                </span>
+              )}
+
+              {bedroomCount > 0 && bathroomCount > 0 && (
+                <span>·</span>
+              )}
+
+              {bathroomCount > 0 && (
+                <span className="font-semibold">
+                  {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
+                </span>
+              )}
+            </div>
+
+            {bathroomCount > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Bathrooms
+                </h3>
+
+                <div className="flex flex-wrap gap-2">
+                  {privateAttachedBathrooms > 0 && (
+                    <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-2 rounded-xl border border-teal-100">
+                      🚿 {privateAttachedBathrooms} Private &amp; attached
+                    </span>
+                  )}
+
+                  {dedicatedBathrooms > 0 && (
+                    <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-2 rounded-xl border border-teal-100">
+                      🚿 {dedicatedBathrooms} Dedicated
+                    </span>
+                  )}
+
+                  {sharedBathrooms > 0 && (
+                    <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-2 rounded-xl border border-teal-100">
+                      🚿 {sharedBathrooms} Shared
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {bathroomCount === 0 && bedroomCount === 0 && (
+              <p className="text-sm text-slate-500">
+                Property details have not been provided yet.
+              </p>
+            )}
           </div>
 
           {/* Host Profile */}
