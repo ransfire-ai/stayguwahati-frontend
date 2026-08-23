@@ -27,6 +27,13 @@ interface PropertyData {
   images: string[];
   features?: string[];
   amenities?: string[];
+  bedrooms?: number | string;
+  bathrooms?: {
+    privateAttached?: number | string;
+    dedicated?: number | string;
+    shared?: number | string;
+    total?: number | string;
+  };
   host?: PropertyHost | string;
   cancellationPolicy?: 'flexible' | 'moderate' | 'strict' | string;
 }
@@ -296,6 +303,29 @@ function PropertyDetailsContent() {
     String(property.pricePerNight || property.price || 1500)
   ).toLocaleString('en-IN');
 
+  // Bedroom & bathroom summary shown to guests.
+  const bedroomCount = Number(property.bedrooms ?? 0);
+  const privateAttachedBathrooms = Number(property.bathrooms?.privateAttached ?? 0);
+  const dedicatedBathrooms = Number(property.bathrooms?.dedicated ?? 0);
+  const sharedBathrooms = Number(property.bathrooms?.shared ?? 0);
+  const bathroomTotalFromTypes =
+    privateAttachedBathrooms + dedicatedBathrooms + sharedBathrooms;
+  const bathroomCount = Number(
+    property.bathrooms?.total ?? bathroomTotalFromTypes
+  );
+
+  const bathroomCountLabel = Number.isInteger(bathroomCount)
+    ? String(bathroomCount)
+    : bathroomCount.toFixed(1).replace(/\\.0$/, '');
+
+  const bathroomTypeItems = [
+    privateAttachedBathrooms > 0
+      ? `${privateAttachedBathrooms} private & attached`
+      : null,
+    dedicatedBathrooms > 0 ? `${dedicatedBathrooms} dedicated` : null,
+    sharedBathrooms > 0 ? `${sharedBathrooms} shared` : null,
+  ].filter(Boolean) as string[];
+
   const totalImages = property.images.length;
   const img2 = property.images[1] || selectedMainImage;
   const img3 = property.images[2] || selectedMainImage;
@@ -355,6 +385,18 @@ function PropertyDetailsContent() {
           <p className="text-xs sm:text-sm text-slate-500 mt-2 flex items-center gap-2 font-medium">
             <span className="text-teal-600 animate-pulse">📍</span> {property.locality || 'Guwahati'}, Guwahati
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700">
+            {bedroomCount > 0 && (
+              <span className="rounded-full bg-white border border-slate-200 px-3 py-1.5 shadow-sm">
+                🛏️ {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
+              </span>
+            )}
+            {bathroomCount > 0 && (
+              <span className="rounded-full bg-white border border-slate-200 px-3 py-1.5 shadow-sm">
+                🚿 {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-600">
@@ -490,6 +532,62 @@ function PropertyDetailsContent() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Property Details / Bedroom & Bathroom Summary */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span className="text-teal-600">🏡</span> Property Details
+            </h2>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Bedrooms
+                </div>
+                <div className="mt-1 text-base sm:text-lg font-black text-slate-900">
+                  {bedroomCount > 0 ? bedroomCount : '—'}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Bathrooms
+                </div>
+                <div className="mt-1 text-base sm:text-lg font-black text-slate-900">
+                  {bathroomCount > 0 ? bathroomCountLabel : '—'}
+                </div>
+              </div>
+
+              <div className="col-span-2 sm:col-span-1 rounded-xl border border-teal-100 bg-teal-50/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-teal-700">
+                  Guest summary
+                </div>
+                <div className="mt-1 text-sm sm:text-base font-black text-slate-900">
+                  {bedroomCount > 0 || bathroomCount > 0
+                    ? `${bedroomCount || 0} bedrooms · ${bathroomCountLabel || 0} bathrooms`
+                    : 'Details not provided'}
+                </div>
+              </div>
+            </div>
+
+            {bathroomTypeItems.length > 0 && (
+              <div className="mt-5 border-t border-slate-100 pt-5">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Bathroom types
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {bathroomTypeItems.map((item) => (
+                    <span
+                      key={item}
+                      className="bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl border border-slate-200"
+                    >
+                      🚿 {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Host Profile */}
