@@ -171,6 +171,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [selectedFilterLocality, setSelectedFilterLocality] = useState<string | null>(null);
   const [searchLocality, setSearchLocality] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
   const t = translations[currentLang] || translations.en;
@@ -232,8 +233,21 @@ export default function HomePage() {
   };
 
   const handleSearch = () => {
-    const value = searchLocality.trim();
-    setSelectedFilterLocality(value || null);
+    const locality = searchLocality.trim();
+    setSelectedFilterLocality(locality || null);
+
+    setTimeout(() => {
+      document.getElementById('listings')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 0);
+  };
+
+  const handleLocalitySelect = (locality: string) => {
+    setSearchLocality(locality);
+    setSelectedFilterLocality(locality || null);
+
     setTimeout(() => {
       document.getElementById('listings')?.scrollIntoView({
         behavior: 'smooth',
@@ -247,9 +261,31 @@ export default function HomePage() {
     router.push(`/property-details?id=${propertyId}&title=${encodeURIComponent(stay.title)}`);
   };
 
-  const filteredProperties = selectedFilterLocality
-    ? properties.filter((p) => p.locality?.toLowerCase().includes(selectedFilterLocality.toLowerCase()))
-    : properties;
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const normalizedLocality = selectedFilterLocality?.trim().toLowerCase() || '';
+
+  const filteredProperties = properties.filter((p) => {
+    const title = (p.title || '').toLowerCase();
+    const locality = (p.locality || '').toLowerCase();
+    const description = (p.description || '').toLowerCase();
+    const features = Array.isArray(p.features)
+      ? p.features.join(' ').toLowerCase()
+      : '';
+
+    const matchesSearch =
+      !normalizedQuery ||
+      title.includes(normalizedQuery) ||
+      locality.includes(normalizedQuery) ||
+      description.includes(normalizedQuery) ||
+      features.includes(normalizedQuery);
+
+    const matchesLocality =
+      !normalizedLocality ||
+      locality === normalizedLocality ||
+      locality.includes(normalizedLocality);
+
+    return matchesSearch && matchesLocality;
+  });
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 font-sans flex flex-col justify-between">
@@ -446,33 +482,46 @@ export default function HomePage() {
             {t.hero_subtitle}
           </p>
 
-          <div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-white p-2 text-left shadow-2xl shadow-black/25 sm:mt-10 sm:rounded-3xl sm:p-2.5">
-            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-              <label className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3.5 ring-1 ring-slate-200">
+          <div className="mx-auto mt-8 max-w-5xl rounded-2xl bg-white p-2 text-left shadow-2xl shadow-black/25 sm:mt-10 sm:rounded-3xl sm:p-2.5">
+            <div className="grid gap-2 lg:grid-cols-[1.2fr_0.8fr_auto]">
+              <label className="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50 px-4 py-3.5 ring-1 ring-slate-200">
+                <span className="text-lg">🔎</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Search
+                  </span>
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSearch();
+                    }}
+                    placeholder="Property, locality or area"
+                    className="mt-1 w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-400"
+                  />
+                </span>
+              </label>
+
+              <label className="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50 px-4 py-3.5 ring-1 ring-slate-200">
                 <span className="text-lg">📍</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    Where do you want to stay?
+                    Locality
                   </span>
                   <select
                     value={searchLocality}
-                    onChange={(e) => setSearchLocality(e.target.value)}
+                    onChange={(e) => handleLocalitySelect(e.target.value)}
                     className="mt-1 w-full bg-transparent text-sm font-bold text-slate-900 outline-none"
                   >
                     <option value="">All Guwahati</option>
                     {[
-                      'Uzan Bazar',
-                      'Paltan Bazar',
-                      'Ganeshguri',
-                      'Dispur',
-                      'Beltola',
-                      'GS Road',
-                      'Chandmari',
-                      'Six Mile',
-                      'Zoo Road',
-                      'Khanapara',
-                      'Pan Bazar',
-                      'Maligaon',
+                      'Amingaon', 'Azara', 'Bamunimaidam', 'Basistha', 'Beltola',
+                      'Bhangagarh', 'Borjhar', 'Chandmari', 'Christian Basti', 'Dispur',
+                      'Ganeshguri', 'Geetanagar', 'GS Road', 'Jalukbari', 'Kahilipara',
+                      'Kamakhya', 'Khanapara', 'Kharghuli', 'Lal Ganesh', 'Lokhra',
+                      'Maligaon', 'Narengi', 'Paltan Bazar', 'Pan Bazar', 'Rehabari',
+                      'Rukminigaon', 'Silpukhuri', 'Six Mile', 'Supermarket', 'Ulubari',
+                      'Uzan Bazar', 'Zoo Road'
                     ].map((locality) => (
                       <option key={locality} value={locality}>
                         {locality}
@@ -484,10 +533,26 @@ export default function HomePage() {
 
               <button
                 onClick={handleSearch}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 sm:min-w-44"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 lg:min-w-36"
               >
-                🔎 {t.hero_btn}
+                🔎 Search
               </button>
+            </div>
+
+            <div className="mt-2 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden">
+              {['Dispur', 'Uzan Bazar', 'Beltola', 'GS Road', 'Ganeshguri', 'Paltan Bazar'].map((locality) => (
+                <button
+                  key={locality}
+                  onClick={() => handleLocalitySelect(locality)}
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
+                    selectedFilterLocality === locality
+                      ? 'border-teal-600 bg-teal-600 text-white'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-700'
+                  }`}
+                >
+                  {locality}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -519,7 +584,7 @@ export default function HomePage() {
               <h3 className="font-bold text-base sm:text-lg text-slate-900">{t.loc1_title}</h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.loc1_desc}</p>
               <button
-                onClick={() => setSelectedFilterLocality('Uzan Bazar')}
+                onClick={() => handleLocalitySelect('Uzan Bazar')}
                 className="inline-block text-xs sm:text-sm font-bold text-teal-600 mt-4 hover:text-teal-700"
               >
                 {t.explore_link}
@@ -539,7 +604,7 @@ export default function HomePage() {
               <h3 className="font-bold text-base sm:text-lg text-slate-900">{t.loc2_title}</h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.loc2_desc}</p>
               <button
-                onClick={() => setSelectedFilterLocality('Paltan Bazar')}
+                onClick={() => handleLocalitySelect('Paltan Bazar')}
                 className="inline-block text-xs sm:text-sm font-bold text-teal-600 mt-4 hover:text-teal-700"
               >
                 {t.explore_link}
@@ -559,7 +624,7 @@ export default function HomePage() {
               <h3 className="font-bold text-base sm:text-lg text-slate-900">{t.loc3_title}</h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.loc3_desc}</p>
               <button
-                onClick={() => setSelectedFilterLocality('Ganeshguri')}
+                onClick={() => handleLocalitySelect('Ganeshguri')}
                 className="inline-block text-xs sm:text-sm font-bold text-teal-600 mt-4 hover:text-teal-700"
               >
                 {t.explore_link}
@@ -576,18 +641,32 @@ export default function HomePage() {
             <h2 className="text-xl sm:text-2xl font-black text-slate-900">{t.sec2_title}</h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.sec2_subtitle}</p>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            {selectedFilterLocality && (
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            {(selectedFilterLocality || searchQuery.trim()) && (
               <button
                 onClick={() => {
                   setSelectedFilterLocality(null);
                   setSearchLocality('');
+                  setSearchQuery('');
                 }}
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:border-teal-300 hover:text-teal-700"
               >
-                Clear filter
+                Clear search
               </button>
             )}
+
+            {selectedFilterLocality && (
+              <span className="rounded-full bg-teal-600 px-3 py-2 text-xs font-bold text-white">
+                📍 {selectedFilterLocality}
+              </span>
+            )}
+
+            {searchQuery.trim() && (
+              <span className="max-w-48 truncate rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">
+                🔎 {searchQuery.trim()}
+              </span>
+            )}
+
             <div className="rounded-full border border-teal-100 bg-teal-50 px-3.5 py-1.5 text-xs font-semibold text-teal-700 sm:px-4 sm:py-2 sm:text-sm">
               <span>{t.showing_text}</span>{' '}
               <span className="font-bold">{filteredProperties.length}</span>{' '}
@@ -607,7 +686,11 @@ export default function HomePage() {
             <p className="font-semibold text-slate-700 text-sm">{t.no_properties}</p>
             <p className="text-slate-400 text-xs mt-1">{t.no_properties_sub}</p>
             <button
-              onClick={() => setSelectedFilterLocality(null)}
+              onClick={() => {
+                setSelectedFilterLocality(null);
+                setSearchLocality('');
+                setSearchQuery('');
+              }}
               className="inline-block mt-4 text-xs sm:text-sm font-bold text-teal-600 hover:underline"
             >
               {t.show_all}
