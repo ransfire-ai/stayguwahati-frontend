@@ -283,18 +283,47 @@ export default function DashboardPage() {
 
   const t = dictionary[currentLang] || dictionary.en;
 
-  // Mount/Auth Check + inactivity security.
-  // Authentication is intentionally session-only: a token in localStorage is
-  // not accepted here, so closing the browser ends the login session.
+  // Mount/Auth Check + strong session security.
+  //
+  // Security model:
+  // 1. Authentication is accepted from sessionStorage only.
+  // 2. A browser-session marker is created when the dashboard is opened.
+  // 3. A fresh browser/window instance must not silently restore an old login.
+  // 4. 30 minutes of inactivity logs the user out.
+  // 5. The timer survives refreshes because the last-activity timestamp is
+  //    kept in sessionStorage.
+  // 6. When the page becomes visible again, the session is checked immediately.
   useEffect(() => {
-    const token = sessionStorage.getItem('token');
+    const TOKEN_KEY = 'token';
+    const PROFILE_KEY = 'userProfile';
+    const ROLE_KEY = 'activeDashboardRole';
+    const LAST_ACTIVITY_KEY = 'stayguwahati_last_activity';
+    const SESSION_ID_KEY = 'stayguwahati_browser_session';
+    const SESSION_STARTED_KEY = 'stayguwahati_session_started';
+
+    const token = sessionStorage.getItem(TOKEN_KEY);
 
     if (!token) {
       router.replace('/login');
       return;
     }
 
-    const savedProfile = sessionStorage.getItem('userProfile');
+    // A session identifier exists only for this browser tab/session.
+    // Do not copy authentication from localStorage.
+    let sessionId = sessionStorage.getItem(SESSION_ID_KEY);
+
+    if (!sessionId) {
+      sessionId =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      sessionStorage.setItem(SESSION_ID_KEY, sessionId);
+      sessionStorage.setItem(SESSION_STARTED_KEY, String(Date.now()));
+    }
+
+    const savedProfile = sessionStorage.getItem(PROFILE_KEY);
+
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile);
@@ -306,91 +335,140 @@ export default function DashboardPage() {
     }
 
     const savedRole =
-      (sessionStorage.getItem('activeDashboardRole') as 'traveler' | 'host') ||
-      'traveler';
+      (sessionStorage.getItem(ROLE_KEY) as 'traveler' | 'host') || 'traveler';
     setCurrentRole(savedRole);
 
     const savedLang =
       (localStorage.getItem('preferredLanguage') as Language) || 'en';
     setCurrentLang(savedLang);
 
-    // Keep the last activity timestamp in sessionStorage so refreshes do not
-    // accidentally reset the inactivity timer.
-    const ACTIVITY_KEY = 'stayguwahati_last_activity';
+    const now = Date.now();
+    const existingLastActivity = Number(
+      sessionStorage.getItem(LAST_ACTIVITY_KEY) || '0'
+    );
+
+    if (
+      !Number.isFinite(existingLastActivity) ||
+      existingLastActivity <= 0
+    ) {
+      sessionStorage.setItem(LAST_ACTIVITY_KEY, String(now));
+    }
 
     const getLastActivity = () => {
-      const value = Number(sessionStorage.getItem(ACTIVITY_KEY) || '0');
+      const value = Number(
+        sessionStorage.getItem(LAST_ACTIVITY_KEY) || '0'
+      );
+
       return Number.isFinite(value) && value > 0 ? value : Date.now();
     };
 
-    const updateActivity = () => {
-      if (sessionStorage.getItem('token')) {
-        sessionStorage.setItem(ACTIVITY_KEY, String(Date.now()));
-      }
+    const forceLogout = () => {
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(PROFILE_KEY);
+      sessionStorage.removeItem(ROLE_KEY);
+      sessionStorage.removeItem(LAST_ACTIVITY_KEY);
+      sessionStorage.removeItem(SESSION_ID_KEY);
+      sessionStorage.removeItem(SESSION_STARTED_KEY);
+
+      // Remove any legacy persistent authentication values.
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(PROFILE_KEY);
+      localStorage.removeItem(ROLE_KEY);
+
+      router.replace('/login');
     };
 
-    // Establish activity immediately on a newly authenticated dashboard.
-    if (!sessionStorage.getItem(ACTIVITY_KEY)) {
-      updateActivity();
-    }
+    let lastRecordedActivity = getLastActivity();
+
+    const recordActivity = () => {
+      if (!sessionStorage.getItem(TOKEN_KEY)) {
+        forceLogout();
+        return;
+      }
+
+      const currentTime = Date.now();
+
+      // Throttle writes while still treating the user as active.
+      if (currentTime - lastRecordedActivity >= 5000) {
+        lastRecordedActivity = currentTime;
+        sessionStorage.setItem(
+          LAST_ACTIVITY_KEY,
+          String(currentTime)
+        );
+      }
+    };
 
     const activityEvents: Array<keyof WindowEventMap> = [
       'mousedown',
       'mousemove',
       'keydown',
       'touchstart',
+      'touchmove',
       'scroll',
       'click',
       'pointerdown',
+      'wheel',
     ];
 
-    // Throttle activity writes to avoid excessive sessionStorage operations.
-    let lastRecordedActivity = getLastActivity();
-
-    const handleActivity = () => {
-      const now = Date.now();
-
-      if (now - lastRecordedActivity >= 5000) {
-        lastRecordedActivity = now;
-        updateActivity();
-      }
-    };
-
     activityEvents.forEach((eventName) => {
-      window.addEventListener(eventName, handleActivity, { passive: true });
+      window.addEventListener(eventName, recordActivity, {
+        passive: true,
+      });
     });
 
-    const inactivityTimer = window.setInterval(() => {
-      const tokenStillValid = sessionStorage.getItem('token');
+    // Detect tab/window lifecycle changes. If the page is restored after
+    // being hidden for longer than the timeout, the session is terminated.
+    const checkSession = () => {
+      const currentToken = sessionStorage.getItem(TOKEN_KEY);
 
-      if (!tokenStillValid) {
-        window.clearInterval(inactivityTimer);
-        router.replace('/login');
+      if (!currentToken) {
+        forceLogout();
         return;
       }
 
       if (Date.now() - getLastActivity() >= INACTIVITY_TIMEOUT_MS) {
-        // Clear authentication and user session data.
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('userProfile');
-        sessionStorage.removeItem('activeDashboardRole');
-        sessionStorage.removeItem(ACTIVITY_KEY);
-
-        // Remove any legacy persistent auth data so an old login cannot
-        // silently restore the session.
-        localStorage.removeItem('token');
-        localStorage.removeItem('userProfile');
-        localStorage.removeItem('activeDashboardRole');
-
-        window.clearInterval(inactivityTimer);
-        router.replace('/login');
+        forceLogout();
       }
-    }, INACTIVITY_CHECK_INTERVAL_MS);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkSession();
+      }
+    };
+
+    const handlePageShow = () => {
+      checkSession();
+    };
+
+    const handleFocus = () => {
+      checkSession();
+    };
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange
+    );
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('focus', handleFocus);
+
+    const inactivityTimer = window.setInterval(
+      checkSession,
+      INACTIVITY_CHECK_INTERVAL_MS
+    );
 
     return () => {
       activityEvents.forEach((eventName) => {
-        window.removeEventListener(eventName, handleActivity);
+        window.removeEventListener(eventName, recordActivity);
       });
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange
+      );
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('focus', handleFocus);
+
       window.clearInterval(inactivityTimer);
     };
   }, [router]);
@@ -398,6 +476,14 @@ export default function DashboardPage() {
   // Unified Logout Handler
   const handleLogOut = () => {
     sessionStorage.clear();
+
+    // Remove legacy persistent authentication data as well.
+    localStorage.removeItem('token');
+    localStorage.removeItem('userProfile');
+    localStorage.removeItem('activeDashboardRole');
+
+    router.replace('/login');
+  };
 
     // Remove legacy persistent authentication data as well.
     localStorage.removeItem('token');
