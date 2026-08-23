@@ -278,8 +278,11 @@ function PropertyDetailsContent() {
       locality: property.locality || 'Guwahati',
       image: mainImage,
     };
-    sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-    router.push('/book-stay');
+    const params = new URLSearchParams({
+      id: bookingData.id,
+    });
+
+    router.push(`/book-stay?${params.toString()}`);
   };
 
   if (!property) {
