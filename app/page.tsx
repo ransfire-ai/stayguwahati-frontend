@@ -14,6 +14,7 @@ interface Property {
   rating?: number;
   reviewsCount?: number;
   tags?: string[];
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 const translations = {
@@ -129,6 +130,7 @@ export default function HomePage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFilterLocality, setSelectedFilterLocality] = useState<string | null>(null);
+  const [searchLocality, setSearchLocality] = useState('');
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
   const t = translations[currentLang] || translations.en;
@@ -151,6 +153,7 @@ export default function HomePage() {
       const loc = urlParams.get('location');
       if (loc) {
         setSelectedFilterLocality(loc);
+        setSearchLocality(loc);
       }
     }
 
@@ -186,6 +189,17 @@ export default function HomePage() {
       e.preventDefault();
       router.push('/login?redirect=/list-property');
     }
+  };
+
+  const handleSearch = () => {
+    const value = searchLocality.trim();
+    setSelectedFilterLocality(value || null);
+    setTimeout(() => {
+      document.getElementById('listings')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 0);
   };
 
   const handleReserveSpace = (stay: Property) => {
@@ -368,30 +382,80 @@ export default function HomePage() {
         )}
       </nav>
 
-      {/* Hero Header */}
-      <header className="relative bg-slate-900 text-white py-16 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden">
+      {/* Hero / Search */}
+      <header className="relative overflow-hidden bg-slate-950 text-white">
         <div
-          className="absolute inset-0 opacity-40 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200')" }}
-        ></div>
-        <div className="relative max-w-4xl mx-auto text-center">
-          <span className="bg-teal-500/25 text-teal-300 font-bold text-[10px] sm:text-xs uppercase tracking-widest px-3.5 py-1 rounded-full border border-teal-500/30">
+          className="absolute inset-0 bg-cover bg-center opacity-35"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80')",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/55 to-slate-950/90" />
+
+        <div className="relative mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 sm:py-20 lg:py-24">
+          <span className="inline-flex rounded-full border border-teal-300/30 bg-teal-400/15 px-3.5 py-1 text-[10px] font-bold uppercase tracking-widest text-teal-200 sm:text-xs">
             {t.hero_tag}
           </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mt-4 mb-4 sm:mb-6 leading-tight">
+
+          <h1 className="mx-auto mt-5 max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
             {t.hero_title}
           </h1>
-          <p className="text-sm sm:text-base md:text-lg text-slate-300 max-w-2xl mx-auto mb-6 sm:mb-8">
+
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base md:text-lg">
             {t.hero_subtitle}
           </p>
 
-          <button
-            onClick={() => router.push('/explore')}
-            className="inline-flex items-center justify-center bg-teal-500 text-slate-950 font-bold px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl text-base sm:text-lg hover:bg-teal-400 transition transform hover:-translate-y-0.5 shadow-lg shadow-teal-500/20 group"
-          >
-            <span>{t.hero_btn}</span>
-            <span className="ml-3 transition group-hover:translate-x-1">→</span>
-          </button>
+          <div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-white p-2 text-left shadow-2xl shadow-black/25 sm:mt-10 sm:rounded-3xl sm:p-2.5">
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <label className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3.5 ring-1 ring-slate-200">
+                <span className="text-lg">📍</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Where do you want to stay?
+                  </span>
+                  <select
+                    value={searchLocality}
+                    onChange={(e) => setSearchLocality(e.target.value)}
+                    className="mt-1 w-full bg-transparent text-sm font-bold text-slate-900 outline-none"
+                  >
+                    <option value="">All Guwahati</option>
+                    {[
+                      'Uzan Bazar',
+                      'Paltan Bazar',
+                      'Ganeshguri',
+                      'Dispur',
+                      'Beltola',
+                      'GS Road',
+                      'Chandmari',
+                      'Six Mile',
+                      'Zoo Road',
+                      'Khanapara',
+                      'Pan Bazar',
+                      'Maligaon',
+                    ].map((locality) => (
+                      <option key={locality} value={locality}>
+                        {locality}
+                      </option>
+                    ))}
+                  </select>
+                </span>
+              </label>
+
+              <button
+                onClick={handleSearch}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 sm:min-w-44"
+              >
+                🔎 {t.hero_btn}
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-slate-300">
+            <span>✓ Local properties</span>
+            <span>✓ Clear pricing</span>
+            <span>✓ Direct host information</span>
+          </div>
         </div>
       </header>
 
@@ -466,15 +530,29 @@ export default function HomePage() {
       </section>
 
       {/* Verified Local Homestays Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24 pt-6">
+      <section id="listings" className="max-w-7xl mx-auto scroll-mt-24 px-4 sm:px-6 pb-20 sm:pb-24 pt-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10 border-b border-slate-200 pb-5">
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900">{t.sec2_title}</h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.sec2_subtitle}</p>
           </div>
-          <div className="bg-teal-50 text-teal-700 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border border-teal-100 self-start sm:self-auto">
-            <span>{t.showing_text}</span> <span className="font-bold">{filteredProperties.length}</span>{' '}
-            <span>{t.active_options_text}</span>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {selectedFilterLocality && (
+              <button
+                onClick={() => {
+                  setSelectedFilterLocality(null);
+                  setSearchLocality('');
+                }}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:border-teal-300 hover:text-teal-700"
+              >
+                Clear filter
+              </button>
+            )}
+            <div className="rounded-full border border-teal-100 bg-teal-50 px-3.5 py-1.5 text-xs font-semibold text-teal-700 sm:px-4 sm:py-2 sm:text-sm">
+              <span>{t.showing_text}</span>{' '}
+              <span className="font-bold">{filteredProperties.length}</span>{' '}
+              <span>{t.active_options_text}</span>
+            </div>
           </div>
         </div>
 
@@ -499,9 +577,9 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {filteredProperties.map((stay, idx) => {
               const img = stay.images && stay.images.length > 0 ? resolveImageUrl(stay.images[0]) : resolveImageUrl();
-              const rating = stay.rating || (4.3 + (idx % 5) * 0.1).toFixed(1);
-              const reviews = stay.reviewsCount || 15 + idx * 7;
-              const tags = stay.tags || ['Premium Linens', 'Wi-Fi', 'Great Location'];
+              const rating = stay.rating;
+              const reviews = stay.reviewsCount || 0;
+              const tags = Array.isArray(stay.tags) ? stay.tags : [];
               const propertyId = stay._id || stay.id || `prop-${idx}`;
 
               return (
@@ -518,9 +596,21 @@ export default function HomePage() {
                       alt={stay.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                     />
-                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-gray-900 shadow-sm flex items-center gap-1">
-                      <span className="text-amber-500">★</span> {rating} ({reviews})
+                    <div className="absolute top-3 left-3 rounded-full bg-teal-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">
+                      ✓ Verified Stay
                     </div>
+
+                    {typeof rating === 'number' && (
+                      <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm backdrop-blur-sm">
+                        <span className="text-amber-500">★</span>
+                        {rating.toFixed(1)}
+                        {reviews > 0 && (
+                          <span className="font-medium text-slate-500">
+                            ({reviews})
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
@@ -534,22 +624,24 @@ export default function HomePage() {
                       >
                         {stay.title}
                       </h3>
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        {tags.map((tag, tIdx) => (
-                          <span
-                            key={tIdx}
-                            className="bg-slate-100 text-slate-600 text-[10px] sm:text-xs px-2.5 py-1 rounded-md font-medium"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+                      {tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                          {tags.slice(0, 3).map((tag, tIdx) => (
+                            <span
+                              key={tIdx}
+                              className="rounded-md bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-600 sm:text-xs"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-5 sm:mt-6 pt-3.5 sm:pt-4 border-t border-slate-100 flex items-center justify-between">
                       <div>
                         <span className="text-lg sm:text-xl font-extrabold text-slate-900">₹{stay.pricePerNight}</span>
-                        <span className="text-[10px] sm:text-xs text-slate-400 block -mt-0.5">/ night value</span>
+                        <span className="text-[10px] sm:text-xs text-slate-400 block -mt-0.5">/ night</span>
                       </div>
                       <button
                         onClick={() => handleReserveSpace(stay)}
@@ -566,13 +658,53 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* Why StayGuwahati */}
+      <section className="border-y border-slate-200 bg-white px-4 py-14 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-600">
+              Why StayGuwahati
+            </p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+              A simpler way to find a stay in Guwahati
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              Explore local properties with clear information before you decide where to stay.
+            </p>
+          </div>
+
+          <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ['📍', 'Local stays', 'Discover properties across Guwahati neighbourhoods.'],
+              ['✓', 'Verified listings', 'Browse properties published through our approved listing pipeline.'],
+              ['₹', 'Clear nightly pricing', 'See the listed price per night before booking.'],
+              ['🤝', 'Host connection', 'View the host information provided with each property.'],
+            ].map(([icon, title, description]) => (
+              <div key={title} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg shadow-sm ring-1 ring-slate-200">
+                  {icon}
+                </div>
+                <h3 className="mt-4 text-sm font-black text-slate-950">{title}</h3>
+                <p className="mt-1.5 text-xs leading-5 text-slate-500">{description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-6 px-4 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>&copy; 2026 StayGuwahati. All rights reserved.</div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+            <button onClick={() => router.push('/list-property')} className="text-slate-600 hover:text-teal-600 font-medium transition">
+              {t.nav_list_property}
+            </button>
             <button onClick={() => router.push('/refer-a-host')} className="text-slate-600 hover:text-teal-600 font-medium transition">
               {t.nav_refer_host}
+            </button>
+            <button onClick={() => router.push('/support')} className="text-slate-600 hover:text-teal-600 font-medium transition">
+              {t.nav_support}
             </button>
             <button onClick={() => router.push('/privacy')} className="text-slate-600 hover:text-teal-600 font-medium transition">
               {t.privacy}
