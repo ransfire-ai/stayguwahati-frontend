@@ -485,14 +485,6 @@ export default function DashboardPage() {
     router.replace('/login');
   };
 
-    // Remove legacy persistent authentication data as well.
-    localStorage.removeItem('token');
-    localStorage.removeItem('userProfile');
-    localStorage.removeItem('activeDashboardRole');
-
-    router.replace('/login');
-  };
-
   // Fetch traveler bookings
   const fetchTravelerBookings = async () => {
     setLoadingTraveler(true);
