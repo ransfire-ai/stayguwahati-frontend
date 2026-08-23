@@ -316,25 +316,14 @@ function PropertyDetailsContent() {
 
   return (
     <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8 flex-1">
-      {/* Back button - return to the actual page the guest came from */}
+      {/* Back button link */}
       <div className="w-full mb-6">
-        <button
-          type="button"
-          onClick={() => {
-            // Use browser history so this works from Map, Home, Dashboard,
-            // search/listing pages, etc. Only fall back to /map when the
-            // property-details page was opened directly.
-            if (typeof window !== 'undefined' && window.history.length > 1) {
-              router.back();
-            } else {
-              router.push('/map');
-            }
-          }}
+        <Link
+          href="/map"
           className="text-xs sm:text-sm font-bold text-teal-600 hover:text-teal-700 inline-flex items-center gap-2 group transition"
         >
-          <span className="transition-transform group-hover:-translate-x-1">←</span>
-          Back
-        </button>
+          <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Exploration Stream
+        </Link>
       </div>
 
       {/* Property Title & Top Actions */}
