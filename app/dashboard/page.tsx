@@ -392,16 +392,30 @@ export default function DashboardPage() {
   const fetchHostProperties = async () => {
     setLoadingHostProps(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/api/properties`);
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token') || '';
+      const res = await fetch(`${BACKEND_URL}/api/homestays`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       let properties: Property[] = [];
       if (res.ok) {
         const data = await res.json();
-        properties = data.success && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+        properties =
+          data.success && Array.isArray(data.data)
+            ? data.data
+            : Array.isArray(data.homestays)
+              ? data.homestays
+              : Array.isArray(data)
+                ? data
+                : [];
       }
 
-      const filteredProps = properties.filter(
-        (p) => p.hostEmail === currentUser.email || p.ownerEmail === currentUser.email || p.userEmail === currentUser.email
-      );
+      const userEmail = currentUser.email.toLowerCase().trim();
+      const filteredProps = properties.filter((p) => {
+        const hostEmail = String(
+          p.hostEmail || p.ownerEmail || p.userEmail || p.host?.email || ''
+        ).toLowerCase().trim();
+        return hostEmail === userEmail;
+      });
 
       setHostProperties(filteredProps);
       fetchHostReservations(filteredProps);
@@ -651,12 +665,12 @@ export default function DashboardPage() {
               {currentRole === 'traveler' ? (
                 <>
                   <Building2 className="w-3.5 h-3.5" />
-                  <span>{t.switchHost}</span>
+                  <span className="hidden sm:inline">{t.switchHost}</span>
                 </>
               ) : (
                 <>
                   <Plane className="w-3.5 h-3.5" />
-                  <span>{t.switchTraveler}</span>
+                  <span className="hidden sm:inline">{t.switchTraveler}</span>
                 </>
               )}
             </button>
@@ -798,25 +812,31 @@ export default function DashboardPage() {
               <Building2 className="w-4 h-4 text-teal-600" /> {t.hostHead}
             </h2>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
-                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.incomeLabel}</p>
-                <p className="text-lg sm:text-xl font-black text-slate-900 mt-1">
-                  ₹{monthlyIncome.toLocaleString('en-IN')}
-                </p>
+            {/* Host overview */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Listings</p>
+                <p className="text-xl font-black text-teal-700 mt-1">{hostProperties.length}</p>
+                <p className="text-[11px] text-gray-400 mt-1">Your properties</p>
               </div>
-              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
-                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.listingsLabel}</p>
-                <p className="text-lg sm:text-xl font-black text-teal-600 mt-1">
-                  {hostProperties.length} Properties
+              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Requests</p>
+                <p className="text-xl font-black text-amber-600 mt-1">
+                  {hostReservations.filter((r) => String(r.status || 'Requested').toLowerCase() === 'requested').length}
                 </p>
+                <p className="text-[11px] text-gray-400 mt-1">Awaiting your action</p>
               </div>
-              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
-                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.ratingLabel}</p>
-                <p className="text-lg sm:text-xl font-black text-amber-500 mt-1 flex items-center justify-center gap-1">
-                  0.0 <Star className="w-3 h-3 fill-amber-500" />
+              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Confirmed</p>
+                <p className="text-xl font-black text-emerald-600 mt-1">
+                  {hostReservations.filter((r) => ['confirmed','accepted','approved'].includes(String(r.status || '').toLowerCase())).length}
                 </p>
+                <p className="text-[11px] text-gray-400 mt-1">Accepted stays</p>
+              </div>
+              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">This month</p>
+                <p className="text-xl font-black text-slate-900 mt-1">₹{monthlyIncome.toLocaleString('en-IN')}</p>
+                <p className="text-[11px] text-gray-400 mt-1">Booking value</p>
               </div>
             </div>
 
@@ -958,7 +978,10 @@ export default function DashboardPage() {
                         className="h-40 bg-gray-200 bg-cover bg-center"
                         style={{
                           backgroundImage: `url('${resolveImageUrl(
-                            p.image || p.imageUrl || p.propertyImage
+                            p.image ||
+                             p.imageUrl ||
+                             p.propertyImage ||
+                             (Array.isArray((p as any).images) ? (p as any).images[0] : '')
                           )}')`
                         }}
                       />
@@ -969,14 +992,34 @@ export default function DashboardPage() {
                           </h3>
                           <p className="text-gray-400 text-xs flex items-center gap-1 mt-1">
                             <MapPin className="w-3 h-3 text-teal-600" />{' '}
-                            {p.location || p.city || p.address || 'Guwahati'}
+                            {p.locality || p.location || p.city || p.address || 'Guwahati'}
                           </p>
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
-                          <span>
-                            Price: <strong>₹{p.price || 0} / night</strong>
-                          </span>
-                          <span className="text-teal-600 font-bold">Active</span>
+                        <div className="mt-4 pt-3 border-t border-gray-50">
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                            <span>
+                              Price: <strong>₹{p.price || p.pricePerNight || 0} / night</strong>
+                            </span>
+                            <span className="text-teal-600 font-bold">
+                              {p.isAvailable === false ? 'Unavailable' : 'Available'}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/edit-property?id=${encodeURIComponent(String(p._id || p.id || ''))}`)}
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:border-teal-500 hover:text-teal-700 transition"
+                            >
+                              Edit Listing
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/property-details?id=${encodeURIComponent(String(p._id || p.id || ''))}`)}
+                              className="rounded-xl bg-teal-600 px-3 py-2 text-xs font-black text-white hover:bg-teal-700 transition"
+                            >
+                              View Listing
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1077,10 +1120,10 @@ export default function DashboardPage() {
               </div>
               <div className="text-xs space-y-2 text-gray-600">
                 <p>
-                  <strong>Status:</strong> Confirmed & Paid
+                  <strong>Status:</strong> Booking Confirmed
                 </p>
                 <p>
-                  <strong>Platform:</strong> StayGuwahati Unified Core
+                  <strong>Payment:</strong> No online payment — arrange payment directly with the host
                 </p>
                 <p className="text-teal-700 font-bold">Thank you for booking with StayGuwahati!</p>
               </div>
