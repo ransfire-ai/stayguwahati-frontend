@@ -8,6 +8,8 @@ interface Property {
   id?: string;
   title: string;
   locality: string;
+  description?: string;
+  features?: string[];
   pricePerNight: number;
   images?: string[];
   rating?: number;
