@@ -36,16 +36,29 @@ interface Property {
   id?: string;
   title?: string;
   propertyName?: string;
+  locality?: string;
   location?: string;
   city?: string;
   address?: string;
   price?: number;
+  pricePerNight?: number;
   image?: string;
   imageUrl?: string;
   propertyImage?: string;
+  images?: string[];
+  status?: string;
+  rating?: number;
+  reviewsCount?: number;
   hostEmail?: string;
   ownerEmail?: string;
   userEmail?: string;
+  host?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    avatar?: string;
+    isVerified?: boolean;
+  };
 }
 
 interface Booking {
@@ -238,6 +251,7 @@ export default function DashboardPage() {
   const [hostProperties, setHostProperties] = useState<Property[]>([]);
   const [hostReservations, setHostReservations] = useState<Booking[]>([]);
   const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
+  const [hostRating, setHostRating] = useState<number>(0);
 
   // Loading states
   const [loadingTraveler, setLoadingTraveler] = useState(true);
@@ -339,43 +353,116 @@ export default function DashboardPage() {
     }
   };
 
+  const normalizeEmail = (value: unknown) =>
+    String(value || '').trim().toLowerCase();
+
+  const getPropertyHostEmail = (property: Property) =>
+    normalizeEmail(
+      property.host?.email ||
+      property.hostEmail ||
+      property.ownerEmail ||
+      property.userEmail
+    );
+
+  const getBookingPropertyId = (booking: Booking) =>
+    String(
+      booking.propertyId?._id ||
+      booking.propertyId?.id ||
+      booking.propertyId ||
+      booking.homestayId?._id ||
+      booking.homestayId?.id ||
+      booking.homestayId ||
+      booking.property?._id ||
+      booking.property?.id ||
+      booking.property ||
+      ''
+    );
+
   // Fetch Host Reservations
   const fetchHostReservations = async (propsList: Property[]) => {
     setLoadingReservations(true);
+
     try {
-      const res = await fetch(`${BACKEND_URL}/api/bookings`);
+      const token =
+        sessionStorage.getItem('token') ||
+        localStorage.getItem('token') ||
+        '';
+
+      const res = await fetch(`${BACKEND_URL}/api/bookings`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
       let allBookings: Booking[] = [];
+
       if (res.ok) {
         const data = await res.json();
-        allBookings = data.success && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+        allBookings =
+          data.success && Array.isArray(data.data)
+            ? data.data
+            : Array.isArray(data)
+              ? data
+              : [];
       }
 
-      const hostPropertyIds = propsList.map((p) => String(p._id || p.id));
-      const reservations = allBookings.filter((b) => {
-        const bPropId = String(b.propertyId?._id || b.propertyId || b.property?._id || b.property || '');
+      const hostEmail = normalizeEmail(currentUser.email);
+      const hostPropertyIds = new Set(
+        propsList
+          .map((p) => String(p._id || p.id || ''))
+          .filter(Boolean)
+      );
+
+      const reservations = allBookings.filter((booking) => {
+        const bookingPropertyId = getBookingPropertyId(booking);
+        const bookingHostEmail = normalizeEmail(
+          booking.hostEmail || booking.ownerEmail
+        );
+
         return (
-          hostPropertyIds.includes(bPropId) ||
-          b.hostEmail === currentUser.email ||
-          b.ownerEmail === currentUser.email
+          (bookingPropertyId && hostPropertyIds.has(bookingPropertyId)) ||
+          (bookingHostEmail && bookingHostEmail === hostEmail)
         );
       });
 
-      setHostReservations(reservations);
+      // Keep the pipeline meaningful: show requested, confirmed,
+      // completed and cancelled/rejected records, but exclude unrelated data.
+      setHostReservations(
+        reservations.sort((a, b) => {
+          const aDate = new Date(a.checkInDate || a.checkIn || a.createdAt || '').getTime();
+          const bDate = new Date(b.checkInDate || b.checkIn || b.createdAt || '').getTime();
+          return bDate - aDate;
+        })
+      );
 
-      // Monthly Earnings calculation
+      // Income is based only on confirmed/completed stays.
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
-      const monthlyEarnings = reservations.reduce((sum, r) => {
+      const monthlyEarnings = reservations.reduce((sum, booking) => {
+        const status = normalizeEmail(booking.status);
+
+        if (status !== 'confirmed' && status !== 'completed') {
+          return sum;
+        }
+
         const bookingDate = new Date(
-          r.checkInDate || r.checkIn || r.createdAt || (r.dates ? r.dates.split(' to ')[0] : null) || ''
+          booking.checkInDate ||
+          booking.checkIn ||
+          booking.createdAt ||
+          (booking.dates ? booking.dates.split(' to ')[0] : '')
         );
+
         const isThisMonth =
-          !isNaN(bookingDate.getTime()) &&
+          !Number.isNaN(bookingDate.getTime()) &&
           bookingDate.getMonth() === currentMonth &&
           bookingDate.getFullYear() === currentYear;
-        const payout = Number(r.totalPrice || r.payout || r.price || 0);
+
+        const payout = Number(
+          booking.totalPrice ||
+          booking.payout ||
+          booking.price ||
+          0
+        );
 
         return isThisMonth ? sum + payout : sum;
       }, 0);
@@ -383,30 +470,90 @@ export default function DashboardPage() {
       setMonthlyIncome(monthlyEarnings);
     } catch (err) {
       console.error('Failed to load host reservations:', err);
+      setHostReservations([]);
+      setMonthlyIncome(0);
     } finally {
       setLoadingReservations(false);
     }
   };
 
-  // Fetch Host Active Properties
+  // Fetch all properties owned by the logged-in host.
+  // The backend defaults /api/properties to approved listings, so we query
+  // all moderation states and then match the nested host.email locally.
   const fetchHostProperties = async () => {
     setLoadingHostProps(true);
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/properties`);
-      let properties: Property[] = [];
-      if (res.ok) {
-        const data = await res.json();
-        properties = data.success && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
-      }
 
-      const filteredProps = properties.filter(
-        (p) => p.hostEmail === currentUser.email || p.ownerEmail === currentUser.email || p.userEmail === currentUser.email
+    try {
+      const hostEmail = normalizeEmail(currentUser.email);
+      const token =
+        sessionStorage.getItem('token') ||
+        localStorage.getItem('token') ||
+        '';
+
+      const headers = token
+        ? { Authorization: `Bearer ${token}` }
+        : undefined;
+
+      const statuses = ['approved', 'pending', 'rejected'];
+
+      const responses = await Promise.all(
+        statuses.map((status) =>
+          fetch(
+            `${BACKEND_URL}/api/properties?status=${encodeURIComponent(status)}`,
+            { headers }
+          )
+        )
       );
 
-      setHostProperties(filteredProps);
-      fetchHostReservations(filteredProps);
+      const results = await Promise.all(
+        responses.map(async (response) => {
+          if (!response.ok) return [];
+          const data = await response.json();
+          return data.success && Array.isArray(data.data)
+            ? data.data
+            : Array.isArray(data)
+              ? data
+              : [];
+        })
+      );
+
+      const allProperties = results.flat();
+
+      // De-duplicate in case the API returns duplicates.
+      const uniqueProperties = Array.from(
+        new Map(
+          allProperties.map((property: Property) => [
+            String(property._id || property.id),
+            property,
+          ])
+        ).values()
+      );
+
+      const ownedProperties = uniqueProperties.filter(
+        (property: Property) =>
+          getPropertyHostEmail(property) === hostEmail
+      );
+
+      setHostProperties(ownedProperties);
+
+      const ratedProperties = ownedProperties.filter(
+        (property) => Number(property.rating) > 0
+      );
+
+      const averageRating = ratedProperties.length
+        ? ratedProperties.reduce(
+            (sum, property) => sum + Number(property.rating || 0),
+            0
+          ) / ratedProperties.length
+        : 0;
+
+      setHostRating(Number(averageRating.toFixed(1)));
+      await fetchHostReservations(ownedProperties);
     } catch (err) {
       console.error('Failed to load host properties:', err);
+      setHostProperties([]);
+      setHostReservations([]);
+      setMonthlyIncome(0);
     } finally {
       setLoadingHostProps(false);
     }
@@ -587,47 +734,9 @@ export default function DashboardPage() {
 
           <div className="pt-3 border-t border-gray-100 flex items-center justify-between mt-auto">
             <div>
-              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Total</span>
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Total Paid</span>
               <span className="text-base font-extrabold text-teal-800">₹{price}</span>
             </div>
-
-            {['requested', 'confirmed'].includes(String(b.status || '').toLowerCase()) && (
-              <button
-                onClick={async () => {
-                  const token =
-                    sessionStorage.getItem('token') ||
-                    localStorage.getItem('token') ||
-                    '';
-                  if (!window.confirm('Cancel this booking?')) return;
-
-                  try {
-                    const res = await fetch(
-                      `${BACKEND_URL}/api/bookings/${b._id || b.id}/status`,
-                      {
-                        method: 'PATCH',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify({ status: 'Cancelled' }),
-                      }
-                    );
-                    const data = await res.json().catch(() => ({}));
-                    if (!res.ok || !data.success) {
-                      window.alert(data.message || 'Unable to cancel this booking.');
-                      return;
-                    }
-                    await fetchTravelerBookings();
-                    window.alert('Booking cancelled.');
-                  } catch {
-                    window.alert('Unable to cancel this booking right now.');
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 hover:text-rose-800 transition-colors"
-              >
-                Cancel booking
-              </button>
-            )}
 
             <button
               onClick={() => setIsReceiptModalOpen(true)}
@@ -853,7 +962,7 @@ export default function DashboardPage() {
               <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
                 <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.ratingLabel}</p>
                 <p className="text-lg sm:text-xl font-black text-amber-500 mt-1 flex items-center justify-center gap-1">
-                  0.0 <Star className="w-3 h-3 fill-amber-500" />
+                  {hostRating.toFixed(1)} <Star className="w-3 h-3 fill-amber-500" />
                 </p>
               </div>
             </div>
@@ -996,7 +1105,7 @@ export default function DashboardPage() {
                         className="h-40 bg-gray-200 bg-cover bg-center"
                         style={{
                           backgroundImage: `url('${resolveImageUrl(
-                            p.image || p.imageUrl || p.propertyImage
+                            p.images?.[0] || p.image || p.imageUrl || p.propertyImage
                           )}')`
                         }}
                       />
@@ -1007,14 +1116,50 @@ export default function DashboardPage() {
                           </h3>
                           <p className="text-gray-400 text-xs flex items-center gap-1 mt-1">
                             <MapPin className="w-3 h-3 text-teal-600" />{' '}
-                            {p.location || p.city || p.address || 'Guwahati'}
+                            {p.locality || p.location || p.city || p.address || 'Guwahati'}
                           </p>
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
-                          <span>
-                            Price: <strong>₹{p.price || 0} / night</strong>
-                          </span>
-                          <span className="text-teal-600 font-bold">Active</span>
+                        <div className="mt-4 pt-3 border-t border-gray-50">
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>
+                              Price: <strong>₹{p.pricePerNight ?? p.price ?? 0} / night</strong>
+                            </span>
+                            <span className={`font-bold ${
+                              String(p.status || '').toLowerCase() === 'approved'
+                                ? 'text-emerald-600'
+                                : String(p.status || '').toLowerCase() === 'pending'
+                                  ? 'text-amber-600'
+                                  : 'text-red-600'
+                            }`}>
+                              {p.status || 'Pending'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 mt-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                router.push(
+                                  `/property-details?id=${encodeURIComponent(String(p._id || p.id || ''))}`
+                                )
+                              }
+                              className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:border-teal-300 hover:text-teal-700"
+                            >
+                              View
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                router.push(
+                                  `/edit-property?id=${encodeURIComponent(String(p._id || p.id || ''))}`
+                                )
+                              }
+                              className="rounded-lg bg-teal-600 px-3 py-2 text-xs font-black text-white hover:bg-teal-700"
+                            >
+                              Edit Listing
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
