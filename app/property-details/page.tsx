@@ -41,7 +41,6 @@ interface Review {
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
-// StayGuwahati support WhatsApp (updated 23 Aug 2026)
 const SUPPORT_EMAIL = 'support@stayguwahati.in';
 const SUPPORT_WHATSAPP =
   process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\\D/g, '') || '';
@@ -279,11 +278,8 @@ function PropertyDetailsContent() {
       locality: property.locality || 'Guwahati',
       image: mainImage,
     };
-    const params = new URLSearchParams({
-      id: bookingData.id,
-    });
-
-    router.push(`/book-stay?${params.toString()}`);
+    sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+    router.push('/book-stay');
   };
 
   if (!property) {
@@ -337,7 +333,34 @@ function PropertyDetailsContent() {
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== 'undefined' && window.history.length > 1) {
+            if (typeof window === 'undefined') return;
+
+            // Return to the page the guest actually came from.
+            // This avoids always sending the guest back to the map.
+            const referrer = document.referrer;
+
+            try {
+              if (referrer) {
+                const previousUrl = new URL(referrer);
+
+                // Only navigate to an internal StayGuwahati page.
+                if (
+                  previousUrl.origin === window.location.origin &&
+                  previousUrl.pathname !== '/property-details'
+                ) {
+                  router.push(
+                    `${previousUrl.pathname}${previousUrl.search}${previousUrl.hash}`
+                  );
+                  return;
+                }
+              }
+            } catch (error) {
+              console.warn('Unable to resolve previous page:', error);
+            }
+
+            // For direct visits/bookmarks where there is no usable referrer,
+            // use browser history if available, otherwise the map.
+            if (window.history.length > 1) {
               router.back();
             } else {
               router.push('/map');
