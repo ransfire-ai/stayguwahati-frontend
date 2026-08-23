@@ -19,7 +19,7 @@ const dateLabel = (value: string) => {
   return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`));
 };
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
   const params = useSearchParams();
   const id = params.get('id') || '';
@@ -117,4 +117,22 @@ export default function CheckoutPage() {
       </div>
     </div>
   </main>;
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-50 px-4 py-16">
+          <div className="mx-auto max-w-3xl rounded-2xl bg-white p-8 text-center shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">
+              Loading booking details...
+            </p>
+          </div>
+        </main>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
+  );
 }
