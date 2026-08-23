@@ -275,8 +275,101 @@ function PropertyDetailsContent() {
     }
   };
 
-  const handleToggleWishlist = () => {
-    setIsSaved(!isSaved);
+  const getAuthToken = () =>
+    sessionStorage.getItem('token') ||
+    sessionStorage.getItem('authToken') ||
+    sessionStorage.getItem('accessToken') ||
+    '';
+
+  useEffect(() => {
+    const propertyId = property?.id || property?._id;
+    const token = getAuthToken();
+
+    if (!propertyId || !token) {
+      setIsSaved(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    fetch(`${BACKEND_URL}/api/wishlist/${encodeURIComponent(propertyId)}`, {
+      method: 'GET',
+      cache: 'no-store',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) {
+          setIsSaved(Boolean(data.saved));
+        }
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') {
+          console.warn('Wishlist status could not be loaded:', error);
+        }
+      });
+
+    return () => controller.abort();
+  }, [property?.id, property?._id]);
+
+  const handleToggleWishlist = async () => {
+    if (!property) return;
+
+    const propertyId = property.id || property._id;
+    const token = getAuthToken();
+
+    if (!token) {
+      router.push(
+        `/login?redirect=${encodeURIComponent(
+          `/property-details?id=${propertyId}`
+        )}`
+      );
+      return;
+    }
+
+    const nextSaved = !isSaved;
+    setIsSaved(nextSaved);
+
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/wishlist/${encodeURIComponent(propertyId)}`,
+        {
+          method: nextSaved ? 'POST' : 'DELETE',
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/json',
+            ...(nextSaved ? { 'Content-Type': 'application/json' } : {}),
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401 || response.status === 403) {
+        setIsSaved(!nextSaved);
+        router.push(
+          `/login?redirect=${encodeURIComponent(
+            `/property-details?id=${propertyId}`
+          )}`
+        );
+        return;
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Wishlist update failed.');
+      }
+
+      setIsSaved(Boolean(data.saved));
+    } catch (error) {
+      console.error('Wishlist update failed:', error);
+      setIsSaved(!nextSaved);
+      alert('Unable to update your wishlist right now. Please try again.');
+    }
   };
 
   const handleReserveSpace = () => {

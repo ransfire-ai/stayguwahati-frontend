@@ -23,8 +23,6 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   'https://stayguwahati-backend.onrender.com';
 
-const WISHLIST_KEY = 'stayguwahatiWishlist';
-
 function getId(property: Homestay) {
   return String(property.id || property._id || '');
 }
@@ -56,67 +54,68 @@ export default function WishlistPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem(WISHLIST_KEY) || '[]'
-      );
+    const loadWishlist = async () => {
+      const token =
+        sessionStorage.getItem('token') ||
+        sessionStorage.getItem('authToken') ||
+        sessionStorage.getItem('accessToken') ||
+        '';
 
-      setWishlistIds(
-        Array.isArray(saved) ? saved.map(String) : []
-      );
-    } catch {
-      setWishlistIds([]);
-    }
-  }, []);
+      if (!token) {
+        setError('Please log in to view your wishlist.');
+        setWishlistIds([]);
+        setProperties([]);
+        setLoading(false);
+        return;
+      }
 
-  useEffect(() => {
-    const loadProperties = async () => {
       try {
         setLoading(true);
         setError('');
 
-        const response = await fetch(`${BACKEND_URL}/api/homestays`);
-
-        if (!response.ok) {
-          throw new Error(`Unable to load properties (${response.status})`);
-        }
-
-        const data = await response.json();
-
-        const raw: Homestay[] =
-          data?.success && Array.isArray(data.data)
-            ? data.data
-            : Array.isArray(data?.data)
-              ? data.data
-              : Array.isArray(data?.homestays)
-                ? data.homestays
-                : Array.isArray(data)
-                  ? data
-                  : [];
-
-        const approved = raw.filter((property) => {
-          const status = String(
-            property.status || 'approved'
-          ).toLowerCase();
-
-          return (
-            status === 'approved' &&
-            property.isAvailable !== false
-          );
+        const response = await fetch(`${BACKEND_URL}/api/wishlist`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
         });
 
-        setProperties(approved);
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401 || response.status === 403) {
+          setError('Your session has expired. Please log in again.');
+          setWishlistIds([]);
+          setProperties([]);
+          return;
+        }
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Unable to load wishlist.');
+        }
+
+        const items = Array.isArray(data.data) ? data.data : [];
+
+        const savedIds = items
+          .map((item: any) => String(item.propertyId || ''))
+          .filter(Boolean);
+
+        const savedProperties = items
+          .map((item: any) => item.property)
+          .filter(Boolean) as Homestay[];
+
+        setWishlistIds(savedIds);
+        setProperties(savedProperties);
       } catch (err) {
-        console.error('Wishlist property fetch failed:', err);
-        setError(
-          'Unable to load your saved properties right now.'
-        );
+        console.error('Wishlist load failed:', err);
+        setError('Unable to load your saved properties right now.');
       } finally {
         setLoading(false);
       }
     };
 
-    loadProperties();
+    loadWishlist();
   }, []);
 
   const savedProperties = useMemo(
@@ -129,24 +128,57 @@ export default function WishlistPage() {
     [wishlistIds, properties]
   );
 
-  const removeFromWishlist = (id: string) => {
-    setWishlistIds((current) => {
-      const next = current.filter((item) => item !== id);
+  const removeFromWishlist = async (id: string) => {
+    const token =
+      sessionStorage.getItem('token') ||
+      sessionStorage.getItem('authToken') ||
+      sessionStorage.getItem('accessToken') ||
+      '';
 
-      try {
-        localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
-      } catch {}
+    if (!token) {
+      setError('Please log in to manage your wishlist.');
+      return;
+    }
 
-      return next;
-    });
-  };
+    const previousIds = wishlistIds;
+    const previousProperties = properties;
 
-  const clearWishlist = () => {
-    setWishlistIds([]);
+    setWishlistIds((current) => current.filter((item) => item !== id));
+    setProperties((current) =>
+      current.filter((property) => getId(property) !== id)
+    );
 
     try {
-      localStorage.setItem(WISHLIST_KEY, '[]');
-    } catch {}
+      const response = await fetch(
+        `${BACKEND_URL}/api/wishlist/${encodeURIComponent(id)}`,
+        {
+          method: 'DELETE',
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Unable to remove property.');
+      }
+    } catch (err) {
+      console.error('Wishlist removal failed:', err);
+      setWishlistIds(previousIds);
+      setProperties(previousProperties);
+      setError('Unable to remove this property right now.');
+    }
+  };
+
+  const clearWishlist = async () => {
+    const ids = [...wishlistIds];
+    for (const id of ids) {
+      await removeFromWishlist(id);
+    }
   };
 
   return (
@@ -194,6 +226,18 @@ export default function WishlistPage() {
               {savedProperties.length === 1 ? 'property' : 'properties'}
             </p>
           </div>
+            {error && !loading && wishlistIds.length === 0 && error.includes('log in') && (
+              <div className="mt-5">
+                <button
+                  type="button"
+                  onClick={() => router.push('/login?redirect=%2Fwishlist')}
+                  className="rounded-xl bg-teal-600 px-5 py-3 text-sm font-black text-white hover:bg-teal-700"
+                >
+                  Log In
+                </button>
+              </div>
+            )}
+
 
           {savedProperties.length > 0 && (
             <button
