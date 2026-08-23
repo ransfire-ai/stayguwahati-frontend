@@ -182,159 +182,222 @@ export default function HomePage() {
   useEffect(() => {
     const TOKEN_KEY = 'token';
     const PROFILE_KEY = 'userProfile';
+    const ROLE_KEY = 'activeDashboardRole';
+
+    // This marker is deliberately NOT an authentication token.
+    // It only tells us that an authenticated browser tab is still alive.
     const HEARTBEAT_KEY = 'stayguwahati_browser_heartbeat';
+
+    // Last real user interaction. Kept in sessionStorage so a refresh does
+    // not reset the inactivity clock.
     const LAST_ACTIVITY_KEY = 'stayguwahati_last_activity';
-    const STALE_HEARTBEAT_MS = 15000;
+
+    // Five seconds gives us a much stronger browser-close/reopen check while
+    // still allowing normal page loading and tab suspension.
+    const STALE_HEARTBEAT_MS = 5000;
+
+    // 30 minutes without real user activity = automatic logout.
     const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 
     const savedLang =
       (localStorage.getItem('preferredLang') as 'en' | 'as' | 'hi') || 'en';
     setCurrentLang(savedLang);
 
-    // Never use localStorage as an authentication source.
+    // IMPORTANT:
+    // Authentication is session-only. Never restore a login from localStorage.
     const token = sessionStorage.getItem(TOKEN_KEY);
+
+    if (!token) {
+      // Remove authentication left behind by older versions of the app.
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(PROFILE_KEY);
+      localStorage.removeItem(ROLE_KEY);
+      localStorage.removeItem(HEARTBEAT_KEY);
+      setUserProfile(null);
+
+      // The homepage itself is public, so do not redirect here.
+      fetchHomestays();
+      return;
+    }
+
+    const now = Date.now();
     const previousHeartbeat = Number(
       localStorage.getItem(HEARTBEAT_KEY) || '0'
     );
 
-    if (!token) {
-      // Clean up legacy persistent auth from older versions.
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(PROFILE_KEY);
-      localStorage.removeItem('activeDashboardRole');
-      setUserProfile(null);
-    } else if (
+    // If the browser/tab was previously authenticated but its heartbeat is
+    // already stale, do not silently restore that old session.
+    if (
       Number.isFinite(previousHeartbeat) &&
       previousHeartbeat > 0 &&
-      Date.now() - previousHeartbeat > STALE_HEARTBEAT_MS
+      now - previousHeartbeat > STALE_HEARTBEAT_MS
     ) {
       sessionStorage.clear();
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(PROFILE_KEY);
-      localStorage.removeItem('activeDashboardRole');
+      localStorage.removeItem(ROLE_KEY);
       localStorage.removeItem(HEARTBEAT_KEY);
       setUserProfile(null);
-    } else {
-      const storedSession = sessionStorage.getItem(PROFILE_KEY);
-
-      if (storedSession) {
-        try {
-          setUserProfile(JSON.parse(storedSession));
-        } catch (err) {
-          console.error('Failed to parse user profile session:', err);
-          sessionStorage.removeItem(PROFILE_KEY);
-          setUserProfile(null);
-        }
-      }
-
-      const now = Date.now();
-      sessionStorage.setItem(LAST_ACTIVITY_KEY, String(now));
-      localStorage.setItem(HEARTBEAT_KEY, String(now));
-
-      const activityEvents: Array<keyof WindowEventMap> = [
-        'mousedown',
-        'mousemove',
-        'keydown',
-        'touchstart',
-        'touchmove',
-        'scroll',
-        'click',
-        'pointerdown',
-        'wheel',
-      ];
-
-      let lastActivity = now;
-
-      const recordActivity = () => {
-        const current = Date.now();
-        lastActivity = current;
-        sessionStorage.setItem(LAST_ACTIVITY_KEY, String(current));
-        localStorage.setItem(HEARTBEAT_KEY, String(current));
-      };
-
-      activityEvents.forEach((eventName) => {
-        window.addEventListener(eventName, recordActivity, { passive: true });
-      });
-
-      const timer = window.setInterval(() => {
-        if (!sessionStorage.getItem(TOKEN_KEY)) {
-          setUserProfile(null);
-          window.clearInterval(timer);
-          return;
-        }
-
-        const current = Date.now();
-        localStorage.setItem(HEARTBEAT_KEY, String(current));
-
-        if (current - lastActivity >= INACTIVITY_TIMEOUT_MS) {
-          sessionStorage.clear();
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(PROFILE_KEY);
-          localStorage.removeItem('activeDashboardRole');
-          localStorage.removeItem(HEARTBEAT_KEY);
-          setUserProfile(null);
-          window.clearInterval(timer);
-          router.replace('/login');
-        }
-      }, 2000);
-
-      const checkReturn = () => {
-        if (document.visibilityState !== 'visible') return;
-
-        const current = Date.now();
-        if (current - lastActivity >= INACTIVITY_TIMEOUT_MS) {
-          sessionStorage.clear();
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(PROFILE_KEY);
-          localStorage.removeItem('activeDashboardRole');
-          localStorage.removeItem(HEARTBEAT_KEY);
-          setUserProfile(null);
-          router.replace('/login');
-          return;
-        }
-
-        localStorage.setItem(HEARTBEAT_KEY, String(current));
-      };
-
-      document.addEventListener('visibilitychange', checkReturn);
-      window.addEventListener('focus', checkReturn);
-      window.addEventListener('pageshow', checkReturn);
-
-      if (typeof window !== 'undefined') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const loc = urlParams.get('location');
-        if (loc) {
-          setSelectedFilterLocality(loc);
-          setSearchLocality(loc);
-        }
-      }
 
       fetchHomestays();
-
-      return () => {
-        activityEvents.forEach((eventName) => {
-          window.removeEventListener(eventName, recordActivity);
-        });
-        document.removeEventListener('visibilitychange', checkReturn);
-        window.removeEventListener('focus', checkReturn);
-        window.removeEventListener('pageshow', checkReturn);
-        window.clearInterval(timer);
-      };
+      return;
     }
 
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const loc = urlParams.get('location');
-      if (loc) {
-        setSelectedFilterLocality(loc);
-        setSearchLocality(loc);
+    const savedSessionProfile = sessionStorage.getItem(PROFILE_KEY);
+
+    if (savedSessionProfile) {
+      try {
+        setUserProfile(JSON.parse(savedSessionProfile));
+      } catch (err) {
+        console.error('Failed to parse user profile session:', err);
+        sessionStorage.removeItem(PROFILE_KEY);
+        setUserProfile(null);
       }
+    }
+
+    let lastActivity = Number(
+      sessionStorage.getItem(LAST_ACTIVITY_KEY) || '0'
+    );
+
+    if (!Number.isFinite(lastActivity) || lastActivity <= 0) {
+      lastActivity = now;
+      sessionStorage.setItem(LAST_ACTIVITY_KEY, String(lastActivity));
+    }
+
+    // Refresh the heartbeat frequently while this authenticated tab is alive.
+    // This is separate from "activity": a user can be reading a page without
+    // moving the mouse, so the browser heartbeat must continue independently.
+    localStorage.setItem(HEARTBEAT_KEY, String(now));
+
+    let lastHeartbeatWrite = now;
+
+    const logoutAndRedirect = () => {
+      sessionStorage.clear();
+
+      // Remove legacy persistent authentication values as well.
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(PROFILE_KEY);
+      localStorage.removeItem(ROLE_KEY);
+      localStorage.removeItem(HEARTBEAT_KEY);
+
+      setUserProfile(null);
+      router.replace('/login');
+    };
+
+    const recordActivity = () => {
+      if (!sessionStorage.getItem(TOKEN_KEY)) {
+        setUserProfile(null);
+        return;
+      }
+
+      const current = Date.now();
+      lastActivity = current;
+      sessionStorage.setItem(LAST_ACTIVITY_KEY, String(current));
+    };
+
+    const checkSession = () => {
+      const currentToken = sessionStorage.getItem(TOKEN_KEY);
+
+      if (!currentToken) {
+        setUserProfile(null);
+        localStorage.removeItem(HEARTBEAT_KEY);
+        return;
+      }
+
+      const current = Date.now();
+
+      if (current - lastActivity >= INACTIVITY_TIMEOUT_MS) {
+        logoutAndRedirect();
+        return;
+      }
+
+      // Keep the browser-alive heartbeat independent of user activity.
+      // Throttling to once per second is enough for close/reopen detection.
+      if (current - lastHeartbeatWrite >= 1000) {
+        lastHeartbeatWrite = current;
+        localStorage.setItem(HEARTBEAT_KEY, String(current));
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkSession();
+      }
+    };
+
+    const handleFocus = () => {
+      checkSession();
+    };
+
+    const handlePageShow = () => {
+      checkSession();
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      // If another tab explicitly logs out, immediately reflect it here.
+      if (
+        event.key === TOKEN_KEY &&
+        event.newValue === null
+      ) {
+        sessionStorage.clear();
+        localStorage.removeItem(HEARTBEAT_KEY);
+        setUserProfile(null);
+      }
+    };
+
+    const activityEvents: Array<keyof WindowEventMap> = [
+      'mousedown',
+      'mousemove',
+      'keydown',
+      'touchstart',
+      'touchmove',
+      'scroll',
+      'click',
+      'pointerdown',
+      'wheel',
+    ];
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, recordActivity, { passive: true });
+    });
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange
+    );
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('storage', handleStorage);
+
+    const sessionTimer = window.setInterval(checkSession, 1000);
+
+    // Read URL filters on initial load.
+    const urlParams = new URLSearchParams(window.location.search);
+    const loc = urlParams.get('location');
+
+    if (loc) {
+      setSelectedFilterLocality(loc);
+      setSearchLocality(loc);
     }
 
     fetchHomestays();
-  }, []);
 
+    return () => {
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, recordActivity);
+      });
 
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange
+      );
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('storage', handleStorage);
+
+      window.clearInterval(sessionTimer);
+    };
+  }, [router]);
   const fetchHomestays = async () => {
     setLoading(true);
     try {
