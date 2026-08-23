@@ -281,7 +281,7 @@ function ReviewContent() {
               </button>
 
               <p className="mt-4 text-center text-[11px] leading-5 text-slate-400">
-                This review link is tied to your StayGuwahati booking and can
+                This review link is tied to your StayGuwahati booking and your logged-in account, and can
                 only be used once.
               </p>
             </div>
