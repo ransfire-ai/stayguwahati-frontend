@@ -6,12 +6,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 interface PropertyHost {
   name: string;
+  email?: string;
   phone?: string;
   avatar?: string;
   photo?: string;
   image?: string;
   profileImage?: string;
   profilePicture?: string;
+  isVerified?: boolean;
 }
 
 interface PropertyData {
@@ -288,8 +290,29 @@ function PropertyDetailsContent() {
   const img4 = property.images[3] || selectedMainImage;
   
   const hostAvatarUrl = getHostAvatarUrl(property.host);
-  const hostName = typeof property.host === 'object' && property.host !== null ? property.host.name : (typeof property.host === 'string' ? property.host : 'Host');
-  const hostPhone = typeof property.host === 'object' && property.host !== null ? (property.host.phone || 'Verified Host') : 'Verified Host';
+  const hostName =
+    typeof property.host === 'object' && property.host !== null
+      ? property.host.name
+      : (typeof property.host === 'string' ? property.host : 'Host');
+
+  const hostPhone =
+    typeof property.host === 'object' && property.host !== null
+      ? (property.host.phone || 'Verified Host')
+      : 'Verified Host';
+
+  const hostEmail =
+    typeof property.host === 'object' && property.host !== null
+      ? (property.host.email || '')
+      : '';
+
+  const hostIsVerified =
+    typeof property.host === 'object' &&
+    property.host !== null &&
+    property.host.isVerified === true;
+
+  const hostProfileHref = `/host-profile?${hostEmail
+    ? `email=${encodeURIComponent(hostEmail)}`
+    : `name=${encodeURIComponent(hostName || 'Host')}`}`;
 
   return (
     <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8 flex-1">
@@ -449,14 +472,28 @@ function PropertyDetailsContent() {
             </div>
           </div>
 
-          {/* Host Details Box with Dynamic Fallback Handling */}
+          {/* Host Profile */}
           {property.host && (
             <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
-              <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
-                Hosted by
-              </h3>
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">
+                    Hosted by
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Get to know your local StayGuwahati host
+                  </p>
+                </div>
+
+                {hostIsVerified && (
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 text-[10px] font-black">
+                    ✓ StayGuwahati Verified
+                  </span>
+                )}
+              </div>
+
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full overflow-hidden bg-teal-50 border border-teal-100 shrink-0 flex items-center justify-center relative">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-50 border border-teal-100 shrink-0 flex items-center justify-center relative shadow-sm">
                   <img
                     src={
                       hostAvatarUrl ||
@@ -476,15 +513,34 @@ function PropertyDetailsContent() {
                     }}
                   />
                 </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm sm:text-base">
+
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-black text-slate-900 text-base sm:text-lg truncate">
                     {hostName}
                   </h4>
-                  <p className="text-xs text-slate-500 font-medium">
+
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
                     {hostPhone}
                   </p>
+
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-xs font-bold text-amber-500">
+                      ★ Host profile
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      • Local host
+                    </span>
+                  </div>
                 </div>
               </div>
+
+              <Link
+                href={hostProfileHref}
+                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-teal-600 text-white font-bold py-3 px-4 text-sm transition shadow-sm"
+              >
+                View Host Profile
+                <span>→</span>
+              </Link>
             </div>
           )}
 
