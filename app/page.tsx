@@ -180,224 +180,30 @@ export default function HomePage() {
   const t = translations[currentLang] || translations.en;
 
   useEffect(() => {
-    const TOKEN_KEY = 'token';
-    const PROFILE_KEY = 'userProfile';
-    const ROLE_KEY = 'activeDashboardRole';
-
-    // This marker is deliberately NOT an authentication token.
-    // It only tells us that an authenticated browser tab is still alive.
-    const HEARTBEAT_KEY = 'stayguwahati_browser_heartbeat';
-
-    // Last real user interaction. Kept in sessionStorage so a refresh does
-    // not reset the inactivity clock.
-    const LAST_ACTIVITY_KEY = 'stayguwahati_last_activity';
-
-    // Five seconds gives us a much stronger browser-close/reopen check while
-    // still allowing normal page loading and tab suspension.
-    const STALE_HEARTBEAT_MS = 5000;
-
-    // 30 minutes without real user activity = automatic logout.
-    const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
-
-    const savedLang =
-      (localStorage.getItem('preferredLang') as 'en' | 'as' | 'hi') || 'en';
+    const savedLang = (localStorage.getItem('preferredLang') as 'en' | 'as' | 'hi') || 'en';
     setCurrentLang(savedLang);
 
-    // IMPORTANT:
-    // Authentication is session-only. Never restore a login from localStorage.
-    const token = sessionStorage.getItem(TOKEN_KEY);
-
-    if (!token) {
-      // Remove authentication left behind by older versions of the app.
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(PROFILE_KEY);
-      localStorage.removeItem(ROLE_KEY);
-      localStorage.removeItem(HEARTBEAT_KEY);
-      setUserProfile(null);
-
-      // The homepage itself is public, so do not redirect here.
-      fetchHomestays();
-      return;
-    }
-
-    const now = Date.now();
-    const previousHeartbeat = Number(
-      localStorage.getItem(HEARTBEAT_KEY) || '0'
-    );
-
-    // If the browser/tab was previously authenticated but its heartbeat is
-    // already stale, do not silently restore that old session.
-    if (
-      Number.isFinite(previousHeartbeat) &&
-      previousHeartbeat > 0 &&
-      now - previousHeartbeat > STALE_HEARTBEAT_MS
-    ) {
-      sessionStorage.clear();
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(PROFILE_KEY);
-      localStorage.removeItem(ROLE_KEY);
-      localStorage.removeItem(HEARTBEAT_KEY);
-      setUserProfile(null);
-
-      fetchHomestays();
-      return;
-    }
-
-    const savedSessionProfile = sessionStorage.getItem(PROFILE_KEY);
-
-    if (savedSessionProfile) {
+    const storedSession = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+    if (storedSession) {
       try {
-        setUserProfile(JSON.parse(savedSessionProfile));
+        setUserProfile(JSON.parse(storedSession));
       } catch (err) {
         console.error('Failed to parse user profile session:', err);
-        sessionStorage.removeItem(PROFILE_KEY);
-        setUserProfile(null);
       }
     }
 
-    let lastActivity = Number(
-      sessionStorage.getItem(LAST_ACTIVITY_KEY) || '0'
-    );
-
-    if (!Number.isFinite(lastActivity) || lastActivity <= 0) {
-      lastActivity = now;
-      sessionStorage.setItem(LAST_ACTIVITY_KEY, String(lastActivity));
-    }
-
-    // Refresh the heartbeat frequently while this authenticated tab is alive.
-    // This is separate from "activity": a user can be reading a page without
-    // moving the mouse, so the browser heartbeat must continue independently.
-    localStorage.setItem(HEARTBEAT_KEY, String(now));
-
-    let lastHeartbeatWrite = now;
-
-    const logoutAndRedirect = () => {
-      sessionStorage.clear();
-
-      // Remove legacy persistent authentication values as well.
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(PROFILE_KEY);
-      localStorage.removeItem(ROLE_KEY);
-      localStorage.removeItem(HEARTBEAT_KEY);
-
-      setUserProfile(null);
-      router.replace('/login');
-    };
-
-    const recordActivity = () => {
-      if (!sessionStorage.getItem(TOKEN_KEY)) {
-        setUserProfile(null);
-        return;
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const loc = urlParams.get('location');
+      if (loc) {
+        setSelectedFilterLocality(loc);
+        setSearchLocality(loc);
       }
-
-      const current = Date.now();
-      lastActivity = current;
-      sessionStorage.setItem(LAST_ACTIVITY_KEY, String(current));
-    };
-
-    const checkSession = () => {
-      const currentToken = sessionStorage.getItem(TOKEN_KEY);
-
-      if (!currentToken) {
-        setUserProfile(null);
-        localStorage.removeItem(HEARTBEAT_KEY);
-        return;
-      }
-
-      const current = Date.now();
-
-      if (current - lastActivity >= INACTIVITY_TIMEOUT_MS) {
-        logoutAndRedirect();
-        return;
-      }
-
-      // Keep the browser-alive heartbeat independent of user activity.
-      // Throttling to once per second is enough for close/reopen detection.
-      if (current - lastHeartbeatWrite >= 1000) {
-        lastHeartbeatWrite = current;
-        localStorage.setItem(HEARTBEAT_KEY, String(current));
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkSession();
-      }
-    };
-
-    const handleFocus = () => {
-      checkSession();
-    };
-
-    const handlePageShow = () => {
-      checkSession();
-    };
-
-    const handleStorage = (event: StorageEvent) => {
-      // If another tab explicitly logs out, immediately reflect it here.
-      if (
-        event.key === TOKEN_KEY &&
-        event.newValue === null
-      ) {
-        sessionStorage.clear();
-        localStorage.removeItem(HEARTBEAT_KEY);
-        setUserProfile(null);
-      }
-    };
-
-    const activityEvents: Array<keyof WindowEventMap> = [
-      'mousedown',
-      'mousemove',
-      'keydown',
-      'touchstart',
-      'touchmove',
-      'scroll',
-      'click',
-      'pointerdown',
-      'wheel',
-    ];
-
-    activityEvents.forEach((eventName) => {
-      window.addEventListener(eventName, recordActivity, { passive: true });
-    });
-
-    document.addEventListener(
-      'visibilitychange',
-      handleVisibilityChange
-    );
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('pageshow', handlePageShow);
-    window.addEventListener('storage', handleStorage);
-
-    const sessionTimer = window.setInterval(checkSession, 1000);
-
-    // Read URL filters on initial load.
-    const urlParams = new URLSearchParams(window.location.search);
-    const loc = urlParams.get('location');
-
-    if (loc) {
-      setSelectedFilterLocality(loc);
-      setSearchLocality(loc);
     }
 
     fetchHomestays();
+  }, []);
 
-    return () => {
-      activityEvents.forEach((eventName) => {
-        window.removeEventListener(eventName, recordActivity);
-      });
-
-      document.removeEventListener(
-        'visibilitychange',
-        handleVisibilityChange
-      );
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('pageshow', handlePageShow);
-      window.removeEventListener('storage', handleStorage);
-
-      window.clearInterval(sessionTimer);
-    };
-  }, [router]);
   const fetchHomestays = async () => {
     setLoading(true);
     try {
@@ -678,17 +484,19 @@ export default function HomePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/55 to-slate-950/90" />
 
-        <div className="relative mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 sm:py-20 lg:py-24">
+        <div className="relative mx-auto max-w-6xl px-4 py-20 text-center sm:px-6 sm:py-24 lg:py-28">
           <span className="inline-flex rounded-full border border-teal-300/30 bg-teal-400/15 px-3.5 py-1 text-[10px] font-bold uppercase tracking-widest text-teal-200 sm:text-xs">
             {t.hero_tag}
           </span>
 
-          <h1 className="mx-auto mt-5 max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
-            {t.hero_title}
+          <h1 className="mx-auto mt-6 max-w-5xl text-4xl font-black leading-[1.05] tracking-[-0.03em] text-white drop-shadow-2xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-[5.25rem]">
+            Find Your Perfect Stay
+            <span className="block text-teal-300">in Guwahati</span>
           </h1>
 
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base md:text-lg">
-            {t.hero_subtitle}
+          <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-6 text-slate-200 drop-shadow sm:text-base md:text-lg md:leading-7">
+            Discover handpicked homestays, apartments and unique stays across
+            Guwahati's best neighbourhoods.
           </p>
 
           <div className="mx-auto mt-8 max-w-5xl rounded-2xl bg-white p-2 text-left shadow-2xl shadow-black/25 sm:mt-10 sm:rounded-3xl sm:p-2.5">
@@ -778,13 +586,16 @@ export default function HomePage() {
         <div className="mb-8 sm:mb-10 text-center sm:text-left">
           <h2 className="text-xl sm:text-2xl font-black text-slate-900">{t.sec1_title}</h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.sec1_subtitle}</p>
+          <p className="mt-2 text-[10px] text-slate-400">
+            Neighborhood photos: Wikimedia Commons.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
             <div className="h-44 sm:h-48 overflow-hidden relative">
               <img
-                src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500"
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/Uzan%20Bazar%20Park%201.jpg"
                 alt="Uzan Bazar"
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
@@ -804,7 +615,7 @@ export default function HomePage() {
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
             <div className="h-44 sm:h-48 overflow-hidden relative">
               <img
-                src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500"
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/PALTAN%20BAZAAR.JPG"
                 alt="Paltan Bazar"
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
@@ -824,7 +635,7 @@ export default function HomePage() {
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition sm:col-span-2 md:col-span-1">
             <div className="h-44 sm:h-48 overflow-hidden relative">
               <img
-                src="https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500"
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/Ganeshguri.jpg"
                 alt="Ganeshguri"
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
@@ -1028,19 +839,58 @@ export default function HomePage() {
                         {stay.title}
                       </button>
 
+                      {typeof stay.description === 'string' && stay.description.trim() && (
+                        <p className="mt-3 line-clamp-2 text-sm leading-5 text-slate-500">
+                          {stay.description.trim()}
+                        </p>
+                      )}
+
                       <div className="mt-3 flex flex-wrap gap-2">
                         {tags.slice(0, 3).map((tag, tIdx) => (
                           <span
-                            key={tIdx}
+                            key={`tag-${tIdx}`}
                             className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-600"
                           >
                             {tag}
                           </span>
                         ))}
+
+                        {Array.isArray(stay.features) &&
+                          stay.features
+                            .filter((feature) => typeof feature === 'string' && feature.trim())
+                            .slice(0, Math.max(0, 3 - tags.length))
+                            .map((feature, fIdx) => (
+                              <span
+                                key={`feature-${fIdx}`}
+                                className="rounded-full bg-teal-50 px-3 py-1.5 text-[11px] font-semibold text-teal-700"
+                              >
+                                ✓ {feature}
+                              </span>
+                            ))}
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+                          <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                            Rating
+                          </span>
+                          <span className="mt-0.5 block text-sm font-black text-slate-800">
+                            {typeof rating === 'number' ? `★ ${rating.toFixed(1)}` : 'New stay'}
+                          </span>
+                        </div>
+
+                        <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+                          <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                            Reviews
+                          </span>
+                          <span className="mt-0.5 block text-sm font-black text-slate-800">
+                            {reviews > 0 ? `${reviews}` : '—'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="mt-6 border-t border-slate-100 pt-5">
+                    <div className="mt-5 border-t border-slate-100 pt-5">
                       <div className="flex items-end justify-between gap-4">
                         <div>
                           <span className="text-2xl font-black text-slate-950">
