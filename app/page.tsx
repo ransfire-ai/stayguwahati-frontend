@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { resolveImageUrl } from '@/lib/utils';
 
 interface Property {
   _id?: string;
@@ -122,6 +121,47 @@ const translations = {
   }
 };
 
+
+const FALLBACK_PROPERTY_IMAGE =
+  "data:image/svg+xml;charset=UTF-8," +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+      <rect width="800" height="600" fill="#e2e8f0"/>
+      <text x="400" y="285" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#64748b">StayGuwahati</text>
+      <text x="400" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#94a3b8">No photo available</text>
+    </svg>
+  `);
+
+function resolvePropertyImage(path: string | undefined, backendUrl: string) {
+  if (!path || !path.trim()) return FALLBACK_PROPERTY_IMAGE;
+
+  const value = path.trim();
+
+  // Full URLs and browser-local URLs can be used directly.
+  if (
+    value.startsWith('http://') ||
+    value.startsWith('https://') ||
+    value.startsWith('data:') ||
+    value.startsWith('blob:')
+  ) {
+    return value;
+  }
+
+  // Normalize old database values such as "uploads/photo.jpg",
+  // "/uploads/photo.jpg", or "api/uploads/photo.jpg".
+  let normalized = value.replace(/\\/g, '/');
+
+  if (normalized.startsWith('api/')) {
+    normalized = normalized.slice(4);
+  }
+
+  if (!normalized.startsWith('/')) {
+    normalized = `/${normalized}`;
+  }
+
+  return `${backendUrl.replace(/\/+$/, '')}${normalized}`;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [currentLang, setCurrentLang] = useState<'en' | 'as' | 'hi'>('en');
@@ -212,10 +252,10 @@ export default function HomePage() {
     : properties;
 
   return (
-    <div className="bg-slate-50 font-sans min-h-screen flex flex-col justify-between">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50 font-sans flex flex-col justify-between">
       {/* Navigation */}
       <nav className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
+        <div className="mx-auto flex h-16 min-w-0 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}>
             <span className="text-xl sm:text-2xl">🏠</span>
             <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
@@ -224,7 +264,7 @@ export default function HomePage() {
           </div>
 
           {/* Desktop Nav Links */}
-          <div className="hidden md:flex gap-6 items-center">
+          <div className="hidden lg:flex gap-5 xl:gap-6 items-center">
             <button
               onClick={() => router.push('/')}
               className="font-medium text-teal-600 border-b-2 border-teal-600 pb-1 text-sm cursor-pointer"
@@ -299,7 +339,7 @@ export default function HomePage() {
           </div>
 
           {/* Mobile Menu Controls */}
-          <div className="flex items-center gap-3 md:hidden">
+          <div className="flex items-center gap-3 lg:hidden">
             <select
               value={currentLang}
               onChange={(e) => handleLangChange(e.target.value as 'en' | 'as' | 'hi')}
@@ -320,7 +360,7 @@ export default function HomePage() {
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-gray-200 px-4 pt-3 pb-5 space-y-3 shadow-lg">
+          <div className="lg:hidden bg-white border-b border-gray-200 px-4 pt-3 pb-5 space-y-3 shadow-lg">
             <button
               onClick={() => router.push('/')}
               className="block w-full text-left font-medium text-teal-600 py-1.5 text-sm border-b border-gray-100"
@@ -576,7 +616,7 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {filteredProperties.map((stay, idx) => {
-              const img = stay.images && stay.images.length > 0 ? resolveImageUrl(stay.images[0]) : resolveImageUrl();
+              const img = resolvePropertyImage(stay.images?.[0], BACKEND_URL);
               const rating = stay.rating;
               const reviews = stay.reviewsCount || 0;
               const tags = Array.isArray(stay.tags) ? stay.tags : [];
@@ -594,7 +634,13 @@ export default function HomePage() {
                     <img
                       src={img}
                       alt={stay.title}
+                      loading={idx < 3 ? 'eager' : 'lazy'}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                      onError={(e) => {
+                        if (e.currentTarget.src !== FALLBACK_PROPERTY_IMAGE) {
+                          e.currentTarget.src = FALLBACK_PROPERTY_IMAGE;
+                        }
+                      }}
                     />
                     <div className="absolute top-3 left-3 rounded-full bg-teal-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">
                       ✓ Verified Stay
