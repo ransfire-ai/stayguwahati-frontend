@@ -257,12 +257,62 @@ const dictionary = {
 };
 
 function resolveImageUrl(imagePath?: string | null): string {
-  if (!imagePath) return 'https://via.placeholder.com/400x200?text=No+Photo';
-  if (imagePath.startsWith('data:') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
+  // Keep already-absolute/data URLs untouched.
+  if (!imagePath) return '';
+  const value = String(imagePath).trim();
+  if (!value) return '';
+  if (value.startsWith('data:') || value.startsWith('http://') || value.startsWith('https://')) {
+    return value;
   }
-  const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+
+  // Normalize API paths such as /uploads/photo.jpg, uploads/photo.jpg,
+  // /images/photo.jpg, or a bare filename.
+  const cleanPath = value.replace(/^\/+/, '');
   return `${BACKEND_URL}/${cleanPath}`;
+}
+
+function getBookingPropertyObject(booking: Booking): any | null {
+  const candidates = [booking.property, booking.propertyId, booking.homestayId];
+  return candidates.find((value) => value && typeof value === 'object') || null;
+}
+
+function getBookingPropertyImage(booking: Booking): string | null {
+  const property = getBookingPropertyObject(booking);
+  return (
+    booking.image ||
+    booking.propertyImage ||
+    property?.image ||
+    property?.imageUrl ||
+    property?.propertyImage ||
+    property?.coverImage ||
+    (Array.isArray(booking.images) ? booking.images[0] : null) ||
+    (Array.isArray(property?.images) ? property.images[0] : null) ||
+    (Array.isArray(property?.photos) ? property.photos[0] : null) ||
+    null
+  );
+}
+
+function getBookingPropertyTitle(booking: Booking): string {
+  const property = getBookingPropertyObject(booking);
+  return (
+    booking.propertyName ||
+    property?.title ||
+    property?.propertyName ||
+    booking.title ||
+    'StayGuwahati Property'
+  );
+}
+
+function getBookingPropertyLocation(booking: Booking): string {
+  const property = getBookingPropertyObject(booking);
+  return (
+    booking.location ||
+    property?.locality ||
+    property?.location ||
+    property?.city ||
+    property?.address ||
+    'Guwahati'
+  );
 }
 
 export default function DashboardPage() {
@@ -430,6 +480,83 @@ export default function DashboardPage() {
     router.replace('/login');
   };
 
+  // Some booking records contain only propertyId/homestayId and therefore do not
+  // carry the property's image/title/location. Enrich those records from the
+  // property API so My Bookings always uses the same property data as Property Details.
+  const enrichTravelerBookings = async (bookings: Booking[]): Promise<Booking[]> => {
+    if (!bookings.length) return bookings;
+
+    const needsPropertyData = bookings.some((booking) => {
+      const property = getBookingPropertyObject(booking);
+      return !getBookingPropertyImage(booking) || !getBookingPropertyTitle(booking) || !getBookingPropertyLocation(booking);
+    });
+
+    if (!needsPropertyData) return bookings;
+
+    try {
+      const token = sessionStorage.getItem('token') || '';
+      const response = await fetch(`${BACKEND_URL}/api/properties?status=approved`, {
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+
+      if (!response.ok) return bookings;
+
+      const data = await response.json();
+      const properties: Property[] =
+        data.success && Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data)
+            ? data
+            : [];
+
+      if (!properties.length) return bookings;
+
+      const propertyMap = new Map<string, Property>();
+      properties.forEach((property) => {
+        const id = String(property._id || property.id || '').trim();
+        if (id) propertyMap.set(id, property);
+      });
+
+      return bookings.map((booking) => {
+        const propertyId = getBookingPropertyId(booking);
+        const property = propertyMap.get(propertyId);
+        if (!property) return booking;
+
+        // Preserve the booking's own values and only fill missing property data.
+        const existingProperty = getBookingPropertyObject(booking);
+        const mergedProperty = existingProperty
+          ? { ...property, ...existingProperty }
+          : property;
+
+        return {
+          ...booking,
+          property: mergedProperty,
+          propertyName: booking.propertyName || property.title || property.propertyName,
+          location:
+            booking.location ||
+            property.locality ||
+            property.location ||
+            property.city ||
+            property.address,
+          image:
+            booking.image ||
+            booking.propertyImage ||
+            property.image ||
+            property.imageUrl ||
+            property.propertyImage ||
+            property.images?.[0]
+        };
+      });
+    } catch (error) {
+      console.warn('Could not enrich booking property details:', error);
+      return bookings;
+    }
+  };
+
   // Fetch all traveler bookings and normalize them into one guest-facing lifecycle:
   // Requested -> Confirmed -> Completed / Cancelled.
   const fetchTravelerBookings = async () => {
@@ -522,12 +649,13 @@ export default function DashboardPage() {
         return (Number.isNaN(bDate) ? 0 : bDate) - (Number.isNaN(aDate) ? 0 : aDate);
       });
 
-      setTravelerBookings(sortedBookings);
+      const enrichedBookings = await enrichTravelerBookings(sortedBookings);
+      setTravelerBookings(enrichedBookings);
 
       const upcoming: Booking[] = [];
       const past: Booking[] = [];
 
-      sortedBookings.forEach((booking) => {
+      enrichedBookings.forEach((booking) => {
         const guestStatus = getGuestStatus(booking);
 
         if (guestStatus === 'requested' || guestStatus === 'confirmed') {
@@ -929,30 +1057,10 @@ export default function DashboardPage() {
   };
 
   const renderBookingCard = (b: Booking, statusText?: string) => {
-    const rawPhoto =
-      b.image ||
-      b.propertyImage ||
-      b.propertyId?.image ||
-      b.propertyId?.imageUrl ||
-      (Array.isArray(b.propertyId?.images) ? b.propertyId.images[0] : null) ||
-      (Array.isArray(b.propertyId?.photos) ? b.propertyId.photos[0] : null) ||
-      b.homestayId?.image ||
-      (Array.isArray(b.homestayId?.images) ? b.homestayId.images[0] : null) ||
-      (Array.isArray(b.homestayId?.photos) ? b.homestayId.photos[0] : null) ||
-      (Array.isArray(b.images) ? b.images[0] : null);
-
+    const rawPhoto = getBookingPropertyImage(b);
     const image = resolveImageUrl(rawPhoto);
-    const title =
-      b.propertyName ||
-      b.propertyId?.title ||
-      b.homestayId?.title ||
-      b.title ||
-      'StayGuwahati Property';
-    const location =
-      b.location ||
-      b.propertyId?.location ||
-      b.homestayId?.location ||
-      'Guwahati';
+    const title = getBookingPropertyTitle(b);
+    const location = getBookingPropertyLocation(b);
     const price =
       b.totalPrice ||
       b.price ||
@@ -972,15 +1080,26 @@ export default function DashboardPage() {
         className="group bg-white border border-gray-200/80 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
       >
         <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
-          <img
-            src={image}
-            alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src =
-                'https://via.placeholder.com/400x250?text=No+Preview';
-            }}
-          />
+          {image ? (
+            <img
+              src={image}
+              alt={title}
+              loading="lazy"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = 'none';
+                const fallback = target.parentElement?.querySelector('[data-booking-image-fallback]') as HTMLElement | null;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div
+            data-booking-image-fallback
+            className={`absolute inset-0 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 text-xs font-semibold ${image ? 'hidden' : 'flex'}`}
+          >
+            No property photo
+          </div>
 
           <span
             className={`absolute top-3 left-3 px-3 py-1 text-[11px] font-bold rounded-full border shadow-sm ${getGuestStatusClasses(
