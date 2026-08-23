@@ -283,47 +283,55 @@ export default function DashboardPage() {
 
   const t = dictionary[currentLang] || dictionary.en;
 
-  // Mount/Auth Check + strong session security.
-  //
-  // Security model:
-  // 1. Authentication is accepted from sessionStorage only.
-  // 2. A browser-session marker is created when the dashboard is opened.
-  // 3. A fresh browser/window instance must not silently restore an old login.
-  // 4. 30 minutes of inactivity logs the user out.
-  // 5. The timer survives refreshes because the last-activity timestamp is
-  //    kept in sessionStorage.
-  // 6. When the page becomes visible again, the session is checked immediately.
+  // Strong session security:
+  // • Auth is sessionStorage-only.
+  // • A short browser heartbeat is kept in localStorage so a restored browser
+  //   session can detect that the previous browser instance stopped running.
+  // • 30 minutes of inactivity logs the user out.
+  // • Refresh/internal navigation keep the session alive.
+  // Note: browsers do not expose a guaranteed "browser closed" event, so the
+  // heartbeat is the practical browser-close/reopen safeguard.
   useEffect(() => {
     const TOKEN_KEY = 'token';
     const PROFILE_KEY = 'userProfile';
     const ROLE_KEY = 'activeDashboardRole';
     const LAST_ACTIVITY_KEY = 'stayguwahati_last_activity';
-    const SESSION_ID_KEY = 'stayguwahati_browser_session';
-    const SESSION_STARTED_KEY = 'stayguwahati_session_started';
+    const HEARTBEAT_KEY = 'stayguwahati_browser_heartbeat';
+    const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+    const HEARTBEAT_INTERVAL_MS = 2000;
+    const STALE_HEARTBEAT_MS = 15000;
 
     const token = sessionStorage.getItem(TOKEN_KEY);
+
+    // Remove legacy persistent authentication immediately. This is important
+    // because older versions stored the login token in localStorage.
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem(ROLE_KEY);
 
     if (!token) {
       router.replace('/login');
       return;
     }
 
-    // A session identifier exists only for this browser tab/session.
-    // Do not copy authentication from localStorage.
-    let sessionId = sessionStorage.getItem(SESSION_ID_KEY);
+    // If a heartbeat from a previous browser instance is stale, treat the
+    // restored session as closed/expired and require a fresh login.
+    const previousHeartbeat = Number(
+      localStorage.getItem(HEARTBEAT_KEY) || '0'
+    );
 
-    if (!sessionId) {
-      sessionId =
-        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-      sessionStorage.setItem(SESSION_ID_KEY, sessionId);
-      sessionStorage.setItem(SESSION_STARTED_KEY, String(Date.now()));
+    if (
+      Number.isFinite(previousHeartbeat) &&
+      previousHeartbeat > 0 &&
+      Date.now() - previousHeartbeat > STALE_HEARTBEAT_MS
+    ) {
+      sessionStorage.clear();
+      localStorage.removeItem(HEARTBEAT_KEY);
+      router.replace('/login');
+      return;
     }
 
     const savedProfile = sessionStorage.getItem(PROFILE_KEY);
-
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile);
@@ -347,56 +355,42 @@ export default function DashboardPage() {
       sessionStorage.getItem(LAST_ACTIVITY_KEY) || '0'
     );
 
-    if (
-      !Number.isFinite(existingLastActivity) ||
-      existingLastActivity <= 0
-    ) {
+    if (!Number.isFinite(existingLastActivity) || existingLastActivity <= 0) {
       sessionStorage.setItem(LAST_ACTIVITY_KEY, String(now));
     }
 
-    const getLastActivity = () => {
-      const value = Number(
-        sessionStorage.getItem(LAST_ACTIVITY_KEY) || '0'
-      );
-
-      return Number.isFinite(value) && value > 0 ? value : Date.now();
-    };
+    let lastRecordedActivity = Number(
+      sessionStorage.getItem(LAST_ACTIVITY_KEY) || now
+    );
 
     const forceLogout = () => {
-      sessionStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(PROFILE_KEY);
-      sessionStorage.removeItem(ROLE_KEY);
-      sessionStorage.removeItem(LAST_ACTIVITY_KEY);
-      sessionStorage.removeItem(SESSION_ID_KEY);
-      sessionStorage.removeItem(SESSION_STARTED_KEY);
-
-      // Remove any legacy persistent authentication values.
+      sessionStorage.clear();
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(PROFILE_KEY);
       localStorage.removeItem(ROLE_KEY);
-
+      localStorage.removeItem(HEARTBEAT_KEY);
       router.replace('/login');
     };
 
-    let lastRecordedActivity = getLastActivity();
-
-    const recordActivity = () => {
+    const touchSession = () => {
       if (!sessionStorage.getItem(TOKEN_KEY)) {
         forceLogout();
         return;
       }
 
-      const currentTime = Date.now();
+      const current = Date.now();
 
-      // Throttle writes while still treating the user as active.
-      if (currentTime - lastRecordedActivity >= 5000) {
-        lastRecordedActivity = currentTime;
-        sessionStorage.setItem(
-          LAST_ACTIVITY_KEY,
-          String(currentTime)
-        );
+      if (current - lastRecordedActivity >= 5000) {
+        lastRecordedActivity = current;
+        sessionStorage.setItem(LAST_ACTIVITY_KEY, String(current));
       }
+
+      // Keep the browser heartbeat current while this page is alive.
+      localStorage.setItem(HEARTBEAT_KEY, String(current));
     };
+
+    // Establish heartbeat immediately.
+    localStorage.setItem(HEARTBEAT_KEY, String(Date.now()));
 
     const activityEvents: Array<keyof WindowEventMap> = [
       'mousedown',
@@ -411,76 +405,77 @@ export default function DashboardPage() {
     ];
 
     activityEvents.forEach((eventName) => {
-      window.addEventListener(eventName, recordActivity, {
-        passive: true,
-      });
+      window.addEventListener(eventName, touchSession, { passive: true });
     });
 
-    // Detect tab/window lifecycle changes. If the page is restored after
-    // being hidden for longer than the timeout, the session is terminated.
-    const checkSession = () => {
-      const currentToken = sessionStorage.getItem(TOKEN_KEY);
-
-      if (!currentToken) {
+    const heartbeatTimer = window.setInterval(() => {
+      if (!sessionStorage.getItem(TOKEN_KEY)) {
         forceLogout();
         return;
       }
 
-      if (Date.now() - getLastActivity() >= INACTIVITY_TIMEOUT_MS) {
+      const current = Date.now();
+      localStorage.setItem(HEARTBEAT_KEY, String(current));
+
+      if (current - lastRecordedActivity >= INACTIVITY_TIMEOUT_MS) {
         forceLogout();
       }
-    };
+    }, HEARTBEAT_INTERVAL_MS);
 
-    const handleVisibilityChange = () => {
+    const checkOnReturn = () => {
       if (document.visibilityState === 'visible') {
-        checkSession();
+        if (
+          Date.now() - Number(
+            sessionStorage.getItem(LAST_ACTIVITY_KEY) || Date.now()
+          ) >= INACTIVITY_TIMEOUT_MS
+        ) {
+          forceLogout();
+          return;
+        }
+
+        localStorage.setItem(HEARTBEAT_KEY, String(Date.now()));
       }
     };
 
-    const handlePageShow = () => {
-      checkSession();
-    };
-
-    const handleFocus = () => {
-      checkSession();
-    };
-
-    document.addEventListener(
-      'visibilitychange',
-      handleVisibilityChange
-    );
-    window.addEventListener('pageshow', handlePageShow);
-    window.addEventListener('focus', handleFocus);
-
-    const inactivityTimer = window.setInterval(
-      checkSession,
-      INACTIVITY_CHECK_INTERVAL_MS
-    );
+    document.addEventListener('visibilitychange', checkOnReturn);
+    window.addEventListener('focus', checkOnReturn);
+    window.addEventListener('pageshow', checkOnReturn);
 
     return () => {
       activityEvents.forEach((eventName) => {
-        window.removeEventListener(eventName, recordActivity);
+        window.removeEventListener(eventName, touchSession);
       });
 
-      document.removeEventListener(
-        'visibilitychange',
-        handleVisibilityChange
-      );
-      window.removeEventListener('pageshow', handlePageShow);
-      window.removeEventListener('focus', handleFocus);
-
-      window.clearInterval(inactivityTimer);
+      document.removeEventListener('visibilitychange', checkOnReturn);
+      window.removeEventListener('focus', checkOnReturn);
+      window.removeEventListener('pageshow', checkOnReturn);
+      window.clearInterval(heartbeatTimer);
     };
   }, [router]);
 
   // Unified Logout Handler
-  const handleLogOut = () => {
-    sessionStorage.clear();
+  const handleLogOut = async () => {
+    const token = sessionStorage.getItem('token');
 
-    // Remove legacy persistent authentication data as well.
+    // Best-effort server-side invalidation. Do not block the UI if the
+    // backend is unavailable.
+    if (token) {
+      try {
+        await fetch(`${BACKEND_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          keepalive: true,
+        });
+      } catch (e) {
+        console.warn('Server logout request failed:', e);
+      }
+    }
+
+    sessionStorage.clear();
     localStorage.removeItem('token');
     localStorage.removeItem('userProfile');
     localStorage.removeItem('activeDashboardRole');
+    localStorage.removeItem('stayguwahati_browser_heartbeat');
 
     router.replace('/login');
   };
@@ -765,7 +760,6 @@ export default function DashboardPage() {
       const updated = { ...currentUser, name: newName };
       setCurrentUser(updated);
       sessionStorage.setItem('userProfile', JSON.stringify(updated));
-      localStorage.setItem('userProfile', JSON.stringify(updated));
       alert('Profile updated successfully!');
     }
   };
