@@ -80,6 +80,9 @@ function CheckoutContent() {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Booking request failed.');
       const bookingId = data.data?._id || data.data?.id || '';
+      try {
+        sessionStorage.setItem('bookingConfirmationEmail', email.trim().toLowerCase());
+      } catch {}
       router.replace(`/booking-confirmation?id=${encodeURIComponent(bookingId)}`);
     } catch (e: any) {
       setError(e.message || 'Unable to submit booking request.');
