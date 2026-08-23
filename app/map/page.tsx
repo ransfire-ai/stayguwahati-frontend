@@ -15,6 +15,10 @@ interface Homestay {
   lng?: number;
   images?: string[];
   verified?: boolean;
+  status?: string;
+  isAvailable?: boolean;
+  rating?: number;
+  reviewsCount?: number;
 }
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
@@ -34,6 +38,8 @@ export default function LiveMapPage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
   const [isLeafletLoaded, setIsLeafletLoaded] = useState(false);
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
+  const [mapError, setMapError] = useState('');
 
   // Load Leaflet dynamically to support SSR in Next.js
   useEffect(() => {
@@ -54,43 +60,57 @@ export default function LiveMapPage() {
     loadLeaflet();
   }, []);
 
-  // Fetch Homestays Data
+  // Fetch approved and available homestays
   useEffect(() => {
     const fetchData = async () => {
-      let properties: Homestay[] = [];
       try {
+        setMapError('');
         const res = await fetch(`${BACKEND_URL}/api/homestays`);
-        if (res.ok) {
-          const data = await res.json();
-          properties = data.data || data || [];
-        } else {
-          properties = JSON.parse(localStorage.getItem('userProperties') || '[]');
+
+        if (!res.ok) {
+          throw new Error(`Unable to load properties (${res.status})`);
         }
+
+        const data = await res.json();
+        const raw: Homestay[] =
+          data?.success && Array.isArray(data.data)
+            ? data.data
+            : Array.isArray(data?.data)
+              ? data.data
+              : Array.isArray(data?.homestays)
+                ? data.homestays
+                : Array.isArray(data)
+                  ? data
+                  : [];
+
+        const approved = raw.filter((property) => {
+          const status = String(property.status || 'approved').toLowerCase();
+          return (
+            status === 'approved' &&
+            property.isAvailable !== false &&
+            Number.isFinite(Number(property.lat)) &&
+            Number.isFinite(Number(property.lng))
+          );
+        });
+
+        setLoadedProperties(approved);
+        setFilteredProperties(approved);
       } catch (err) {
-        console.error('Fetch error, defaulting to localStorage fallback:', err);
-        properties = JSON.parse(localStorage.getItem('userProperties') || '[]');
+        console.error('Map property fetch error:', err);
+        setLoadedProperties([]);
+        setFilteredProperties([]);
+        setMapError('Unable to load approved stays right now. Please try again.');
       }
-
-      if (!properties || properties.length === 0) {
-        properties = [
-          {
-            id: 'sample-1',
-            title: 'Green Villa',
-            pricePerNight: 1600,
-            locality: 'Bhangagarh',
-            lat: 26.1550,
-            lng: 91.7600,
-            images: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500'],
-            verified: true
-          }
-        ];
-      }
-
-      setLoadedProperties(properties);
-      setFilteredProperties(properties);
     };
 
     fetchData();
+
+    try {
+      const saved = JSON.parse(localStorage.getItem('stayguwahatiWishlist') || '[]');
+      if (Array.isArray(saved)) setWishlistIds(saved.map(String));
+    } catch {
+      setWishlistIds([]);
+    }
   }, []);
 
   // Initialize Leaflet Map once loaded
@@ -121,7 +141,7 @@ export default function LiveMapPage() {
       const matchesQuery = titleMatch || localityMatch;
 
       if (verifiedOnly) {
-        return matchesQuery && stay.verified !== false;
+        return matchesQuery && stay.verified === true;
       }
       return matchesQuery;
     });
@@ -188,6 +208,20 @@ export default function LiveMapPage() {
         else badge.classList.remove('active-pin');
       }
     }
+  };
+
+  const toggleWishlist = (propId: string) => {
+    setWishlistIds((current) => {
+      const next = current.includes(propId)
+        ? current.filter((id) => id !== propId)
+        : [...current, propId];
+
+      try {
+        localStorage.setItem('stayguwahatiWishlist', JSON.stringify(next));
+      } catch {}
+
+      return next;
+    });
   };
 
   const focusOnProperty = (lat?: number, lng?: number, id?: string) => {
@@ -290,7 +324,7 @@ export default function LiveMapPage() {
             {/* 3. Action CTA */}
             <div className="flex items-center gap-3">
               <Link
-                href="/dashboard"
+                href="/list-property"
                 className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm"
               >
                 <span>+</span> List Your Stay
@@ -343,6 +377,11 @@ export default function LiveMapPage() {
               </button>
             </div>
           </div>
+          {mapError && (
+            <div className="mt-2 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+              {mapError}
+            </div>
+          )}
         </section>
 
         {/* Mobile View Switcher */}
@@ -385,7 +424,7 @@ export default function LiveMapPage() {
               <div>
                 <h1 className="text-lg font-black text-slate-900 tracking-tight">Explore Stays</h1>
                 <p className="text-slate-500 text-xs mt-0.5 font-medium">
-                  Showing {filteredProperties.length} verified stay
+                  Showing {filteredProperties.length} approved stay
                   {filteredProperties.length === 1 ? '' : 's'} in Guwahati
                 </p>
               </div>
@@ -403,6 +442,18 @@ export default function LiveMapPage() {
                   </div>
                   <p className="text-slate-800 font-bold text-sm">No stays match your criteria</p>
                   <p className="text-slate-400 text-xs mt-1">Try clearing filters or adjusting your search term.</p>
+                  {(searchQuery || verifiedOnly) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setVerifiedOnly(false);
+                      }}
+                      className="mt-4 rounded-xl bg-teal-600 px-4 py-2 text-xs font-black text-white hover:bg-teal-700"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                 </div>
               ) : (
                 filteredProperties.map((stay) => {
@@ -410,7 +461,11 @@ export default function LiveMapPage() {
                   const price = parseInt(String(stay.pricePerNight || stay.price || 1500)).toLocaleString('en-IN');
                   let img = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500';
                   if (stay.images && stay.images.length > 0) {
-                    img = stay.images[0].startsWith('/uploads') ? `${BACKEND_URL}${stay.images[0]}` : stay.images[0];
+                    const firstImage = stay.images[0];
+                    img =
+                      firstImage.startsWith('/uploads')
+                        ? `${BACKEND_URL}${firstImage}`
+                        : firstImage;
                   }
 
                   return (
@@ -450,7 +505,10 @@ export default function LiveMapPage() {
                               📍 {stay.locality || 'Guwahati'}
                             </span>
                             <span className="flex items-center gap-1 text-slate-700 font-bold">
-                              ⭐ 4.9 <span className="text-slate-400 font-normal">(12)</span>
+                              ⭐ {Number(stay.rating ?? 0).toFixed(1)}
+                              {typeof stay.reviewsCount === 'number' && (
+                                <span className="text-slate-400 font-normal">({stay.reviewsCount})</span>
+                              )}
                             </span>
                           </div>
                           <h3 className="font-bold text-slate-900 text-base group-hover:text-teal-600 transition line-clamp-1">
