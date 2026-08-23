@@ -28,9 +28,6 @@ interface PropertyData {
   features?: string[];
   amenities?: string[];
   host?: PropertyHost | string;
-  cancellationPolicy?: 'flexible' | 'moderate' | 'strict';
-  isVerified?: boolean;
-  verified?: boolean;
 }
 
 interface Review {
@@ -95,9 +92,6 @@ function PropertyDetailsContent() {
   const [property, setProperty] = useState<PropertyData | null>(null);
   const [selectedMainImage, setSelectedMainImage] = useState<string>('');
   const [isSaved, setIsSaved] = useState(false);
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
-  const [guests, setGuests] = useState(2);
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState<boolean>(true);
@@ -264,28 +258,16 @@ function PropertyDetailsContent() {
 
   const handleReserveSpace = () => {
     if (!property) return;
-
-    if (!checkIn || !checkOut) {
-      window.alert('Please select your check-in and check-out dates.');
-      return;
-    }
-
-    const start = new Date(`${checkIn}T00:00:00`);
-    const end = new Date(`${checkOut}T00:00:00`);
-
-    if (end <= start) {
-      window.alert('Check-out must be after check-in.');
-      return;
-    }
-
-    const propertyId = property.id || property._id || '';
-
-    router.push(
-      `/checkout?id=${encodeURIComponent(propertyId)}` +
-      `&checkIn=${encodeURIComponent(checkIn)}` +
-      `&checkOut=${encodeURIComponent(checkOut)}` +
-      `&guests=${encodeURIComponent(String(guests))}`
-    );
+    const mainImage = property.images && property.images.length > 0 ? property.images[0] : '';
+    const bookingData = {
+      id: property.id || property._id || '',
+      title: property.title || '',
+      price: property.pricePerNight || property.price || 1500,
+      locality: property.locality || 'Guwahati',
+      image: mainImage,
+    };
+    sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+    router.push('/book-stay');
   };
 
   if (!property) {
@@ -301,26 +283,6 @@ function PropertyDetailsContent() {
   const priceFormatted = parseInt(
     String(property.pricePerNight || property.price || 1500)
   ).toLocaleString('en-IN');
-
-  const pricePerNightNumber = Number(
-    property.pricePerNight || property.price || 1500
-  );
-
-  const selectedNights =
-    checkIn && checkOut
-      ? Math.max(
-          0,
-          Math.ceil(
-            (new Date(`${checkOut}T00:00:00`).getTime() -
-              new Date(`${checkIn}T00:00:00`).getTime()) /
-              86400000
-          )
-        )
-      : 0;
-
-  const bookingTotal = pricePerNightNumber * selectedNights;
-
-  const today = new Date().toISOString().split('T')[0];
 
   const totalImages = property.images.length;
   const img2 = property.images[1] || selectedMainImage;
@@ -354,14 +316,25 @@ function PropertyDetailsContent() {
 
   return (
     <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8 flex-1">
-      {/* Back button link */}
+      {/* Back button - return to the actual page the guest came from */}
       <div className="w-full mb-6">
-        <Link
-          href="/map"
+        <button
+          type="button"
+          onClick={() => {
+            // Use browser history so this works from Map, Home, Dashboard,
+            // search/listing pages, etc. Only fall back to /map when the
+            // property-details page was opened directly.
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/map');
+            }
+          }}
           className="text-xs sm:text-sm font-bold text-teal-600 hover:text-teal-700 inline-flex items-center gap-2 group transition"
         >
-          <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Exploration Stream
-        </Link>
+          <span className="transition-transform group-hover:-translate-x-1">←</span>
+          Back
+        </button>
       </div>
 
       {/* Property Title & Top Actions */}
@@ -634,104 +607,34 @@ function PropertyDetailsContent() {
                   / night value
                 </span>
               </div>
-              {(property.isVerified === true || property.verified === true) && (
-                <div className="bg-emerald-50 text-emerald-700 font-bold px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs border border-emerald-100 flex items-center gap-1">
-                  <span>🛡️</span> Verified Stay
-                </div>
-              )}
+              <div className="bg-emerald-50 text-emerald-700 font-bold px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs border border-emerald-100 flex items-center gap-1">
+                <span>🛡️</span> Verified Stay
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 rounded-xl border border-slate-200 overflow-hidden">
-                <label className="p-3 border-r border-slate-200 bg-white">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    Check-in
-                  </span>
-                  <input
-                    type="date"
-                    min={today}
-                    value={checkIn}
-                    onChange={(e) => {
-                      setCheckIn(e.target.value);
-                      if (checkOut && e.target.value >= checkOut) setCheckOut('');
-                    }}
-                    className="mt-1 w-full text-sm font-bold text-slate-800 outline-none bg-transparent"
-                  />
-                </label>
-
-                <label className="p-3 bg-white">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    Check-out
-                  </span>
-                  <input
-                    type="date"
-                    min={checkIn || today}
-                    value={checkOut}
-                    onChange={(e) => setCheckOut(e.target.value)}
-                    className="mt-1 w-full text-sm font-bold text-slate-800 outline-none bg-transparent"
-                  />
-                </label>
-              </div>
-
-              <label className="block rounded-xl border border-slate-200 p-3 bg-white">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  Guests
-                </span>
-                <select
-                  value={guests}
-                  onChange={(e) => setGuests(Number(e.target.value))}
-                  className="mt-1 w-full bg-transparent text-sm font-bold text-slate-800 outline-none"
-                >
-                  <option value={1}>1 guest</option>
-                  <option value={2}>2 guests</option>
-                  <option value={3}>3 guests</option>
-                  <option value={4}>4 guests</option>
-                  <option value={5}>5 guests</option>
-                  <option value={6}>6 guests</option>
-                  <option value={7}>7 guests</option>
-                  <option value={8}>8 guests</option>
-                </select>
-              </label>
-
+            <div className="space-y-3">
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
                 <div className="flex justify-between items-center text-xs font-semibold">
                   <span className="text-slate-500">Cancellation Policy</span>
-                  <span className="text-teal-700">
-                    {getCancellationPolicy(property.cancellationPolicy).title}
-                  </span>
+                  <span className="text-teal-700">{getCancellationPolicy(property.cancellationPolicy).title}</span>
                 </div>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
                   {getCancellationPolicy(property.cancellationPolicy).short}
                 </p>
               </div>
-
-              {selectedNights > 0 && (
-                <div className="rounded-xl border border-slate-100 bg-white p-3 text-sm">
-                  <div className="flex justify-between text-slate-500">
-                    <span>₹{pricePerNightNumber.toLocaleString('en-IN')} × {selectedNights} night{selectedNights === 1 ? '' : 's'}</span>
-                    <span className="font-bold text-slate-800">
-                      ₹{bookingTotal.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex justify-between border-t border-slate-100 pt-2 font-black">
-                    <span>Total</span>
-                    <span>₹{bookingTotal.toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
-              )}
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex justify-between items-center text-xs font-semibold text-slate-500">
+                <span>Check-in Status</span>
+                <span className="text-slate-800">Self Check-in</span>
+              </div>
             </div>
 
             <button
               onClick={handleReserveSpace}
-              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-black py-3.5 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2 group text-sm sm:text-base cursor-pointer"
+              className="w-full bg-slate-900 hover:bg-teal-600 text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2 group text-sm sm:text-base cursor-pointer"
             >
-              Request Booking{' '}
+              Proceed to Reservation{' '}
               <span className="text-sm transition-transform group-hover:translate-x-1">→</span>
             </button>
-
-            <p className="text-center text-[11px] text-slate-400">
-              You’ll enter your guest details on the existing checkout page. No online payment.
-            </p>
           </div>
         </div>
       </div>
@@ -739,7 +642,7 @@ function PropertyDetailsContent() {
   );
 }
 
-function getCancellationPolicy(policy?: string) {
+export default function getCancellationPolicy(policy?: string) {
   if (policy === 'moderate') {
     return {
       title: 'Moderate',
@@ -763,7 +666,7 @@ function getCancellationPolicy(policy?: string) {
   };
 }
 
-export default function PropertyPage() {
+function PropertyPage() {
   return (
     <div className="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
       {/* Navigation Bar */}
