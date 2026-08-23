@@ -28,6 +28,7 @@ interface PropertyData {
   features?: string[];
   amenities?: string[];
   host?: PropertyHost | string;
+  cancellationPolicy?: 'flexible' | 'moderate' | 'strict' | string;
 }
 
 interface Review {
@@ -316,14 +317,22 @@ function PropertyDetailsContent() {
 
   return (
     <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8 flex-1">
-      {/* Back button link */}
+      {/* Back button - return to the actual previous page */}
       <div className="w-full mb-6">
-        <Link
-          href="/map"
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/map');
+            }
+          }}
           className="text-xs sm:text-sm font-bold text-teal-600 hover:text-teal-700 inline-flex items-center gap-2 group transition"
         >
-          <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Exploration Stream
-        </Link>
+          <span className="transition-transform group-hover:-translate-x-1">←</span>
+          Back
+        </button>
       </div>
 
       {/* Property Title & Top Actions */}
@@ -631,7 +640,7 @@ function PropertyDetailsContent() {
   );
 }
 
-export default function getCancellationPolicy(policy?: string) {
+function getCancellationPolicy(policy?: string) {
   if (policy === 'moderate') {
     return {
       title: 'Moderate',
@@ -655,7 +664,7 @@ export default function getCancellationPolicy(policy?: string) {
   };
 }
 
-function PropertyPage() {
+export default function PropertyPage() {
   return (
     <div className="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
       {/* Navigation Bar */}
