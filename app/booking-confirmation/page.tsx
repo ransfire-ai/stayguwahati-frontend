@@ -23,6 +23,7 @@ interface Booking {
   firstName?: string;
   lastName?: string;
   homestayId?: any;
+  cancellationPolicy?: 'flexible' | 'moderate' | 'strict';
 }
 
 const formatDate = (value?: string) => {
@@ -138,8 +139,24 @@ function ConfirmationContent() {
     status === 'accepted' ||
     status === 'approved';
 
-  const isRejected =
-    status === 'rejected' || status === 'cancelled' || status === 'canceled';
+  const isCancelled =
+    status === 'cancelled' || status === 'canceled';
+
+  const isRejected = status === 'rejected';
+
+  const cancellationPolicy =
+    booking?.cancellationPolicy ||
+    booking?.homestayId?.cancellationPolicy ||
+    'flexible';
+
+  const cancellationSummary =
+    cancellationPolicy === 'moderate'
+      ? 'Moderate — free cancellation up to 5 days before check-in.'
+      : cancellationPolicy === 'strict'
+        ? 'Strict — limited cancellation.'
+        : 'Flexible — free cancellation up to 24 hours before check-in.';
+
+  const canCancel = status === 'requested' || status === 'confirmed';
 
   if (loading) {
     return (
@@ -211,23 +228,27 @@ function ConfirmationContent() {
                     : 'bg-amber-100'
               }`}
             >
-              {isRejected ? '×' : isConfirmed ? '✓' : '⏳'}
+              {isCancelled ? '×' : isRejected ? '×' : isConfirmed ? '✓' : '⏳'}
             </div>
 
             <h1 className="mt-5 text-3xl font-black text-slate-950">
-              {isRejected
-                ? 'Booking Request Declined'
-                : isConfirmed
-                  ? 'Booking Confirmed'
-                  : 'Booking Request Submitted'}
+              {isCancelled
+                ? 'Booking Cancelled'
+                : isRejected
+                  ? 'Booking Request Declined'
+                  : isConfirmed
+                    ? 'Booking Confirmed'
+                    : 'Booking Request Submitted'}
             </h1>
 
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
-              {isRejected
-                ? 'Unfortunately, the host could not accept this booking request.'
-                : isConfirmed
-                  ? 'Your stay has been confirmed by the host.'
-                  : 'Your request has been sent to the host. The host will review the dates and contact you to confirm the stay.'}
+              {isCancelled
+                ? 'This booking has been cancelled.'
+                : isRejected
+                  ? 'Unfortunately, the host could not accept this booking request.'
+                  : isConfirmed
+                    ? 'Your stay has been confirmed by the host.'
+                    : 'Your request has been sent to the host. The host will review the dates and contact you to confirm the stay.'}
             </p>
           </div>
 
@@ -277,6 +298,15 @@ function ConfirmationContent() {
                   {guestName}
                 </p>
               </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-teal-100 bg-teal-50/60 p-5">
+              <p className="text-xs font-black uppercase tracking-wide text-teal-700">
+                Cancellation Policy
+              </p>
+              <p className="mt-1 text-sm font-bold text-slate-800">
+                {cancellationSummary}
+              </p>
             </div>
 
             <div className="mt-6 rounded-2xl border border-slate-200 p-5">
@@ -329,6 +359,55 @@ function ConfirmationContent() {
             </div>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              {canCancel && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const token =
+                      sessionStorage.getItem('token') ||
+                      localStorage.getItem('token') ||
+                      '';
+
+                    if (!token) {
+                      window.alert('Please sign in again to cancel this booking.');
+                      return;
+                    }
+
+                    if (!window.confirm('Cancel this booking?')) return;
+
+                    try {
+                      const response = await fetch(
+                        `${BACKEND_URL}/api/bookings/${booking?._id || booking?.id}/status`,
+                        {
+                          method: 'PATCH',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({ status: 'Cancelled' }),
+                        }
+                      );
+
+                      const data = await response.json().catch(() => ({}));
+
+                      if (!response.ok || !data.success) {
+                        window.alert(
+                          data.message || 'Unable to cancel this booking.'
+                        );
+                        return;
+                      }
+
+                      setBooking(data.data);
+                    } catch {
+                      window.alert('Unable to cancel this booking right now.');
+                    }
+                  }}
+                  className="flex-1 rounded-xl bg-rose-50 px-5 py-3.5 text-sm font-black text-rose-700 ring-1 ring-rose-200 hover:bg-rose-600 hover:text-white"
+                >
+                  Cancel Booking
+                </button>
+              )}
+
               <button
                 onClick={() => router.push('/')}
                 className="flex-1 rounded-xl bg-slate-950 px-5 py-3.5 text-sm font-black text-white hover:bg-teal-700"

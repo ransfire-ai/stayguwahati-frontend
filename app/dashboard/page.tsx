@@ -34,42 +34,18 @@ interface UserProfile {
 interface Property {
   _id?: string;
   id?: string;
-
   title?: string;
   propertyName?: string;
-
-  locality?: string;
   location?: string;
   city?: string;
   address?: string;
-
   price?: number;
-  pricePerNight?: number;
-
   image?: string;
   imageUrl?: string;
   propertyImage?: string;
-  images?: string[];
-
   hostEmail?: string;
   ownerEmail?: string;
   userEmail?: string;
-
-  host?: {
-    name?: string;
-    email?: string;
-    phone?: string;
-    avatar?: string;
-    isVerified?: boolean;
-  };
-
-  isAvailable?: boolean;
-  status?: 'pending' | 'approved' | 'rejected' | string;
-
-  rating?: number;
-  reviewsCount?: number;
-  description?: string;
-  features?: string[];
 }
 
 interface Booking {
@@ -416,30 +392,16 @@ export default function DashboardPage() {
   const fetchHostProperties = async () => {
     setLoadingHostProps(true);
     try {
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token') || '';
-      const res = await fetch(`${BACKEND_URL}/api/homestays`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+      const res = await fetch(`${BACKEND_URL}/api/properties`);
       let properties: Property[] = [];
       if (res.ok) {
         const data = await res.json();
-        properties =
-          data.success && Array.isArray(data.data)
-            ? data.data
-            : Array.isArray(data.homestays)
-              ? data.homestays
-              : Array.isArray(data)
-                ? data
-                : [];
+        properties = data.success && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
       }
 
-      const userEmail = currentUser.email.toLowerCase().trim();
-      const filteredProps = properties.filter((p) => {
-        const hostEmail = String(
-          p.hostEmail || p.ownerEmail || p.userEmail || p.host?.email || ''
-        ).toLowerCase().trim();
-        return hostEmail === userEmail;
-      });
+      const filteredProps = properties.filter(
+        (p) => p.hostEmail === currentUser.email || p.ownerEmail === currentUser.email || p.userEmail === currentUser.email
+      );
 
       setHostProperties(filteredProps);
       fetchHostReservations(filteredProps);
@@ -625,9 +587,47 @@ export default function DashboardPage() {
 
           <div className="pt-3 border-t border-gray-100 flex items-center justify-between mt-auto">
             <div>
-              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Total Paid</span>
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Total</span>
               <span className="text-base font-extrabold text-teal-800">₹{price}</span>
             </div>
+
+            {['requested', 'confirmed'].includes(String(b.status || '').toLowerCase()) && (
+              <button
+                onClick={async () => {
+                  const token =
+                    sessionStorage.getItem('token') ||
+                    localStorage.getItem('token') ||
+                    '';
+                  if (!window.confirm('Cancel this booking?')) return;
+
+                  try {
+                    const res = await fetch(
+                      `${BACKEND_URL}/api/bookings/${b._id || b.id}/status`,
+                      {
+                        method: 'PATCH',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ status: 'Cancelled' }),
+                      }
+                    );
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.success) {
+                      window.alert(data.message || 'Unable to cancel this booking.');
+                      return;
+                    }
+                    await fetchTravelerBookings();
+                    window.alert('Booking cancelled.');
+                  } catch {
+                    window.alert('Unable to cancel this booking right now.');
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 hover:text-rose-800 transition-colors"
+              >
+                Cancel booking
+              </button>
+            )}
 
             <button
               onClick={() => setIsReceiptModalOpen(true)}
@@ -689,12 +689,12 @@ export default function DashboardPage() {
               {currentRole === 'traveler' ? (
                 <>
                   <Building2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t.switchHost}</span>
+                  <span>{t.switchHost}</span>
                 </>
               ) : (
                 <>
                   <Plane className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t.switchTraveler}</span>
+                  <span>{t.switchTraveler}</span>
                 </>
               )}
             </button>
@@ -836,31 +836,25 @@ export default function DashboardPage() {
               <Building2 className="w-4 h-4 text-teal-600" /> {t.hostHead}
             </h2>
 
-            {/* Host overview */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
-                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Listings</p>
-                <p className="text-xl font-black text-teal-700 mt-1">{hostProperties.length}</p>
-                <p className="text-[11px] text-gray-400 mt-1">Your properties</p>
-              </div>
-              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
-                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Requests</p>
-                <p className="text-xl font-black text-amber-600 mt-1">
-                  {hostReservations.filter((r) => String(r.status || 'Requested').toLowerCase() === 'requested').length}
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.incomeLabel}</p>
+                <p className="text-lg sm:text-xl font-black text-slate-900 mt-1">
+                  ₹{monthlyIncome.toLocaleString('en-IN')}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-1">Awaiting your action</p>
               </div>
-              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
-                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Confirmed</p>
-                <p className="text-xl font-black text-emerald-600 mt-1">
-                  {hostReservations.filter((r) => ['confirmed','accepted','approved'].includes(String(r.status || '').toLowerCase())).length}
+              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.listingsLabel}</p>
+                <p className="text-lg sm:text-xl font-black text-teal-600 mt-1">
+                  {hostProperties.length} Properties
                 </p>
-                <p className="text-[11px] text-gray-400 mt-1">Accepted stays</p>
               </div>
-              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
-                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">This month</p>
-                <p className="text-xl font-black text-slate-900 mt-1">₹{monthlyIncome.toLocaleString('en-IN')}</p>
-                <p className="text-[11px] text-gray-400 mt-1">Booking value</p>
+              <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm text-center">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.ratingLabel}</p>
+                <p className="text-lg sm:text-xl font-black text-amber-500 mt-1 flex items-center justify-center gap-1">
+                  0.0 <Star className="w-3 h-3 fill-amber-500" />
+                </p>
               </div>
             </div>
 
@@ -1002,10 +996,7 @@ export default function DashboardPage() {
                         className="h-40 bg-gray-200 bg-cover bg-center"
                         style={{
                           backgroundImage: `url('${resolveImageUrl(
-                            p.image ||
-                             p.imageUrl ||
-                             p.propertyImage ||
-                             (Array.isArray((p as any).images) ? (p as any).images[0] : '')
+                            p.image || p.imageUrl || p.propertyImage
                           )}')`
                         }}
                       />
@@ -1016,34 +1007,14 @@ export default function DashboardPage() {
                           </h3>
                           <p className="text-gray-400 text-xs flex items-center gap-1 mt-1">
                             <MapPin className="w-3 h-3 text-teal-600" />{' '}
-                            {p.locality || p.location || p.city || p.address || 'Guwahati'}
+                            {p.location || p.city || p.address || 'Guwahati'}
                           </p>
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-50">
-                          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                            <span>
-                              Price: <strong>₹{p.price || p.pricePerNight || 0} / night</strong>
-                            </span>
-                            <span className="text-teal-600 font-bold">
-                              {p.isAvailable === false ? 'Unavailable' : 'Available'}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => router.push(`/edit-property?id=${encodeURIComponent(String(p._id || p.id || ''))}`)}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:border-teal-500 hover:text-teal-700 transition"
-                            >
-                              Edit Listing
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => router.push(`/property-details?id=${encodeURIComponent(String(p._id || p.id || ''))}`)}
-                              className="rounded-xl bg-teal-600 px-3 py-2 text-xs font-black text-white hover:bg-teal-700 transition"
-                            >
-                              View Listing
-                            </button>
-                          </div>
+                        <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
+                          <span>
+                            Price: <strong>₹{p.price || 0} / night</strong>
+                          </span>
+                          <span className="text-teal-600 font-bold">Active</span>
                         </div>
                       </div>
                     </div>
@@ -1144,10 +1115,10 @@ export default function DashboardPage() {
               </div>
               <div className="text-xs space-y-2 text-gray-600">
                 <p>
-                  <strong>Status:</strong> Booking Confirmed
+                  <strong>Status:</strong> Confirmed & Paid
                 </p>
                 <p>
-                  <strong>Payment:</strong> No online payment — arrange payment directly with the host
+                  <strong>Platform:</strong> StayGuwahati Unified Core
                 </p>
                 <p className="text-teal-700 font-bold">Thank you for booking with StayGuwahati!</p>
               </div>

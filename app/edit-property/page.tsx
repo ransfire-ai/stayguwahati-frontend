@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import React, {
   FormEvent,
@@ -85,6 +85,7 @@ function EditPropertyContent() {
   const [locality, setLocality] = useState('');
   const [description, setDescription] = useState('');
   const [pricePerNight, setPricePerNight] = useState('');
+  const [cancellationPolicy, setCancellationPolicy] = useState<'flexible' | 'moderate' | 'strict'>('flexible');
   const [hostName, setHostName] = useState('');
   const [hostEmail, setHostEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -125,6 +126,11 @@ function EditPropertyContent() {
         setDescription(property.description || '');
         setPricePerNight(
           String(property.pricePerNight ?? property.price ?? '')
+        );
+        setCancellationPolicy(
+          property.cancellationPolicy === 'moderate' || property.cancellationPolicy === 'strict'
+            ? property.cancellationPolicy
+            : 'flexible'
         );
         setHostName(property.host?.name || '');
         setHostEmail(property.host?.email || '');
@@ -242,6 +248,7 @@ function EditPropertyContent() {
         locality,
         description: description.trim(),
         pricePerNight: price,
+        cancellationPolicy,
         features,
         images,
         host: {

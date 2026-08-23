@@ -602,9 +602,14 @@ function PropertyDetailsContent() {
             </div>
 
             <div className="space-y-3">
-              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex justify-between items-center text-xs font-semibold text-slate-500">
-                <span>Cancellation Policy</span>
-                <span className="text-slate-800">Free cancellation</span>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-slate-500">Cancellation Policy</span>
+                  <span className="text-teal-700">{getCancellationPolicy(property.cancellationPolicy).title}</span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {getCancellationPolicy(property.cancellationPolicy).short}
+                </p>
               </div>
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex justify-between items-center text-xs font-semibold text-slate-500">
                 <span>Check-in Status</span>
@@ -626,7 +631,31 @@ function PropertyDetailsContent() {
   );
 }
 
-export default function PropertyPage() {
+export default function getCancellationPolicy(policy?: string) {
+  if (policy === 'moderate') {
+    return {
+      title: 'Moderate',
+      short: 'Free cancellation up to 5 days before check-in.',
+      detail: 'Free cancellation is available up to 5 days before check-in.'
+    };
+  }
+
+  if (policy === 'strict') {
+    return {
+      title: 'Strict',
+      short: 'Limited cancellation.',
+      detail: 'Cancellation is limited. After the host confirms your booking, please contact the host or StayGuwahati support for assistance.'
+    };
+  }
+
+  return {
+    title: 'Flexible',
+    short: 'Free cancellation up to 24 hours before check-in.',
+    detail: 'Free cancellation is available up to 24 hours before check-in.'
+  };
+}
+
+function PropertyPage() {
   return (
     <div className="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
       {/* Navigation Bar */}
