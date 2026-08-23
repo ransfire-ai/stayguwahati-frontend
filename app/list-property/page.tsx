@@ -804,15 +804,33 @@ export default function ListPropertyPage() {
                 <div className="flex-1">
                   <label className="block text-gray-700 font-bold mb-0.5">{t.lHostPhoto}</label>
                   <p className="text-gray-400 text-[11px] mb-2">Upload a photo, or we will automatically generate an initial avatar from your name.</p>
-                  <label className="inline-block bg-white hover:bg-gray-100 text-teal-800 font-semibold px-3 py-1.5 rounded-xl border border-gray-200 text-xs cursor-pointer shadow-sm transition">
-                    Choose Photo
-                    <input
-                      type="file"
-                      accept="image/png, image/jpeg, image/webp"
-                      onChange={handleHostPhotoChange}
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-md">
+                    <label className="flex items-center justify-center gap-1.5 bg-white hover:bg-gray-100 text-teal-800 font-semibold px-3 py-2 rounded-xl border border-gray-200 text-xs cursor-pointer shadow-sm transition">
+                      🖼️ Choose from device
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={handleHostPhotoChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    <label className="flex items-center justify-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold px-3 py-2 rounded-xl border border-teal-600 text-xs cursor-pointer shadow-sm transition">
+                      📷 Take photo with camera
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        onChange={handleHostPhotoChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  <p className="text-gray-400 text-[10px] mt-2">
+                    On mobile, the camera option opens the front camera. On laptops/desktops,
+                    your browser may ask for camera permission or use the available camera.
+                  </p>
                 </div>
               </div>
 
