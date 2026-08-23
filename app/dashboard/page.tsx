@@ -34,18 +34,42 @@ interface UserProfile {
 interface Property {
   _id?: string;
   id?: string;
+
   title?: string;
   propertyName?: string;
+
+  locality?: string;
   location?: string;
   city?: string;
   address?: string;
+
   price?: number;
+  pricePerNight?: number;
+
   image?: string;
   imageUrl?: string;
   propertyImage?: string;
+  images?: string[];
+
   hostEmail?: string;
   ownerEmail?: string;
   userEmail?: string;
+
+  host?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    avatar?: string;
+    isVerified?: boolean;
+  };
+
+  isAvailable?: boolean;
+  status?: 'pending' | 'approved' | 'rejected' | string;
+
+  rating?: number;
+  reviewsCount?: number;
+  description?: string;
+  features?: string[];
 }
 
 interface Booking {
