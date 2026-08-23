@@ -203,49 +203,36 @@ function BookStayContent() {
     activeHomestay.hostName || 'Host'
   )}&background=0d9488&color=fff&size=128`;
 
-  const hostAvatar = avatarError
-    ? fallbackAvatarUrl
-    : getSafeHostAvatar(activeHomestay.hostAvatar, activeHomestay.hostName);
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-24 lg:pb-10">
-      {/* Compact header */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <div className="bg-slate-50 min-h-screen text-slate-900 font-sans pb-28 sm:pb-12">
+      {/* Header Bar */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <button
-            type="button"
             onClick={() => router.back()}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900"
           >
-            <ChevronLeft className="h-4 w-4" />
-            Back
+            <ChevronLeft className="w-5 h-5" />
+            <span>Back</span>
           </button>
-
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 text-white shadow-sm">
-              <Building2 className="h-5 w-5" />
-            </span>
-            <span className="text-lg font-black tracking-tight">
+            <div className="w-7 h-7 bg-teal-600 rounded-lg flex items-center justify-center text-white">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <span className="text-base font-black text-slate-900 tracking-tight">
               Stay<span className="text-teal-600">Guwahati</span>
             </span>
           </Link>
-
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              aria-label="Share property"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100"
-            >
-              <Share2 className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <button className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-700">
+              <Share2 className="w-4 h-4" />
             </button>
             <button
-              type="button"
-              aria-label={isLiked ? 'Remove from wishlist' : 'Add to wishlist'}
               onClick={() => setIsLiked(!isLiked)}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100"
+              className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-700"
             >
               <Heart
-                className={`h-4 w-4 ${
+                className={`w-4 h-4 ${
                   isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-700'
                 }`}
               />
@@ -254,209 +241,176 @@ function BookStayContent() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
-        {/* Property title */}
-        <div className="mb-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+      {/* Main Area */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
+        {/* Hero Image Block */}
+        <div className="relative w-full aspect-[16/9] max-h-[380px] rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-200 shadow-sm border border-slate-200/80">
+          <Image
+            src={primaryImage}
+            alt={activeHomestay.title}
+            fill
+            priority
+            sizes="(max-width: 1200px) 100vw, 1200px"
+            className="object-cover"
+          />
+        </div>
+
+        {/* Layout Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+          {/* Left Details Column */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 {activeHomestay.title}
               </h1>
-              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500">
-                <MapPin className="h-4 w-4 shrink-0 text-teal-600" />
+              <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                 <span>
+                  Entire villa in{' '}
                   {activeHomestay.locality
                     ? `${activeHomestay.locality}, ${activeHomestay.location}`
                     : activeHomestay.location}
                 </span>
               </p>
-            </div>
 
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-200">
-                <Star className="h-4 w-4 fill-current" />
-                {activeHomestay.rating}
-              </span>
-              <span className="text-slate-500">
-                {activeHomestay.reviewCount || 0} reviews
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Hero image */}
-        <div className="relative overflow-hidden rounded-2xl bg-slate-200 shadow-sm ring-1 ring-slate-200 sm:rounded-3xl">
-          <div className="relative h-[260px] sm:h-[360px] lg:h-[410px]">
-            <Image
-              src={primaryImage}
-              alt={activeHomestay.title}
-              fill
-              priority
-              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 92vw, 1200px"
-              className="object-cover"
-            />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/30 to-transparent" />
-          </div>
-        </div>
-
-        {/* Main content + booking card */}
-        <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
-          <section className="space-y-5">
-            {/* Summary */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
-              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                <span className="font-semibold text-slate-900">
-                  {activeHomestay.bedrooms} bedrooms
-                </span>
-                <span className="text-slate-300">•</span>
-                <span>Entire place</span>
-                <span className="text-slate-300">•</span>
-                <span>Guwahati, Assam</span>
-              </div>
-
-              <div className="mt-5 grid grid-cols-3 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-slate-50">
-                <div className="px-2 py-3 text-center">
-                  <div className="flex items-center justify-center gap-1 font-bold text-slate-900">
-                    <Star className="h-4 w-4 fill-current" />
-                    {activeHomestay.rating}
+              {/* Highlights */}
+              <div className="grid grid-cols-3 gap-2 mt-5 py-3.5 bg-slate-50 rounded-xl text-center border border-slate-100">
+                <div>
+                  <div className="flex items-center justify-center gap-1 font-black text-slate-900 text-sm">
+                    <Star className="w-3.5 h-3.5 fill-slate-900" />
+                    <span>{activeHomestay.rating}</span>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-slate-500">Rating</p>
+                  <span className="text-[10px] text-slate-500 font-medium">Ratings</span>
                 </div>
-                <div className="px-2 py-3 text-center">
-                  <div className="font-bold text-slate-900">
-                    {activeHomestay.reviewCount || 0}
+                <div className="border-x border-slate-200">
+                  <div className="flex items-center justify-center gap-1 font-black text-slate-900 text-sm">
+                    <Award className="w-3.5 h-3.5 text-slate-900" />
+                    <span>Guest favorite</span>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-slate-500">Reviews</p>
+                  <span className="text-[10px] text-slate-500 font-medium">Top 5% of homes</span>
                 </div>
-                <div className="px-2 py-3 text-center">
-                  <div className="font-bold text-slate-900">
+                <div>
+                  <div className="font-black text-slate-900 text-sm">
                     {activeHomestay.bedrooms}
                   </div>
-                  <p className="mt-0.5 text-[11px] text-slate-500">Bedrooms</p>
+                  <span className="text-[10px] text-slate-500 font-medium">Bedrooms</span>
                 </div>
               </div>
             </div>
 
-            {/* Host */}
-            <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-teal-50 ring-2 ring-white shadow-sm">
+            {/* Host Section */}
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-teal-50 shrink-0">
                 <img
-                  src={hostAvatar}
+                  src={
+                    avatarError
+                      ? fallbackAvatarUrl
+                      : getSafeHostAvatar(activeHomestay.hostAvatar, activeHomestay.hostName)
+                  }
                   alt={activeHomestay.hostName || 'Host'}
-                  className="h-full w-full object-cover"
+                  className="w-full h-full object-cover"
                   onError={() => setAvatarError(true)}
                 />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Hosted by
-                </p>
-                <h2 className="mt-0.5 truncate text-base font-bold text-slate-950">
-                  {activeHomestay.hostName}
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">
+                  Hosted by {activeHomestay.hostName}
                 </h2>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Verified host · Guwahati
-                </p>
+                <p className="text-xs text-slate-500 font-medium">Superhost · Host in Guwahati</p>
               </div>
-              <ShieldCheck className="ml-auto h-5 w-5 shrink-0 text-teal-600" />
             </div>
 
-            {/* Highlights */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
-              <h2 className="text-lg font-bold text-slate-950">Why you'll love this stay</h2>
-              <div className="mt-5 space-y-5">
-                <div className="flex gap-3">
-                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-slate-700" />
-                  <div>
-                    <h3 className="text-sm font-semibold">Comfortable workspace</h3>
-                    <p className="mt-1 text-sm leading-6 text-slate-500">
-                      A comfortable space with Wi-Fi for work and relaxing.
-                    </p>
-                  </div>
+            {/* Features */}
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+              <div className="flex items-start gap-3.5">
+                <ShieldCheck className="w-5 h-5 text-slate-800 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">Dedicated workspace</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    A comfortable room equipped with Wi-Fi for remote work.
+                  </p>
                 </div>
-                <div className="flex gap-3">
-                  <Award className="mt-0.5 h-5 w-5 shrink-0 text-slate-700" />
-                  <div>
-                    <h3 className="text-sm font-semibold">Easy self check-in</h3>
-                    <p className="mt-1 text-sm leading-6 text-slate-500">
-                      Simple arrival arrangements for a smooth stay.
-                    </p>
-                  </div>
+              </div>
+              <div className="flex items-start gap-3.5">
+                <Award className="w-5 h-5 text-slate-800 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">Self check-in</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Check yourself in using the digital keypad.</p>
                 </div>
-                <div className="flex gap-3">
-                  <Lock className="mt-0.5 h-5 w-5 shrink-0 text-slate-700" />
-                  <div>
-                    <h3 className="text-sm font-semibold">Flexible cancellation</h3>
-                    <p className="mt-1 text-sm leading-6 text-slate-500">
-                      Check the booking terms before confirming your reservation.
-                    </p>
-                  </div>
+              </div>
+              <div className="flex items-start gap-3.5">
+                <Lock className="w-5 h-5 text-slate-800 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                    Free cancellation before arrival
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Full refund if your travel plans change.
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Description */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
-              <h2 className="text-lg font-bold text-slate-950">About this space</h2>
-              <p
-                className={`mt-3 text-sm leading-7 text-slate-600 ${
-                  !showFullDesc ? 'line-clamp-4' : ''
-                }`}
-              >
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+              <h2 className="text-base font-bold text-slate-900 mb-2">About this space</h2>
+              <p className={`text-xs sm:text-sm text-slate-600 leading-relaxed ${!showFullDesc && 'line-clamp-3'}`}>
                 {activeHomestay.description}
               </p>
               <button
-                type="button"
                 onClick={() => setShowFullDesc(!showFullDesc)}
-                className="mt-3 text-sm font-bold text-teal-700 underline underline-offset-2"
+                className="text-xs font-bold text-teal-600 underline mt-3 hover:text-teal-700 transition"
               >
                 {showFullDesc ? 'Show less' : 'Show more'}
               </button>
             </div>
 
             {/* Amenities */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
-              <h2 className="text-lg font-bold text-slate-950">What this place offers</h2>
-              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {[
-                  [Wifi, 'Fast Wi-Fi'],
-                  [Tv, 'HDTV with Netflix'],
-                  [Car, 'Free parking'],
-                  [Dog, 'Pets allowed'],
-                ].map(([Icon, label]) => (
-                  <div
-                    key={label as string}
-                    className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"
-                  >
-                    <Icon className="h-5 w-5 text-teal-600" />
-                    <span>{label as string}</span>
-                  </div>
-                ))}
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+              <h2 className="text-base font-bold text-slate-900 mb-4">What this place offers</h2>
+              <div className="grid grid-cols-2 gap-4 text-xs font-medium text-slate-700">
+                <div className="flex items-center gap-2.5">
+                  <Wifi className="w-4 h-4 text-slate-700" />
+                  <span>Fast wifi</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Tv className="w-4 h-4 text-slate-700" />
+                  <span>HDTV with Netflix</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Car className="w-4 h-4 text-slate-700" />
+                  <span>Free parking</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Dog className="w-4 h-4 text-slate-700" />
+                  <span>Pets allowed</span>
+                </div>
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Desktop booking card */}
-          <aside className="hidden lg:block lg:sticky lg:top-24">
-            <div className="rounded-2xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
-              <div className="flex items-end justify-between border-b border-slate-100 pb-5">
-                <div>
-                  <span className="text-2xl font-black text-slate-950">
-                    ₹{activeHomestay.pricePerNight.toLocaleString('en-IN')}
+          {/* Right Column: Interactive Desktop Card */}
+          <div className="hidden lg:block lg:col-span-1">
+            <div className="sticky top-20 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-md">
+              <div className="flex items-baseline justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-black text-slate-900">
+                    ₹{activeHomestay.pricePerNight}
                   </span>
-                  <span className="ml-1 text-sm text-slate-500">/ night</span>
+                  <span className="text-xs text-slate-500 font-medium">/ night</span>
                 </div>
-                <div className="flex items-center gap-1 text-sm font-bold">
-                  <Star className="h-4 w-4 fill-current" />
-                  {activeHomestay.rating}
+                <div className="flex items-center gap-1 text-xs font-bold text-slate-900">
+                  <Star className="w-3.5 h-3.5 fill-slate-900" />
+                  <span>{activeHomestay.rating}</span>
                 </div>
               </div>
 
-              <div className="mt-5 overflow-hidden rounded-xl border border-slate-300">
-                <div className="grid grid-cols-2">
-                  <label className="block border-r border-b border-slate-300 p-3">
-                    <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                      Check-in
+              {/* Interactive Date & Guest Input Card */}
+              <div className="my-4 border border-slate-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-rose-500 transition">
+                <div className="grid grid-cols-2 border-b border-slate-300">
+                  <label className="p-2.5 border-r border-slate-300 bg-white cursor-pointer hover:bg-slate-50 block">
+                    <span className="block text-[9px] font-black uppercase text-slate-500 tracking-wider">
+                      CHECK-IN
                     </span>
                     <input
                       type="date"
@@ -471,32 +425,32 @@ function BookStayContent() {
                           setCheckOut(nextDay.toISOString().split('T')[0]);
                         }
                       }}
-                      className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
+                      className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
                     />
                   </label>
 
-                  <label className="block border-b border-slate-300 p-3">
-                    <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                      Checkout
+                  <label className="p-2.5 bg-white cursor-pointer hover:bg-slate-50 block">
+                    <span className="block text-[9px] font-black uppercase text-slate-500 tracking-wider">
+                      CHECKOUT
                     </span>
                     <input
                       type="date"
                       min={checkIn}
                       value={checkOut}
                       onChange={(e) => setCheckOut(e.target.value)}
-                      className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
+                      className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
                     />
                   </label>
                 </div>
 
-                <label className="block p-3">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                    Guests
+                <label className="p-2.5 bg-white block cursor-pointer hover:bg-slate-50">
+                  <span className="block text-[9px] font-black uppercase text-slate-500 tracking-wider">
+                    GUESTS
                   </span>
                   <select
                     value={guests}
                     onChange={(e) => setGuests(Number(e.target.value))}
-                    className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
+                    className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
                   >
                     <option value={1}>1 guest</option>
                     <option value={2}>2 guests</option>
@@ -507,86 +461,80 @@ function BookStayContent() {
                 </label>
               </div>
 
-              <div className="mt-5 space-y-3 text-sm">
-                <div className="flex justify-between text-slate-600">
+              {/* Subtotal Calculation Summary */}
+              <div className="space-y-2 my-4 text-xs text-slate-600">
+                <div className="flex justify-between">
                   <span>
-                    ₹{activeHomestay.pricePerNight.toLocaleString('en-IN')} × {nights}{' '}
-                    {nights === 1 ? 'night' : 'nights'}
+                    ₹{activeHomestay.pricePerNight} × {nights} {nights === 1 ? 'night' : 'nights'}
                   </span>
-                  <span className="font-semibold text-slate-900">
-                    ₹{totalPrice.toLocaleString('en-IN')}
-                  </span>
-                </div>
-                <div className="flex justify-between border-t border-slate-100 pt-3 font-bold text-slate-950">
-                  <span>Total</span>
-                  <span>₹{totalPrice.toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-slate-900">₹{totalPrice}</span>
                 </div>
               </div>
 
               <Link
                 href={`/checkout?id=${activeHomestay._id}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`}
-                className="mt-5 block w-full rounded-xl bg-teal-600 py-3.5 text-center text-sm font-bold text-white shadow-md shadow-teal-600/20 transition hover:bg-teal-700"
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-md shadow-rose-600/20 block text-center"
               >
                 Reserve Stay
               </Link>
 
-              <p className="mt-3 text-center text-xs text-slate-400">
+              <p className="text-[11px] text-center text-slate-400 mt-3 font-medium">
                 You won't be charged yet
               </p>
             </div>
-          </aside>
+          </div>
         </div>
       </main>
 
-      {/* Mobile reservation bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-xl backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
-          <div className="min-w-0">
+      {/* Mobile Sticky Reservation Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 px-4 z-40 shadow-lg">
+        <div className="flex items-center justify-between max-w-xl mx-auto">
+          <div>
             <div className="flex items-baseline gap-1">
-              <span className="text-lg font-black text-slate-950">
-                ₹{activeHomestay.pricePerNight.toLocaleString('en-IN')}
+              <span className="text-lg font-black text-slate-900">
+                ₹{activeHomestay.pricePerNight}
               </span>
-              <span className="text-xs text-slate-500">/ night</span>
+              <span className="text-xs text-slate-500 font-medium">/ night</span>
             </div>
+
             <button
               type="button"
               onClick={() => setIsMobileModalOpen(true)}
-              className="mt-0.5 block text-left text-xs font-semibold text-teal-700"
+              className="text-[11px] text-teal-600 font-bold underline text-left block hover:text-teal-700 transition mt-0.5 cursor-pointer"
             >
-              {nights} {nights === 1 ? 'night' : 'nights'} · {guests}{' '}
-              {guests === 1 ? 'guest' : 'guests'}
+              {nights} {nights === 1 ? 'night' : 'nights'} · {guests} {guests === 1 ? 'guest' : 'guests'}
             </button>
           </div>
 
           <Link
             href={`/checkout?id=${activeHomestay._id}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`}
-            className="shrink-0 rounded-xl bg-teal-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/20 transition hover:bg-teal-700"
+            className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-rose-600/20 transition"
           >
             Reserve
           </Link>
         </div>
       </div>
 
-      {/* Mobile booking modal */}
+      {/* Mobile Date & Guest Selection Modal */}
       {isMobileModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end bg-slate-950/50 lg:hidden">
-          <div className="w-full rounded-t-3xl bg-white p-6 shadow-2xl">
-            <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
-              <h3 className="font-bold text-slate-950">Select dates & guests</h3>
+        <div className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-0">
+          <div className="bg-white w-full rounded-t-3xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-slate-900">Select Dates & Guests</h3>
               <button
                 type="button"
                 onClick={() => setIsMobileModalOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <label className="rounded-xl border border-slate-300 p-3">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                  Check-in
-                </span>
+              <div className="border border-slate-300 rounded-xl p-2.5">
+                <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1">
+                  CHECK-IN
+                </label>
                 <input
                   type="date"
                   min={getTodayString()}
@@ -600,32 +548,31 @@ function BookStayContent() {
                       setCheckOut(nextDay.toISOString().split('T')[0]);
                     }
                   }}
-                  className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
+                  className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
                 />
-              </label>
-
-              <label className="rounded-xl border border-slate-300 p-3">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                  Checkout
-                </span>
+              </div>
+              <div className="border border-slate-300 rounded-xl p-2.5">
+                <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1">
+                  CHECKOUT
+                </label>
                 <input
                   type="date"
                   min={checkIn}
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
-                  className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
+                  className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
                 />
-              </label>
+              </div>
             </div>
 
-            <label className="mt-3 block rounded-xl border border-slate-300 p-3">
-              <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                Guests
-              </span>
+            <div className="border border-slate-300 rounded-xl p-2.5">
+              <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider mb-1">
+                GUESTS
+              </label>
               <select
                 value={guests}
                 onChange={(e) => setGuests(Number(e.target.value))}
-                className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
+                className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
               >
                 <option value={1}>1 guest</option>
                 <option value={2}>2 guests</option>
@@ -633,19 +580,17 @@ function BookStayContent() {
                 <option value={4}>4 guests</option>
                 <option value={5}>5+ guests</option>
               </select>
-            </label>
+            </div>
 
-            <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
-              <span className="text-slate-600">Total for {nights} {nights === 1 ? 'night' : 'nights'}</span>
-              <span className="text-lg font-black text-slate-950">
-                ₹{totalPrice.toLocaleString('en-IN')}
-              </span>
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+              <span>Total for {nights} {nights === 1 ? 'night' : 'nights'}</span>
+              <span className="font-bold text-slate-900 text-sm">₹{totalPrice}</span>
             </div>
 
             <button
               type="button"
               onClick={() => setIsMobileModalOpen(false)}
-              className="mt-5 w-full rounded-xl bg-teal-600 py-3.5 text-sm font-bold text-white"
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md cursor-pointer"
             >
               Done
             </button>
@@ -654,7 +599,6 @@ function BookStayContent() {
       )}
     </div>
   );
-
 }
 
 export default function BookStayPage() {
