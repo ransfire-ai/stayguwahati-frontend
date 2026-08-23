@@ -33,6 +33,12 @@ export default function AdminDashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
+  // In this moderation workflow, an approved listing is the verified public listing.
+  const isListingVerified = (stay: any) =>
+    stay?.isVerified === true ||
+    stay?.verified === true ||
+    String(stay?.status || '').toLowerCase() === 'approved';
+
   // Auth & Role Validation Guard
   const checkAdminAccess = useCallback(() => {
     if (typeof window === 'undefined') return false;
@@ -133,6 +139,11 @@ export default function AdminDashboardPage() {
         },
         body: JSON.stringify({
           status: newStatus,
+          // Keep the public verification flag synchronized with moderation.
+          // The backend can persist this when the field exists; status remains
+          // the source of truth for older records.
+          verified: newStatus === 'approved',
+          isVerified: newStatus === 'approved',
           ...(reason.trim() ? { reason: reason.trim() } : {}),
         }),
       });
@@ -340,16 +351,17 @@ export default function AdminDashboardPage() {
                   <th className="py-4 px-6">Pricing</th>
                   <th className="py-4 px-6">Host Contact</th>
                   <th className="py-4 px-6">Current Status</th>
+                  <th className="py-4 px-6">Verification</th>
                   <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {loading ? (
-                  <tr><td colSpan={6} className="text-center py-12 text-slate-400">Loading property moderation queue...</td></tr>
+                  <tr><td colSpan={7} className="text-center py-12 text-slate-400">Loading property moderation queue...</td></tr>
                 ) : fetchError ? (
-                  <tr><td colSpan={6} className="text-center py-12 text-rose-500 font-medium">Failed to load moderation pipeline. Check server connection.</td></tr>
+                  <tr><td colSpan={7} className="text-center py-12 text-rose-500 font-medium">Failed to load moderation pipeline. Check server connection.</td></tr>
                 ) : filteredListings.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-12 text-slate-400 font-medium">No matching {filter} property submissions found.</td></tr>
+                  <tr><td colSpan={7} className="text-center py-12 text-slate-400 font-medium">No matching {filter} property submissions found.</td></tr>
                 ) : (
                   filteredListings.map((stay) => {
                     const mainImg = formatImageUrl(stay.images?.[0]);
@@ -397,6 +409,17 @@ export default function AdminDashboardPage() {
                           }`}>
                             {statusVal === 'approved' ? 'Approved' : statusVal === 'rejected' ? 'Rejected' : 'Pending'}
                           </span>
+                        </td>
+                        <td className="py-4 px-6">
+                          {isListingVerified(stay) ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-black text-teal-700">
+                              ✓ Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-500">
+                              Not verified
+                            </span>
+                          )}
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center justify-end gap-2">
@@ -447,6 +470,13 @@ export default function AdminDashboardPage() {
                         statusVal === 'approved' ? 'bg-emerald-50 text-emerald-700' : statusVal === 'rejected' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
                       }`}>
                         {statusVal === 'approved' ? 'Approved' : statusVal === 'rejected' ? 'Rejected' : 'Pending'}
+                      </span>
+                      <span className={`mt-2 ml-1 inline-flex rounded-full px-2.5 py-1 text-[10px] font-black ${
+                        isListingVerified(stay)
+                          ? 'bg-teal-50 text-teal-700'
+                          : 'bg-slate-50 text-slate-500'
+                      }`}>
+                        {isListingVerified(stay) ? '✓ Verified' : 'Not verified'}
                       </span>
                     </div>
                   </div>
