@@ -586,13 +586,16 @@ export default function HomePage() {
         <div className="mb-8 sm:mb-10 text-center sm:text-left">
           <h2 className="text-xl sm:text-2xl font-black text-slate-900">{t.sec1_title}</h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.sec1_subtitle}</p>
+          <p className="mt-2 text-[10px] text-slate-400">
+            Neighborhood photos: Wikimedia Commons.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
             <div className="h-44 sm:h-48 overflow-hidden relative">
               <img
-                src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500"
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/Uzan%20Bazar%20Park%201.jpg"
                 alt="Uzan Bazar"
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
@@ -612,7 +615,7 @@ export default function HomePage() {
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
             <div className="h-44 sm:h-48 overflow-hidden relative">
               <img
-                src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500"
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/PALTAN%20BAZAAR.JPG"
                 alt="Paltan Bazar"
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
@@ -632,7 +635,7 @@ export default function HomePage() {
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition sm:col-span-2 md:col-span-1">
             <div className="h-44 sm:h-48 overflow-hidden relative">
               <img
-                src="https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500"
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/Ganeshguri.jpg"
                 alt="Ganeshguri"
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
