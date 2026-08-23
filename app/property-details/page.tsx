@@ -27,8 +27,30 @@ interface PropertyData {
   images: string[];
   features?: string[];
   amenities?: string[];
+  bedrooms?: number | string;
+  bathrooms?: {
+    privateAttached?: number | string;
+    dedicated?: number | string;
+    shared?: number | string;
+    total?: number | string;
+  };
+  propertyType?: string;
+  spaceType?: string;
+  maxGuests?: number | string;
+  guestCapacity?: number | string;
+  accommodates?: number | string;
+  sleepingArrangements?: Array<{
+    bedroom?: string;
+    bedType?: string;
+    beds?: string;
+  }>;
+  bedroomsDetails?: Array<{
+    name?: string;
+    bedType?: string;
+    beds?: string;
+  }>;
   host?: PropertyHost | string;
-  cancellationPolicy?: 'flexible' | 'moderate' | 'strict' | string;
+  cancellationPolicy?: 'flexible' | 'moderate' | 'strict';
 }
 
 interface Review {
@@ -40,17 +62,6 @@ interface Review {
 }
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
-
-const SUPPORT_EMAIL = 'support@stayguwahati.in';
-const SUPPORT_WHATSAPP =
-  process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\\D/g, '') || '';
-
-const getWhatsAppUrl = (phone: string, message: string) => {
-  const digits = phone.replace(/\\D/g, '');
-  if (!digits) return '';
-  const normalized = digits.startsWith('91') ? digits : `91${digits}`;
-  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
-};
 
 const getHostAvatarUrl = (host?: PropertyHost | string) => {
   if (!host) return null;
@@ -277,6 +288,7 @@ function PropertyDetailsContent() {
       price: property.pricePerNight || property.price || 1500,
       locality: property.locality || 'Guwahati',
       image: mainImage,
+      cancellationPolicy: property.cancellationPolicy || 'flexible',
     };
     const params = new URLSearchParams({
       id: bookingData.id,
@@ -298,6 +310,40 @@ function PropertyDetailsContent() {
   const priceFormatted = parseInt(
     String(property.pricePerNight || property.price || 1500)
   ).toLocaleString('en-IN');
+
+  const bedroomCount = Number(property.bedrooms ?? 0);
+  const privateAttachedBathrooms = Number(property.bathrooms?.privateAttached ?? 0);
+  const dedicatedBathrooms = Number(property.bathrooms?.dedicated ?? 0);
+  const sharedBathrooms = Number(property.bathrooms?.shared ?? 0);
+  const bathroomTotalFromTypes =
+    privateAttachedBathrooms + dedicatedBathrooms + sharedBathrooms;
+  const bathroomCount = Math.max(
+    0,
+    Math.round(
+      Number(property.bathrooms?.total ?? bathroomTotalFromTypes) || 0
+    )
+  );
+  const bathroomCountLabel = String(bathroomCount);
+
+  const maxGuests = Number(
+    property.maxGuests ?? property.guestCapacity ?? property.accommodates ?? 0
+  );
+  const spaceType = property.spaceType || property.propertyType || '';
+
+  const bathroomTypeItems = [
+    privateAttachedBathrooms > 0
+      ? `${privateAttachedBathrooms} Private & attached`
+      : null,
+    dedicatedBathrooms > 0 ? `${dedicatedBathrooms} Dedicated` : null,
+    sharedBathrooms > 0 ? `${sharedBathrooms} Shared` : null,
+  ].filter(Boolean) as string[];
+
+  const sleepingItems = (
+    property.sleepingArrangements || property.bedroomsDetails || []
+  ).map((item, index) => ({
+    name: item.bedroom || item.name || `Bedroom ${index + 1}`,
+    bed: item.bedType || item.beds || 'Bed details not provided',
+  }));
 
   const totalImages = property.images.length;
   const img2 = property.images[1] || selectedMainImage;
@@ -331,22 +377,14 @@ function PropertyDetailsContent() {
 
   return (
     <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8 flex-1">
-      {/* Back button - return to the actual previous page */}
+      {/* Back button link */}
       <div className="w-full mb-6">
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window !== 'undefined' && window.history.length > 1) {
-              router.back();
-            } else {
-              router.push('/map');
-            }
-          }}
+        <Link
+          href="/map"
           className="text-xs sm:text-sm font-bold text-teal-600 hover:text-teal-700 inline-flex items-center gap-2 group transition"
         >
-          <span className="transition-transform group-hover:-translate-x-1">←</span>
-          Back
-        </button>
+          <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Exploration Stream
+        </Link>
       </div>
 
       {/* Property Title & Top Actions */}
@@ -358,6 +396,28 @@ function PropertyDetailsContent() {
           <p className="text-xs sm:text-sm text-slate-500 mt-2 flex items-center gap-2 font-medium">
             <span className="text-teal-600 animate-pulse">📍</span> {property.locality || 'Guwahati'}, Guwahati
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700">
+            {bedroomCount > 0 && (
+              <span className="rounded-full bg-white border border-slate-200 px-3 py-1.5 shadow-sm">
+                {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
+              </span>
+            )}
+            {bathroomCount > 0 && (
+              <span className="rounded-full bg-white border border-slate-200 px-3 py-1.5 shadow-sm">
+                {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
+              </span>
+            )}
+            {spaceType && (
+              <span className="rounded-full bg-white border border-slate-200 px-3 py-1.5 shadow-sm">
+                {spaceType}
+              </span>
+            )}
+            {maxGuests > 0 && (
+              <span className="rounded-full bg-white border border-slate-200 px-3 py-1.5 shadow-sm">
+                Up to {maxGuests} guests
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-600">
@@ -494,6 +554,65 @@ function PropertyDetailsContent() {
               </div>
             </div>
           </div>
+
+          {/* Property details: bedrooms, bathrooms and sleeping arrangements */}
+          {(bedroomCount > 0 || bathroomCount > 0 || sleepingItems.length > 0) && (
+            <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+                <span className="text-teal-600">🏡</span> Property Details
+              </h2>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {bedroomCount > 0 && (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Bedrooms</div>
+                    <div className="mt-1 text-lg font-black text-slate-900">{bedroomCount}</div>
+                  </div>
+                )}
+                {bathroomCount > 0 && (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Bathrooms</div>
+                    <div className="mt-1 text-lg font-black text-slate-900">{bathroomCountLabel}</div>
+                  </div>
+                )}
+                {(spaceType || maxGuests > 0) && (
+                  <div className="col-span-2 sm:col-span-1 rounded-xl border border-teal-100 bg-teal-50/60 p-4">
+                    <div className="text-xs font-bold uppercase tracking-wider text-teal-700">Stay type</div>
+                    <div className="mt-1 text-sm font-black text-slate-900">
+                      {spaceType || 'Entire place'}{maxGuests > 0 ? ` · Up to ${maxGuests} guests` : ''}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {sleepingItems.length > 0 && (
+                <div className="mt-6 border-t border-slate-100 pt-6">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Sleeping arrangements</h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {sleepingItems.map((item, index) => (
+                      <div key={`${item.name}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                        <div className="font-bold text-slate-900">🛏 {item.name}</div>
+                        <div className="mt-1 text-sm text-slate-600">{item.bed}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {bathroomTypeItems.length > 0 && (
+                <div className="mt-6 border-t border-slate-100 pt-6">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Bathrooms</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {bathroomTypeItems.map((item) => (
+                      <span key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700">
+                        🚿 {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Host Profile */}
           {property.host && (
@@ -650,57 +769,6 @@ function PropertyDetailsContent() {
           </div>
         </div>
       </div>
-
-      {/* Guest Support */}
-      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal-50 text-xl">
-            💬
-          </div>
-          <div>
-            <h2 className="text-base sm:text-lg font-black text-slate-900">Need help?</h2>
-            <p className="mt-1 text-xs sm:text-sm text-slate-500">
-              Our support team can help with your booking, dates, or property questions.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <a
-            href={
-              SUPPORT_WHATSAPP
-                ? getWhatsAppUrl(
-                    SUPPORT_WHATSAPP,
-                    `Hi StayGuwahati Support, I need help with ${property.title}.`
-                  )
-                : `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-                    `Help with ${property.title}`
-                  )}`
-            }
-            target={SUPPORT_WHATSAPP ? "_blank" : undefined}
-            rel={SUPPORT_WHATSAPP ? "noreferrer" : undefined}
-            className="rounded-xl bg-teal-600 px-4 py-3 text-center text-sm font-black text-white hover:bg-teal-700 transition"
-          >
-            💬 WhatsApp Support
-          </a>
-
-          <a
-            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-              `Support request - ${property.title}`
-            )}`}
-            className="rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-black text-slate-700 hover:border-teal-300 hover:text-teal-700 transition"
-          >
-            🎧 Contact StayGuwahati
-          </a>
-        </div>
-
-        {!SUPPORT_WHATSAPP && (
-          <p className="mt-3 text-[11px] text-slate-400">
-            Configure NEXT_PUBLIC_SUPPORT_WHATSAPP to enable the direct WhatsApp button.
-          </p>
-        )}
-      </section>
-
     </main>
   );
 }
