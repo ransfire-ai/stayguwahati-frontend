@@ -1,4 +1,4 @@
- 'use client';
+'use client';
 
 import React, {
   FormEvent,
@@ -85,6 +85,8 @@ function EditPropertyContent() {
   const [locality, setLocality] = useState('');
   const [description, setDescription] = useState('');
   const [pricePerNight, setPricePerNight] = useState('');
+  const [hostName, setHostName] = useState('');
+  const [hostEmail, setHostEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [avatar, setAvatar] = useState('');
   const [images, setImages] = useState<string[]>([]);
@@ -124,6 +126,8 @@ function EditPropertyContent() {
         setPricePerNight(
           String(property.pricePerNight ?? property.price ?? '')
         );
+        setHostName(property.host?.name || '');
+        setHostEmail(property.host?.email || '');
         setPhone(property.host?.phone || '');
         setAvatar(property.host?.avatar || '');
         setImages(
@@ -221,8 +225,17 @@ function EditPropertyContent() {
 
       const token =
         typeof window !== 'undefined'
-          ? sessionStorage.getItem('token') || ''
+          ? sessionStorage.getItem('token') ||
+            localStorage.getItem('token') ||
+            localStorage.getItem('authToken') ||
+            ''
           : '';
+
+      if (!token) {
+        setError('Your login session has expired. Please sign in again and then edit the listing.');
+        setSaving(false);
+        return;
+      }
 
       const updatedData = {
         title: title.trim(),
@@ -232,6 +245,8 @@ function EditPropertyContent() {
         features,
         images,
         host: {
+          name: hostName.trim(),
+          email: hostEmail.trim().toLowerCase(),
           phone: phone.trim(),
           avatar: avatar.trim(),
         },
@@ -249,11 +264,29 @@ function EditPropertyContent() {
         }
       );
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data.success) {
+        const detail =
+          data?.details && typeof data.details === 'object'
+            ? Object.values(data.details)
+                .map((item: any) => item?.message || String(item))
+                .filter(Boolean)
+                .join(' ')
+            : '';
+
+        if (res.status === 401) {
+          throw new Error('Your login session has expired. Please sign in again.');
+        }
+
+        if (res.status === 403) {
+          throw new Error(data.message || 'You are not allowed to edit this listing.');
+        }
+
         throw new Error(
-          data.message || 'Failed to save listing.'
+          data.message ||
+          detail ||
+          `Failed to save listing (HTTP ${res.status}).`
         );
       }
 
@@ -494,6 +527,34 @@ function EditPropertyContent() {
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Host name
+                </label>
+                <input
+                  type="text"
+                  value={hostName}
+                  onChange={(e) => setHostName(e.target.value)}
+                  placeholder="Host name"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Host email
+                </label>
+                <input
+                  type="email"
+                  value={hostEmail}
+                  onChange={(e) => setHostEmail(e.target.value)}
+                  placeholder="Host email"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                  required
+                />
+              </div>
+
               <div>
                 <label className="mb-2 block text-sm font-bold text-slate-700">
                   Host phone
