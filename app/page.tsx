@@ -8,14 +8,14 @@ interface Property {
   id?: string;
   title: string;
   locality: string;
+  description?: string;
+  features?: string[];
   pricePerNight: number;
   images?: string[];
   rating?: number;
   reviewsCount?: number;
   tags?: string[];
   status?: 'pending' | 'approved' | 'rejected';
-  isVerified?: boolean;
-  verified?: boolean;
 }
 
 const translations = {
@@ -173,6 +173,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [selectedFilterLocality, setSelectedFilterLocality] = useState<string | null>(null);
   const [searchLocality, setSearchLocality] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [galleryIndexes, setGalleryIndexes] = useState<Record<string, number>>({});
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
   const t = translations[currentLang] || translations.en;
@@ -234,8 +236,9 @@ export default function HomePage() {
   };
 
   const handleSearch = () => {
-    const value = searchLocality.trim();
-    setSelectedFilterLocality(value || null);
+    const locality = searchLocality.trim();
+    setSelectedFilterLocality(locality || null);
+
     setTimeout(() => {
       document.getElementById('listings')?.scrollIntoView({
         behavior: 'smooth',
@@ -244,14 +247,60 @@ export default function HomePage() {
     }, 0);
   };
 
+  const handleLocalitySelect = (locality: string) => {
+    setSearchLocality(locality);
+    setSelectedFilterLocality(locality || null);
+
+    setTimeout(() => {
+      document.getElementById('listings')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 0);
+  };
+
+  const changeGalleryImage = (propertyId: string, total: number, direction: number) => {
+    if (total <= 1) return;
+
+    setGalleryIndexes((current) => {
+      const currentIndex = current[propertyId] || 0;
+      return {
+        ...current,
+        [propertyId]: (currentIndex + direction + total) % total,
+      };
+    });
+  };
+
   const handleReserveSpace = (stay: Property) => {
     const propertyId = stay._id || stay.id;
     router.push(`/property-details?id=${propertyId}&title=${encodeURIComponent(stay.title)}`);
   };
 
-  const filteredProperties = selectedFilterLocality
-    ? properties.filter((p) => p.locality?.toLowerCase().includes(selectedFilterLocality.toLowerCase()))
-    : properties;
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const normalizedLocality = selectedFilterLocality?.trim().toLowerCase() || '';
+
+  const filteredProperties = properties.filter((p) => {
+    const title = (p.title || '').toLowerCase();
+    const locality = (p.locality || '').toLowerCase();
+    const description = (p.description || '').toLowerCase();
+    const features = Array.isArray(p.features)
+      ? p.features.join(' ').toLowerCase()
+      : '';
+
+    const matchesSearch =
+      !normalizedQuery ||
+      title.includes(normalizedQuery) ||
+      locality.includes(normalizedQuery) ||
+      description.includes(normalizedQuery) ||
+      features.includes(normalizedQuery);
+
+    const matchesLocality =
+      !normalizedLocality ||
+      locality === normalizedLocality ||
+      locality.includes(normalizedLocality);
+
+    return matchesSearch && matchesLocality;
+  });
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 font-sans flex flex-col justify-between">
@@ -435,46 +484,61 @@ export default function HomePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/55 to-slate-950/90" />
 
-        <div className="relative mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 sm:py-20 lg:py-24">
+        <div className="relative mx-auto max-w-6xl px-4 py-20 text-center sm:px-6 sm:py-24 lg:py-28">
           <span className="inline-flex rounded-full border border-teal-300/30 bg-teal-400/15 px-3.5 py-1 text-[10px] font-bold uppercase tracking-widest text-teal-200 sm:text-xs">
             {t.hero_tag}
           </span>
 
-          <h1 className="mx-auto mt-5 max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
-            {t.hero_title}
+          <h1 className="mx-auto mt-6 max-w-5xl text-4xl font-black leading-[1.05] tracking-[-0.03em] text-white drop-shadow-2xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-[5.25rem]">
+            Find Your Perfect Stay
+            <span className="block text-teal-300">in Guwahati</span>
           </h1>
 
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base md:text-lg">
-            {t.hero_subtitle}
+          <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-6 text-slate-200 drop-shadow sm:text-base md:text-lg md:leading-7">
+            Discover handpicked homestays, apartments and unique stays across
+            Guwahati's best neighbourhoods.
           </p>
 
-          <div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-white p-2 text-left shadow-2xl shadow-black/25 sm:mt-10 sm:rounded-3xl sm:p-2.5">
-            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-              <label className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3.5 ring-1 ring-slate-200">
+          <div className="mx-auto mt-8 max-w-5xl rounded-2xl bg-white p-2 text-left shadow-2xl shadow-black/25 sm:mt-10 sm:rounded-3xl sm:p-2.5">
+            <div className="grid gap-2 lg:grid-cols-[1.2fr_0.8fr_auto]">
+              <label className="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50 px-4 py-3.5 ring-1 ring-slate-200">
+                <span className="text-lg">🔎</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Search
+                  </span>
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSearch();
+                    }}
+                    placeholder="Property, locality or area"
+                    className="mt-1 w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-400"
+                  />
+                </span>
+              </label>
+
+              <label className="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50 px-4 py-3.5 ring-1 ring-slate-200">
                 <span className="text-lg">📍</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    Where do you want to stay?
+                    Locality
                   </span>
                   <select
                     value={searchLocality}
-                    onChange={(e) => setSearchLocality(e.target.value)}
+                    onChange={(e) => handleLocalitySelect(e.target.value)}
                     className="mt-1 w-full bg-transparent text-sm font-bold text-slate-900 outline-none"
                   >
                     <option value="">All Guwahati</option>
                     {[
-                      'Uzan Bazar',
-                      'Paltan Bazar',
-                      'Ganeshguri',
-                      'Dispur',
-                      'Beltola',
-                      'GS Road',
-                      'Chandmari',
-                      'Six Mile',
-                      'Zoo Road',
-                      'Khanapara',
-                      'Pan Bazar',
-                      'Maligaon',
+                      'Amingaon', 'Azara', 'Bamunimaidam', 'Basistha', 'Beltola',
+                      'Bhangagarh', 'Borjhar', 'Chandmari', 'Christian Basti', 'Dispur',
+                      'Ganeshguri', 'Geetanagar', 'GS Road', 'Jalukbari', 'Kahilipara',
+                      'Kamakhya', 'Khanapara', 'Kharghuli', 'Lal Ganesh', 'Lokhra',
+                      'Maligaon', 'Narengi', 'Paltan Bazar', 'Pan Bazar', 'Rehabari',
+                      'Rukminigaon', 'Silpukhuri', 'Six Mile', 'Supermarket', 'Ulubari',
+                      'Uzan Bazar', 'Zoo Road'
                     ].map((locality) => (
                       <option key={locality} value={locality}>
                         {locality}
@@ -486,10 +550,26 @@ export default function HomePage() {
 
               <button
                 onClick={handleSearch}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 sm:min-w-44"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 lg:min-w-36"
               >
-                🔎 {t.hero_btn}
+                🔎 Search
               </button>
+            </div>
+
+            <div className="mt-2 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden">
+              {['Dispur', 'Uzan Bazar', 'Beltola', 'GS Road', 'Ganeshguri', 'Paltan Bazar'].map((locality) => (
+                <button
+                  key={locality}
+                  onClick={() => handleLocalitySelect(locality)}
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
+                    selectedFilterLocality === locality
+                      ? 'border-teal-600 bg-teal-600 text-white'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-700'
+                  }`}
+                >
+                  {locality}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -521,7 +601,7 @@ export default function HomePage() {
               <h3 className="font-bold text-base sm:text-lg text-slate-900">{t.loc1_title}</h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.loc1_desc}</p>
               <button
-                onClick={() => setSelectedFilterLocality('Uzan Bazar')}
+                onClick={() => handleLocalitySelect('Uzan Bazar')}
                 className="inline-block text-xs sm:text-sm font-bold text-teal-600 mt-4 hover:text-teal-700"
               >
                 {t.explore_link}
@@ -541,7 +621,7 @@ export default function HomePage() {
               <h3 className="font-bold text-base sm:text-lg text-slate-900">{t.loc2_title}</h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.loc2_desc}</p>
               <button
-                onClick={() => setSelectedFilterLocality('Paltan Bazar')}
+                onClick={() => handleLocalitySelect('Paltan Bazar')}
                 className="inline-block text-xs sm:text-sm font-bold text-teal-600 mt-4 hover:text-teal-700"
               >
                 {t.explore_link}
@@ -561,7 +641,7 @@ export default function HomePage() {
               <h3 className="font-bold text-base sm:text-lg text-slate-900">{t.loc3_title}</h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.loc3_desc}</p>
               <button
-                onClick={() => setSelectedFilterLocality('Ganeshguri')}
+                onClick={() => handleLocalitySelect('Ganeshguri')}
                 className="inline-block text-xs sm:text-sm font-bold text-teal-600 mt-4 hover:text-teal-700"
               >
                 {t.explore_link}
@@ -578,18 +658,32 @@ export default function HomePage() {
             <h2 className="text-xl sm:text-2xl font-black text-slate-900">{t.sec2_title}</h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.sec2_subtitle}</p>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            {selectedFilterLocality && (
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            {(selectedFilterLocality || searchQuery.trim()) && (
               <button
                 onClick={() => {
                   setSelectedFilterLocality(null);
                   setSearchLocality('');
+                  setSearchQuery('');
                 }}
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:border-teal-300 hover:text-teal-700"
               >
-                Clear filter
+                Clear search
               </button>
             )}
+
+            {selectedFilterLocality && (
+              <span className="rounded-full bg-teal-600 px-3 py-2 text-xs font-bold text-white">
+                📍 {selectedFilterLocality}
+              </span>
+            )}
+
+            {searchQuery.trim() && (
+              <span className="max-w-48 truncate rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">
+                🔎 {searchQuery.trim()}
+              </span>
+            )}
+
             <div className="rounded-full border border-teal-100 bg-teal-50 px-3.5 py-1.5 text-xs font-semibold text-teal-700 sm:px-4 sm:py-2 sm:text-sm">
               <span>{t.showing_text}</span>{' '}
               <span className="font-bold">{filteredProperties.length}</span>{' '}
@@ -609,99 +703,171 @@ export default function HomePage() {
             <p className="font-semibold text-slate-700 text-sm">{t.no_properties}</p>
             <p className="text-slate-400 text-xs mt-1">{t.no_properties_sub}</p>
             <button
-              onClick={() => setSelectedFilterLocality(null)}
+              onClick={() => {
+                setSelectedFilterLocality(null);
+                setSearchLocality('');
+                setSearchQuery('');
+              }}
               className="inline-block mt-4 text-xs sm:text-sm font-bold text-teal-600 hover:underline"
             >
               {t.show_all}
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProperties.map((stay, idx) => {
-              const img = resolvePropertyImage(stay.images?.[0], BACKEND_URL);
+              const gallery = Array.isArray(stay.images)
+                ? stay.images.filter(Boolean).slice(0, 8)
+                : [];
+              const propertyId = stay._id || stay.id || `prop-${idx}`;
+              const currentIndex = Math.min(
+                galleryIndexes[propertyId] || 0,
+                Math.max(gallery.length - 1, 0)
+              );
+              const img = resolvePropertyImage(gallery[currentIndex], BACKEND_URL);
               const rating = stay.rating;
               const reviews = stay.reviewsCount || 0;
               const tags = Array.isArray(stay.tags) ? stay.tags : [];
-              const propertyId = stay._id || stay.id || `prop-${idx}`;
 
               return (
-                <div
+                <article
                   key={propertyId}
-                  className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between group"
+                  className="group flex h-full w-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div
-                    onClick={() => router.push(`/property-details?id=${propertyId}&title=${encodeURIComponent(stay.title)}`)}
-                    className="relative overflow-hidden aspect-[4/3] bg-slate-100 block cursor-pointer"
-                  >
-                    <img
-                      src={img}
-                      alt={stay.title}
-                      loading={idx < 3 ? 'eager' : 'lazy'}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                      onError={(e) => {
-                        if (e.currentTarget.src !== FALLBACK_PROPERTY_IMAGE) {
-                          e.currentTarget.src = FALLBACK_PROPERTY_IMAGE;
-                        }
-                      }}
-                    />
-                    {(stay.isVerified === true || stay.verified === true) && (
-                      <div className="absolute top-3 left-3 rounded-full bg-teal-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">
-                        ✓ Verified Stay
-                      </div>
-                    )}
+                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => handleReserveSpace(stay)}
+                      className="block h-full w-full cursor-pointer"
+                      aria-label={`View ${stay.title}`}
+                    >
+                      <img
+                        src={img}
+                        alt={stay.title}
+                        loading={idx < 3 ? 'eager' : 'lazy'}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          if (e.currentTarget.src !== FALLBACK_PROPERTY_IMAGE) {
+                            e.currentTarget.src = FALLBACK_PROPERTY_IMAGE;
+                          }
+                        }}
+                      />
+                    </button>
+
+                    <div className="absolute left-4 top-4 rounded-full bg-teal-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-white shadow-md">
+                      ✓ Verified Stay
+                    </div>
 
                     {typeof rating === 'number' && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm backdrop-blur-sm">
+                      <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-slate-900 shadow-md backdrop-blur">
                         <span className="text-amber-500">★</span>
                         {rating.toFixed(1)}
                         {reviews > 0 && (
-                          <span className="font-medium text-slate-500">
-                            ({reviews})
-                          </span>
+                          <span className="font-medium text-slate-500">({reviews})</span>
                         )}
                       </div>
                     )}
-                  </div>
 
-                  <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-teal-600 tracking-wide uppercase">
-                        📍 {stay.locality || 'Guwahati'}, GUWAHATI
-                      </div>
-                      <h3
-                        onClick={() => router.push(`/property-details?id=${propertyId}&title=${encodeURIComponent(stay.title)}`)}
-                        className="font-bold text-base sm:text-lg text-slate-900 mt-1 group-hover:text-teal-600 transition truncate cursor-pointer"
-                      >
-                        {stay.title}
-                      </h3>
-                      {tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2.5">
-                          {tags.slice(0, 3).map((tag, tIdx) => (
-                            <span
-                              key={tIdx}
-                              className="rounded-md bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-600 sm:text-xs"
-                            >
-                              {tag}
-                            </span>
+                    {gallery.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label="Previous property photo"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            changeGalleryImage(propertyId, gallery.length, -1);
+                          }}
+                          className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-lg font-bold text-slate-900 shadow-lg transition hover:bg-white"
+                        >
+                          ‹
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Next property photo"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            changeGalleryImage(propertyId, gallery.length, 1);
+                          }}
+                          className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-lg font-bold text-slate-900 shadow-lg transition hover:bg-white"
+                        >
+                          ›
+                        </button>
+
+                        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-slate-950/55 px-2.5 py-1.5 backdrop-blur">
+                          {gallery.map((_, photoIndex) => (
+                            <button
+                              key={photoIndex}
+                              type="button"
+                              aria-label={`Show photo ${photoIndex + 1}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setGalleryIndexes((current) => ({
+                                  ...current,
+                                  [propertyId]: photoIndex,
+                                }));
+                              }}
+                              className={`h-1.5 rounded-full transition-all ${
+                                photoIndex === currentIndex
+                                  ? 'w-4 bg-white'
+                                  : 'w-1.5 bg-white/60'
+                              }`}
+                            />
                           ))}
                         </div>
-                      )}
+
+                        <div className="absolute bottom-3 right-3 rounded-full bg-slate-950/60 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">
+                          {currentIndex + 1}/{gallery.length} photos
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-5 sm:p-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-teal-700 sm:text-xs">
+                        📍 {stay.locality || 'Guwahati'}, Guwahati
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleReserveSpace(stay)}
+                        className="mt-2 text-left text-xl font-black tracking-tight text-slate-950 transition hover:text-teal-700"
+                      >
+                        {stay.title}
+                      </button>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {tags.slice(0, 3).map((tag, tIdx) => (
+                          <span
+                            key={tIdx}
+                            className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="mt-5 sm:mt-6 pt-3.5 sm:pt-4 border-t border-slate-100 flex items-center justify-between">
-                      <div>
-                        <span className="text-lg sm:text-xl font-extrabold text-slate-900">₹{stay.pricePerNight}</span>
-                        <span className="text-[10px] sm:text-xs text-slate-400 block -mt-0.5">/ night</span>
+                    <div className="mt-6 border-t border-slate-100 pt-5">
+                      <div className="flex items-end justify-between gap-4">
+                        <div>
+                          <span className="text-2xl font-black text-slate-950">
+                            ₹{Number(stay.pricePerNight || 0).toLocaleString('en-IN')}
+                          </span>
+                          <span className="ml-1 text-sm text-slate-400">/ night</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleReserveSpace(stay)}
+                          className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-teal-600"
+                        >
+                          View Stay →
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleReserveSpace(stay)}
-                        className="bg-slate-900 hover:bg-teal-600 text-white px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-sm"
-                      >
-                        {t.reserve_btn}
-                      </button>
                     </div>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
