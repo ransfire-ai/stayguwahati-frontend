@@ -278,8 +278,16 @@ function PropertyDetailsContent() {
       locality: property.locality || 'Guwahati',
       image: mainImage,
     };
+    if (!bookingData.id) {
+      console.error('Cannot open booking page: property ID is missing.');
+      return;
+    }
+
     sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-    router.push('/book-stay');
+
+    // /book-stay loads the property using the `id` query parameter.
+    // Keep pendingBooking as well so existing booking data continues to work.
+    router.push(`/book-stay?id=${encodeURIComponent(bookingData.id)}`);
   };
 
   if (!property) {
@@ -335,15 +343,12 @@ function PropertyDetailsContent() {
           onClick={() => {
             if (typeof window === 'undefined') return;
 
-            // Return to the page the guest actually came from.
-            // This avoids always sending the guest back to the map.
             const referrer = document.referrer;
 
             try {
               if (referrer) {
                 const previousUrl = new URL(referrer);
 
-                // Only navigate to an internal StayGuwahati page.
                 if (
                   previousUrl.origin === window.location.origin &&
                   previousUrl.pathname !== '/property-details'
@@ -358,8 +363,6 @@ function PropertyDetailsContent() {
               console.warn('Unable to resolve previous page:', error);
             }
 
-            // For direct visits/bookmarks where there is no usable referrer,
-            // use browser history if available, otherwise the map.
             if (window.history.length > 1) {
               router.back();
             } else {
