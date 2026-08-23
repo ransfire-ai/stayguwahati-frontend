@@ -28,6 +28,7 @@ interface PropertyData {
   features?: string[];
   amenities?: string[];
   host?: PropertyHost | string;
+  cancellationPolicy?: 'flexible' | 'moderate' | 'strict';
 }
 
 interface Review {
@@ -265,6 +266,7 @@ function PropertyDetailsContent() {
       price: property.pricePerNight || property.price || 1500,
       locality: property.locality || 'Guwahati',
       image: mainImage,
+      cancellationPolicy: property.cancellationPolicy || 'flexible',
     };
     sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
     router.push('/book-stay');
@@ -631,7 +633,7 @@ function PropertyDetailsContent() {
   );
 }
 
-export default function getCancellationPolicy(policy?: string) {
+function getCancellationPolicy(policy?: string) {
   if (policy === 'moderate') {
     return {
       title: 'Moderate',
@@ -655,7 +657,7 @@ export default function getCancellationPolicy(policy?: string) {
   };
 }
 
-function PropertyPage() {
+export default function PropertyPage() {
   return (
     <div className="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
       {/* Navigation Bar */}
