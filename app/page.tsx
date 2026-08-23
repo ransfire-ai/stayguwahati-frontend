@@ -586,13 +586,16 @@ export default function HomePage() {
         <div className="mb-8 sm:mb-10 text-center sm:text-left">
           <h2 className="text-xl sm:text-2xl font-black text-slate-900">{t.sec1_title}</h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.sec1_subtitle}</p>
+          <p className="mt-2 text-[10px] text-slate-400">
+            Neighborhood photos: Wikimedia Commons.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
             <div className="h-44 sm:h-48 overflow-hidden relative">
               <img
-                src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500"
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/Uzan%20Bazar%20Park%201.jpg"
                 alt="Uzan Bazar"
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
@@ -612,7 +615,7 @@ export default function HomePage() {
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition">
             <div className="h-44 sm:h-48 overflow-hidden relative">
               <img
-                src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500"
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/PALTAN%20BAZAAR.JPG"
                 alt="Paltan Bazar"
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
@@ -632,7 +635,7 @@ export default function HomePage() {
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group hover:shadow-md transition sm:col-span-2 md:col-span-1">
             <div className="h-44 sm:h-48 overflow-hidden relative">
               <img
-                src="https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500"
+                src="https://commons.wikimedia.org/wiki/Special:FilePath/Ganeshguri.jpg"
                 alt="Ganeshguri"
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
@@ -836,19 +839,58 @@ export default function HomePage() {
                         {stay.title}
                       </button>
 
+                      {typeof stay.description === 'string' && stay.description.trim() && (
+                        <p className="mt-3 line-clamp-2 text-sm leading-5 text-slate-500">
+                          {stay.description.trim()}
+                        </p>
+                      )}
+
                       <div className="mt-3 flex flex-wrap gap-2">
                         {tags.slice(0, 3).map((tag, tIdx) => (
                           <span
-                            key={tIdx}
+                            key={`tag-${tIdx}`}
                             className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-600"
                           >
                             {tag}
                           </span>
                         ))}
+
+                        {Array.isArray(stay.features) &&
+                          stay.features
+                            .filter((feature) => typeof feature === 'string' && feature.trim())
+                            .slice(0, Math.max(0, 3 - tags.length))
+                            .map((feature, fIdx) => (
+                              <span
+                                key={`feature-${fIdx}`}
+                                className="rounded-full bg-teal-50 px-3 py-1.5 text-[11px] font-semibold text-teal-700"
+                              >
+                                ✓ {feature}
+                              </span>
+                            ))}
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+                          <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                            Rating
+                          </span>
+                          <span className="mt-0.5 block text-sm font-black text-slate-800">
+                            {typeof rating === 'number' ? `★ ${rating.toFixed(1)}` : 'New stay'}
+                          </span>
+                        </div>
+
+                        <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+                          <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                            Reviews
+                          </span>
+                          <span className="mt-0.5 block text-sm font-black text-slate-800">
+                            {reviews > 0 ? `${reviews}` : '—'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="mt-6 border-t border-slate-100 pt-5">
+                    <div className="mt-5 border-t border-slate-100 pt-5">
                       <div className="flex items-end justify-between gap-4">
                         <div>
                           <span className="text-2xl font-black text-slate-950">
