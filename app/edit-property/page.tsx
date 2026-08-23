@@ -89,6 +89,7 @@ function EditPropertyContent() {
   const [avatar, setAvatar] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [features, setFeatures] = useState<string[]>([]);
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!propertyId) {
@@ -149,6 +150,31 @@ function EditPropertyContent() {
 
     fetchProperty();
   }, [propertyId]);
+
+  const moveImage = (fromIndex: number, toIndex: number) => {
+    setImages((current) => {
+      if (
+        fromIndex === toIndex ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= current.length ||
+        toIndex >= current.length
+      ) {
+        return current;
+      }
+
+      const next = [...current];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  };
+
+  const handleImageDrop = (targetIndex: number) => {
+    if (draggedImageIndex === null) return;
+    moveImage(draggedImageIndex, targetIndex);
+    setDraggedImageIndex(null);
+  };
 
   const toggleFeature = (feature: string) => {
     setFeatures((current) =>
@@ -499,37 +525,84 @@ function EditPropertyContent() {
             </div>
           </section>
 
-          {/* Existing photos */}
+          {/* Property photo gallery + reordering */}
           <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-teal-50 p-2.5 text-teal-700">
-                <ImageIcon className="h-5 w-5" />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-teal-50 p-2.5 text-teal-700">
+                  <ImageIcon className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-slate-950">Property photos</h2>
+                  <p className="text-xs text-slate-500">
+                    Drag photos to reorder them. The first photo is your cover photo.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-bold text-slate-950">
-                  Property photos
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Your existing property photos will remain unchanged.
-                </p>
-              </div>
+
+              {images.length > 0 && (
+                <span className="w-fit rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700">
+                  {images.length} {images.length === 1 ? 'photo' : 'photos'}
+                </span>
+              )}
             </div>
 
             {images.length > 0 ? (
-              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {images.slice(0, 8).map((image, index) => (
                   <div
                     key={`${image}-${index}`}
-                    className="aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200"
+                    draggable
+                    onDragStart={() => setDraggedImageIndex(index)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleImageDrop(index)}
+                    onDragEnd={() => setDraggedImageIndex(null)}
+                    className={`group relative overflow-hidden rounded-2xl bg-slate-100 ring-1 transition ${
+                      draggedImageIndex === index
+                        ? 'scale-[0.98] ring-2 ring-teal-500 opacity-70'
+                        : 'ring-slate-200 hover:ring-teal-300'
+                    }`}
                   >
-                    <img
-                      src={image}
-                      alt={`Property photo ${index + 1}`}
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
+                    <div className="aspect-[4/3]">
+                      <img
+                        src={image}
+                        alt={`Property photo ${index + 1}`}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+
+                    <div className="absolute left-3 top-3 rounded-full bg-slate-950/75 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white backdrop-blur">
+                      {index === 0 ? '★ Cover photo' : `Photo ${index + 1}`}
+                    </div>
+
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => moveImage(index, index - 1)}
+                        disabled={index === 0}
+                        className="rounded-lg bg-white/95 px-2.5 py-1.5 text-xs font-black text-slate-800 shadow disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Move photo left"
+                      >
+                        ←
+                      </button>
+
+                      <span className="rounded-lg bg-slate-950/65 px-2.5 py-1.5 text-[10px] font-bold text-white backdrop-blur">
+                        Drag to reorder
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => moveImage(index, index + 1)}
+                        disabled={index === images.length - 1 || index === 7}
+                        className="rounded-lg bg-white/95 px-2.5 py-1.5 text-xs font-black text-slate-800 shadow disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Move photo right"
+                      >
+                        →
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -537,6 +610,13 @@ function EditPropertyContent() {
               <div className="mt-5 rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400">
                 No property photos found.
               </div>
+            )}
+
+            {images.length > 1 && (
+              <p className="mt-4 text-xs leading-5 text-slate-400">
+                Tip: Put your best room or exterior photo first. It will be used as the main image on StayGuwahati search cards.
+                Photo order is saved when you click <strong className="text-slate-600">Save Changes</strong>.
+              </p>
             )}
           </section>
 

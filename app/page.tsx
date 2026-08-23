@@ -174,6 +174,7 @@ export default function HomePage() {
   const [selectedFilterLocality, setSelectedFilterLocality] = useState<string | null>(null);
   const [searchLocality, setSearchLocality] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [galleryIndexes, setGalleryIndexes] = useState<Record<string, number>>({});
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
   const t = translations[currentLang] || translations.en;
@@ -256,6 +257,18 @@ export default function HomePage() {
         block: 'start',
       });
     }, 0);
+  };
+
+  const changeGalleryImage = (propertyId: string, total: number, direction: number) => {
+    if (total <= 1) return;
+
+    setGalleryIndexes((current) => {
+      const currentIndex = current[propertyId] || 0;
+      return {
+        ...current,
+        [propertyId]: (currentIndex + direction + total) % total,
+      };
+    });
   };
 
   const handleReserveSpace = (stay: Property) => {
@@ -699,90 +712,160 @@ export default function HomePage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProperties.map((stay, idx) => {
-              const img = resolvePropertyImage(stay.images?.[0], BACKEND_URL);
+              const gallery = Array.isArray(stay.images)
+                ? stay.images.filter(Boolean).slice(0, 8)
+                : [];
+              const propertyId = stay._id || stay.id || `prop-${idx}`;
+              const currentIndex = Math.min(
+                galleryIndexes[propertyId] || 0,
+                Math.max(gallery.length - 1, 0)
+              );
+              const img = resolvePropertyImage(gallery[currentIndex], BACKEND_URL);
               const rating = stay.rating;
               const reviews = stay.reviewsCount || 0;
               const tags = Array.isArray(stay.tags) ? stay.tags : [];
-              const propertyId = stay._id || stay.id || `prop-${idx}`;
 
               return (
-                <div
+                <article
                   key={propertyId}
-                  className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between group"
+                  className="group flex h-full w-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div
-                    onClick={() => router.push(`/property-details?id=${propertyId}&title=${encodeURIComponent(stay.title)}`)}
-                    className="relative overflow-hidden aspect-[4/3] bg-slate-100 block cursor-pointer"
-                  >
-                    <img
-                      src={img}
-                      alt={stay.title}
-                      loading={idx < 3 ? 'eager' : 'lazy'}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                      onError={(e) => {
-                        if (e.currentTarget.src !== FALLBACK_PROPERTY_IMAGE) {
-                          e.currentTarget.src = FALLBACK_PROPERTY_IMAGE;
-                        }
-                      }}
-                    />
-                    <div className="absolute top-3 left-3 rounded-full bg-teal-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => handleReserveSpace(stay)}
+                      className="block h-full w-full cursor-pointer"
+                      aria-label={`View ${stay.title}`}
+                    >
+                      <img
+                        src={img}
+                        alt={stay.title}
+                        loading={idx < 3 ? 'eager' : 'lazy'}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          if (e.currentTarget.src !== FALLBACK_PROPERTY_IMAGE) {
+                            e.currentTarget.src = FALLBACK_PROPERTY_IMAGE;
+                          }
+                        }}
+                      />
+                    </button>
+
+                    <div className="absolute left-4 top-4 rounded-full bg-teal-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-white shadow-md">
                       ✓ Verified Stay
                     </div>
 
                     {typeof rating === 'number' && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm backdrop-blur-sm">
+                      <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-slate-900 shadow-md backdrop-blur">
                         <span className="text-amber-500">★</span>
                         {rating.toFixed(1)}
                         {reviews > 0 && (
-                          <span className="font-medium text-slate-500">
-                            ({reviews})
-                          </span>
+                          <span className="font-medium text-slate-500">({reviews})</span>
                         )}
                       </div>
                     )}
-                  </div>
 
-                  <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-teal-600 tracking-wide uppercase">
-                        📍 {stay.locality || 'Guwahati'}, GUWAHATI
-                      </div>
-                      <h3
-                        onClick={() => router.push(`/property-details?id=${propertyId}&title=${encodeURIComponent(stay.title)}`)}
-                        className="font-bold text-base sm:text-lg text-slate-900 mt-1 group-hover:text-teal-600 transition truncate cursor-pointer"
-                      >
-                        {stay.title}
-                      </h3>
-                      {tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2.5">
-                          {tags.slice(0, 3).map((tag, tIdx) => (
-                            <span
-                              key={tIdx}
-                              className="rounded-md bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-600 sm:text-xs"
-                            >
-                              {tag}
-                            </span>
+                    {gallery.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label="Previous property photo"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            changeGalleryImage(propertyId, gallery.length, -1);
+                          }}
+                          className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-lg font-bold text-slate-900 shadow-lg transition hover:bg-white"
+                        >
+                          ‹
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Next property photo"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            changeGalleryImage(propertyId, gallery.length, 1);
+                          }}
+                          className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-lg font-bold text-slate-900 shadow-lg transition hover:bg-white"
+                        >
+                          ›
+                        </button>
+
+                        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-slate-950/55 px-2.5 py-1.5 backdrop-blur">
+                          {gallery.map((_, photoIndex) => (
+                            <button
+                              key={photoIndex}
+                              type="button"
+                              aria-label={`Show photo ${photoIndex + 1}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setGalleryIndexes((current) => ({
+                                  ...current,
+                                  [propertyId]: photoIndex,
+                                }));
+                              }}
+                              className={`h-1.5 rounded-full transition-all ${
+                                photoIndex === currentIndex
+                                  ? 'w-4 bg-white'
+                                  : 'w-1.5 bg-white/60'
+                              }`}
+                            />
                           ))}
                         </div>
-                      )}
+
+                        <div className="absolute bottom-3 right-3 rounded-full bg-slate-950/60 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">
+                          {currentIndex + 1}/{gallery.length} photos
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-5 sm:p-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-teal-700 sm:text-xs">
+                        📍 {stay.locality || 'Guwahati'}, Guwahati
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleReserveSpace(stay)}
+                        className="mt-2 text-left text-xl font-black tracking-tight text-slate-950 transition hover:text-teal-700"
+                      >
+                        {stay.title}
+                      </button>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {tags.slice(0, 3).map((tag, tIdx) => (
+                          <span
+                            key={tIdx}
+                            className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="mt-5 sm:mt-6 pt-3.5 sm:pt-4 border-t border-slate-100 flex items-center justify-between">
-                      <div>
-                        <span className="text-lg sm:text-xl font-extrabold text-slate-900">₹{stay.pricePerNight}</span>
-                        <span className="text-[10px] sm:text-xs text-slate-400 block -mt-0.5">/ night</span>
+                    <div className="mt-6 border-t border-slate-100 pt-5">
+                      <div className="flex items-end justify-between gap-4">
+                        <div>
+                          <span className="text-2xl font-black text-slate-950">
+                            ₹{Number(stay.pricePerNight || 0).toLocaleString('en-IN')}
+                          </span>
+                          <span className="ml-1 text-sm text-slate-400">/ night</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleReserveSpace(stay)}
+                          className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-teal-600"
+                        >
+                          View Stay →
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleReserveSpace(stay)}
-                        className="bg-slate-900 hover:bg-teal-600 text-white px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-sm"
-                      >
-                        {t.reserve_btn}
-                      </button>
                     </div>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
