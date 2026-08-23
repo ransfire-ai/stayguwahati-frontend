@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 const dictionary = {
@@ -86,24 +86,6 @@ export default function ListPropertyPage() {
   const [locality, setLocality] = useState('');
   const [price, setPrice] = useState('');
   const [bedrooms, setBedrooms] = useState<number>(2);
-
-  // Bathroom type counts, matching the guest-facing categories.
-  const [bathrooms, setBathrooms] = useState({
-    privateAttached: 0,
-    dedicated: 0,
-    shared: 0,
-  });
-
-  const updateBathroomCount = (
-    type: 'privateAttached' | 'dedicated' | 'shared',
-    delta: number
-  ) => {
-    setBathrooms((current) => ({
-      ...current,
-      [type]: Math.max(0, Math.min(20, current[type] + delta)),
-    }));
-  };
-
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
@@ -122,6 +104,14 @@ export default function ListPropertyPage() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Camera state. Using getUserMedia gives Android users a real camera
+  // experience instead of relying on browser-specific <input capture> behavior.
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraTarget, setCameraTarget] = useState<'property' | 'host'>('property');
+  const [cameraError, setCameraError] = useState('');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
   const t = dictionary[currentLang] || dictionary.en;
@@ -166,6 +156,136 @@ export default function ListPropertyPage() {
       setSelectedAmenities([...selectedAmenities, label]);
     }
   };
+
+  const stopCamera = () => {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  const closeCamera = () => {
+    stopCamera();
+    setCameraOpen(false);
+    setCameraError('');
+  };
+
+  const openCamera = async (target: 'property' | 'host') => {
+    setCameraTarget(target);
+    setCameraError('');
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError(
+        'Camera access is not supported by this browser. Please use Choose from phone instead.'
+      );
+      setCameraOpen(true);
+      return;
+    }
+
+    try {
+      stopCamera();
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: target === 'property' ? 'environment' : 'user' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+
+      cameraStreamRef.current = stream;
+      setCameraOpen(true);
+
+      // Wait until the modal/video element is mounted.
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => undefined);
+        }
+      });
+    } catch (error: any) {
+      console.error('Camera access failed:', error);
+      setCameraError(
+        error?.name === 'NotAllowedError'
+          ? 'Camera permission was denied. Allow camera access in your browser settings and try again.'
+          : 'Could not open the camera. Please use Choose from phone instead.'
+      );
+      setCameraOpen(true);
+    }
+  };
+
+  const takeCameraPhoto = () => {
+    const video = videoRef.current;
+
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setCameraError('Camera is not ready yet. Please wait a moment and try again.');
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    const maxWidth = 1600;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      setCameraError('Could not capture the photo. Please try again.');
+      return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setCameraError('Could not create the photo file. Please try again.');
+        return;
+      }
+
+      const fileName = `stayguwahati-${cameraTarget}-${Date.now()}.jpg`;
+      const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+      if (cameraTarget === 'host') {
+        if (hostPhoto?.startsWith('blob:')) {
+          URL.revokeObjectURL(hostPhoto);
+        }
+        setHostPhotoFile(file);
+        setHostPhoto(URL.createObjectURL(file));
+        closeCamera();
+        return;
+      }
+
+      // Property camera captures one photo at a time so the host can take
+      // four separate shots, just like the requested mobile workflow.
+      if (selectedFiles.length >= 4) {
+        setImageError('You already have exactly 4 images. Remove one before adding another.');
+        closeCamera();
+        return;
+      }
+
+      const previewUrl = URL.createObjectURL(file);
+      setSelectedFiles((current) => [...current, file]);
+      setPreviews((current) => [...current, previewUrl]);
+
+      const total = selectedFiles.length + 1;
+      setImageError(
+        total < 4
+          ? `Please add ${4 - total} more image${4 - total === 1 ? '' : 's'}.`
+          : null
+      );
+
+      closeCamera();
+    }, 'image/jpeg', 0.9);
+  };
+
+  useEffect(() => {
+    return () => stopCamera();
+  }, []);
 
   const handleHostPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -408,18 +528,8 @@ export default function ListPropertyPage() {
         description: description.trim(),
         locality: locality,
         pricePerNight: parsedPrice,
-        bedrooms,
-        bathrooms: {
-          privateAttached: bathrooms.privateAttached,
-          dedicated: bathrooms.dedicated,
-          shared: bathrooms.shared,
-          total:
-            bathrooms.privateAttached +
-            bathrooms.dedicated +
-            bathrooms.shared,
-        },
-        lat: parsedLat,
-        lng: parsedLng,
+        lat: isNaN(parsedLat) ? 26.1445 : parsedLat,
+        lng: isNaN(parsedLng) ? 91.7362 : parsedLng,
         images: uploadedImageUrls,
         features: selectedAmenities,
         host: {
@@ -600,132 +710,6 @@ export default function ListPropertyPage() {
               </div>
             </div>
 
-            {/* Bathroom Selector Block */}
-            <div className="p-4 sm:p-5 bg-white border border-gray-200 rounded-2xl">
-              <div className="mb-4">
-                <label className="block text-gray-700 font-bold text-sm">
-                  BATHROOMS AVAILABLE TO GUESTS
-                </label>
-                <p className="text-gray-400 text-xs mt-1">
-                  Select how many bathrooms of each type guests can use.
-                </p>
-              </div>
-
-              <div className="divide-y divide-gray-100">
-                {/* Private and attached */}
-                <div className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
-                  <div className="min-w-0 pr-3">
-                    <p className="font-semibold text-gray-900 text-sm">
-                      Private and attached
-                    </p>
-                    <p className="text-gray-400 text-xs leading-5 mt-0.5">
-                      It’s connected to the guest’s room and is just for them.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => updateBathroomCount('privateAttached', -1)}
-                      disabled={bathrooms.privateAttached === 0}
-                      className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
-                      aria-label="Decrease private and attached bathrooms"
-                    >
-                      −
-                    </button>
-                    <span className="w-5 text-center font-bold text-gray-900">
-                      {bathrooms.privateAttached}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => updateBathroomCount('privateAttached', 1)}
-                      className="w-9 h-9 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold flex items-center justify-center"
-                      aria-label="Increase private and attached bathrooms"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                {/* Dedicated */}
-                <div className="py-4 flex items-center justify-between gap-4">
-                  <div className="min-w-0 pr-3">
-                    <p className="font-semibold text-gray-900 text-sm">
-                      Dedicated
-                    </p>
-                    <p className="text-gray-400 text-xs leading-5 mt-0.5">
-                      It’s private, but accessed via a shared space, such as a hallway.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => updateBathroomCount('dedicated', -1)}
-                      disabled={bathrooms.dedicated === 0}
-                      className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
-                      aria-label="Decrease dedicated bathrooms"
-                    >
-                      −
-                    </button>
-                    <span className="w-5 text-center font-bold text-gray-900">
-                      {bathrooms.dedicated}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => updateBathroomCount('dedicated', 1)}
-                      className="w-9 h-9 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold flex items-center justify-center"
-                      aria-label="Increase dedicated bathrooms"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                {/* Shared */}
-                <div className="py-4 last:pb-0 flex items-center justify-between gap-4">
-                  <div className="min-w-0 pr-3">
-                    <p className="font-semibold text-gray-900 text-sm">
-                      Shared
-                    </p>
-                    <p className="text-gray-400 text-xs leading-5 mt-0.5">
-                      It’s shared with other people.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => updateBathroomCount('shared', -1)}
-                      disabled={bathrooms.shared === 0}
-                      className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
-                      aria-label="Decrease shared bathrooms"
-                    >
-                      −
-                    </button>
-                    <span className="w-5 text-center font-bold text-gray-900">
-                      {bathrooms.shared}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => updateBathroomCount('shared', 1)}
-                      className="w-9 h-9 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold flex items-center justify-center"
-                      aria-label="Increase shared bathrooms"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-500">
-                Total bathrooms:{" "}
-                <strong className="text-slate-800">
-                  {bathrooms.privateAttached + bathrooms.dedicated + bathrooms.shared}
-                </strong>
-              </div>
-            </div>
-
             {/* Amenities Selection */}
             <div>
               <label className="block text-gray-400 font-medium mb-2 uppercase tracking-wide">
@@ -770,32 +754,31 @@ export default function ListPropertyPage() {
                   ? 'border-2 border-rose-300 bg-rose-50/30'
                   : 'border-2 border-dashed border-teal-200 bg-teal-50/30'
               }`}>
-                <label className="flex flex-col items-center justify-center min-h-44 rounded-2xl border-2 border-dashed border-gray-300 bg-white hover:border-teal-400 hover:bg-teal-50/40 cursor-pointer transition px-5 py-8 text-center">
-                  <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center text-3xl mb-3">
-                    📷
-                  </div>
-                  <span className="text-base font-black text-gray-900">
-                    Add property photos
-                  </span>
-                  <span className="text-xs text-gray-400 mt-1">
-                    Tap here to choose from your Photo Library, take a photo, or choose a file
-                  </span>
-                  <span className="mt-3 rounded-xl bg-slate-950 text-white font-bold px-5 py-2.5 text-sm">
-                    Upload photos
-                  </span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={addPropertyImages}
-                    className="hidden"
-                  />
-                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="flex items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 cursor-pointer transition shadow-sm">
+                    🖼️ <span>Choose from phone</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={addPropertyImages}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => openCamera('property')}
+                    disabled={selectedFiles.length >= 4}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-teal-50 text-teal-800 font-bold py-3 px-4 cursor-pointer transition border border-teal-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    📷 <span>Take photo with camera</span>
+                  </button>
+                </div>
 
                 <p className="text-center text-gray-400 text-xs mt-3">
-                  On iPhone/iPad, the system photo picker will offer options such as
-                  Photo Library, Take Photo and Choose Files. On desktop, it opens the normal
-                  file picker.
+                  Add exactly 4 property photos. Choose from your gallery or use the camera.
+                  On Android, the camera opens directly inside StayGuwahati.
                 </p>
 
                 {previews.length > 0 ? (
@@ -957,20 +940,24 @@ export default function ListPropertyPage() {
                 <div className="flex-1">
                   <label className="block text-gray-700 font-bold mb-0.5">{t.lHostPhoto}</label>
                   <p className="text-gray-400 text-[11px] mb-2">Upload a photo, or we will automatically generate an initial avatar from your name.</p>
-                  <label className="inline-flex items-center justify-center gap-2 bg-white hover:bg-teal-50 text-teal-800 font-semibold px-4 py-2.5 rounded-xl border border-gray-200 text-xs cursor-pointer shadow-sm transition">
-                    📷 Add / change host photo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleHostPhotoChange}
-                      className="hidden"
-                    />
-                  </label>
-
-                  <p className="text-gray-400 text-[10px] mt-2">
-                    On iPhone/iPad, tapping this opens the system picker with options such as
-                    Photo Library, Take Photo and Choose Files. On desktop, it opens the normal file picker.
-                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="inline-flex items-center gap-1.5 bg-white hover:bg-gray-100 text-teal-800 font-semibold px-3 py-1.5 rounded-xl border border-gray-200 text-xs cursor-pointer shadow-sm transition">
+                      🖼️ Photo Library
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={handleHostPhotoChange}
+                        className="hidden"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => openCamera('host')}
+                      className="inline-flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold px-3 py-1.5 rounded-xl border border-teal-600 text-xs cursor-pointer shadow-sm transition"
+                    >
+                      📷 Take photo
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1009,6 +996,78 @@ export default function ListPropertyPage() {
           </form>
         </div>
       </main>
+
+      {/* Cross-browser camera modal. This avoids Android Chrome/Samsung browser
+          differences with <input capture> and gives the host an explicit camera UI. */}
+      {cameraOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white rounded-2xl overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <div>
+                <h2 className="font-black text-gray-900">
+                  {cameraTarget === 'host' ? 'Take host profile photo' : 'Take property photo'}
+                </h2>
+                <p className="text-[11px] text-gray-400">
+                  {cameraTarget === 'host'
+                    ? 'Position your face and tap Capture.'
+                    : `Photo ${Math.min(selectedFiles.length + 1, 4)} of 4`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeCamera}
+                className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold"
+                aria-label="Close camera"
+              >
+                ×
+              </button>
+            </div>
+
+            {cameraError ? (
+              <div className="p-6">
+                <div className="rounded-xl bg-rose-50 border border-rose-100 text-rose-700 p-4 text-sm font-semibold">
+                  {cameraError}
+                </div>
+                <button
+                  type="button"
+                  onClick={closeCamera}
+                  className="mt-4 w-full rounded-xl bg-slate-900 text-white font-bold py-3"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="bg-black aspect-[4/3] flex items-center justify-center">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={closeCamera}
+                    className="flex-1 rounded-xl border border-gray-200 py-3 font-bold text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={takeCameraPhoto}
+                    className="flex-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-white py-3 font-black"
+                  >
+                    📷 Capture
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="text-center py-4 text-xs text-gray-400 border-t border-gray-100 bg-white mt-12">
