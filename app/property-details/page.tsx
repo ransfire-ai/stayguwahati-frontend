@@ -41,6 +41,7 @@ interface Review {
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
+// StayGuwahati support WhatsApp (updated 23 Aug 2026)
 const SUPPORT_EMAIL = 'support@stayguwahati.in';
 const SUPPORT_WHATSAPP =
   process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\\D/g, '') || '';
