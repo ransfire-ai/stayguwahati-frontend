@@ -12,18 +12,11 @@ interface Homestay {
   locality?: string;
   pricePerNight: number;
   images?: string[];
-  cancellationPolicy?: 'flexible' | 'moderate' | 'strict';
 }
 
 const dateLabel = (value: string) => {
   if (!value) return '—';
   return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`));
-};
-
-const cancellationText = (policy?: string) => {
-  if (policy === 'moderate') return 'Moderate — free cancellation up to 5 days before check-in.';
-  if (policy === 'strict') return 'Strict — limited cancellation after confirmation.';
-  return 'Flexible — free cancellation up to 24 hours before check-in.';
 };
 
 function CheckoutContent() {
@@ -53,8 +46,7 @@ function CheckoutContent() {
           title: p.title || p.name || 'Homestay',
           locality: p.locality || p.city || 'Guwahati',
           pricePerNight: Number(p.pricePerNight || p.price || 0),
-          images: Array.isArray(p.images) ? p.images : [],
-          cancellationPolicy: p.cancellationPolicy || 'flexible'
+          images: Array.isArray(p.images) ? p.images : []
         });
       })
       .catch(e => setError(e.message || 'Unable to load property.'))
@@ -123,11 +115,6 @@ function CheckoutContent() {
           {property?.images?.[0] && <img src={property.images[0]} alt={property.title} className="h-48 w-full rounded-2xl object-cover" />}
           <h2 className="mt-4 text-xl font-black text-slate-950">{property?.title}</h2><p className="mt-1 text-sm text-slate-500">📍 {property?.locality}, Guwahati</p>
           <div className="mt-5 border-t border-slate-100 pt-5 space-y-3 text-sm"><div className="flex justify-between"><span className="text-slate-500">Check-in</span><b>{dateLabel(checkIn)}</b></div><div className="flex justify-between"><span className="text-slate-500">Check-out</span><b>{dateLabel(checkOut)}</b></div><div className="flex justify-between"><span className="text-slate-500">Guests</span><b>{guests}</b></div></div>
-          <div className="mt-5 rounded-2xl border border-teal-100 bg-teal-50/60 p-4">
-            <p className="text-[10px] font-black uppercase tracking-wider text-teal-700">Cancellation Policy</p>
-            <p className="mt-1 text-sm font-bold text-slate-800">{cancellationText(property?.cancellationPolicy)}</p>
-          </div>
-
           <div className="mt-5 border-t border-slate-100 pt-5"><div className="flex justify-between text-sm"><span>₹{property?.pricePerNight.toLocaleString('en-IN')} × {nights || 0} nights</span><b>₹{total.toLocaleString('en-IN')}</b></div><div className="mt-3 flex justify-between text-lg font-black"><span>Total</span><span>₹{total.toLocaleString('en-IN')}</span></div><p className="mt-3 text-xs text-slate-400">Payment is arranged directly with the host. StayGuwahati does not collect payment online.</p></div>
         </aside>
       </div>
