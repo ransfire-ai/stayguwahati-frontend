@@ -23,7 +23,8 @@ interface Booking {
   firstName?: string;
   lastName?: string;
   homestayId?: any;
-  cancellationPolicy?: 'flexible' | 'moderate' | 'strict';
+  hostPhone?: string;
+  hostName?: string;
 }
 
 const formatDate = (value?: string) => {
@@ -37,6 +38,17 @@ const formatDate = (value?: string) => {
   }).format(d);
 };
 
+const SUPPORT_EMAIL = 'support@stayguwahati.in';
+const SUPPORT_WHATSAPP =
+  process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\\D/g, '') || '';
+
+const getWhatsAppUrl = (phone: string, message: string) => {
+  const digits = phone.replace(/\\D/g, '');
+  if (!digits) return '';
+  const normalized = digits.startsWith('91') ? digits : `91${digits}`;
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+};
+
 function ConfirmationContent() {
   const router = useRouter();
   const params = useSearchParams();
@@ -45,6 +57,8 @@ function ConfirmationContent() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [hostPhone, setHostPhone] = useState('');
+  const [hostName, setHostName] = useState('Host');
 
   useEffect(() => {
     let cancelled = false;
@@ -139,24 +153,8 @@ function ConfirmationContent() {
     status === 'accepted' ||
     status === 'approved';
 
-  const isCancelled =
-    status === 'cancelled' || status === 'canceled';
-
-  const isRejected = status === 'rejected';
-
-  const cancellationPolicy =
-    booking?.cancellationPolicy ||
-    booking?.homestayId?.cancellationPolicy ||
-    'flexible';
-
-  const cancellationSummary =
-    cancellationPolicy === 'moderate'
-      ? 'Moderate — free cancellation up to 5 days before check-in.'
-      : cancellationPolicy === 'strict'
-        ? 'Strict — limited cancellation.'
-        : 'Flexible — free cancellation up to 24 hours before check-in.';
-
-  const canCancel = status === 'requested' || status === 'confirmed';
+  const isRejected =
+    status === 'rejected' || status === 'cancelled' || status === 'canceled';
 
   if (loading) {
     return (
@@ -228,27 +226,23 @@ function ConfirmationContent() {
                     : 'bg-amber-100'
               }`}
             >
-              {isCancelled ? '×' : isRejected ? '×' : isConfirmed ? '✓' : '⏳'}
+              {isRejected ? '×' : isConfirmed ? '✓' : '⏳'}
             </div>
 
             <h1 className="mt-5 text-3xl font-black text-slate-950">
-              {isCancelled
-                ? 'Booking Cancelled'
-                : isRejected
-                  ? 'Booking Request Declined'
-                  : isConfirmed
-                    ? 'Booking Confirmed'
-                    : 'Booking Request Submitted'}
+              {isRejected
+                ? 'Booking Request Declined'
+                : isConfirmed
+                  ? 'Booking Confirmed'
+                  : 'Booking Request Submitted'}
             </h1>
 
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
-              {isCancelled
-                ? 'This booking has been cancelled.'
-                : isRejected
-                  ? 'Unfortunately, the host could not accept this booking request.'
-                  : isConfirmed
-                    ? 'Your stay has been confirmed by the host.'
-                    : 'Your request has been sent to the host. The host will review the dates and contact you to confirm the stay.'}
+              {isRejected
+                ? 'Unfortunately, the host could not accept this booking request.'
+                : isConfirmed
+                  ? 'Your stay has been confirmed by the host.'
+                  : 'Your request has been sent to the host. The host will review the dates and contact you to confirm the stay.'}
             </p>
           </div>
 
@@ -300,15 +294,6 @@ function ConfirmationContent() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-teal-100 bg-teal-50/60 p-5">
-              <p className="text-xs font-black uppercase tracking-wide text-teal-700">
-                Cancellation Policy
-              </p>
-              <p className="mt-1 text-sm font-bold text-slate-800">
-                {cancellationSummary}
-              </p>
-            </div>
-
             <div className="mt-6 rounded-2xl border border-slate-200 p-5">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-slate-500">Total stay price</span>
@@ -358,56 +343,92 @@ function ConfirmationContent() {
               </div>
             </div>
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              {canCancel && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const token =
-                      sessionStorage.getItem('token') ||
-                      localStorage.getItem('token') ||
-                      '';
+            <div className="mt-7 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-left">
+          <p className="text-xs font-black uppercase tracking-widest text-teal-600">
+            Need help?
+          </p>
+          <h2 className="mt-2 text-lg font-black text-slate-900">
+            StayGuwahati Support
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            Questions about your booking or stay? Contact our support team.
+          </p>
 
-                    if (!token) {
-                      window.alert('Please sign in again to cancel this booking.');
-                      return;
-                    }
+          <div className="mt-4 grid gap-2">
+            <a
+              href={
+                SUPPORT_WHATSAPP
+                  ? getWhatsAppUrl(
+                      SUPPORT_WHATSAPP,
+                      `Hi StayGuwahati Support, I need help with booking ${booking?._id || booking?.id || ''}.`
+                    )
+                  : `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+                      `Help with booking ${booking?._id || booking?.id || ''}`
+                    )}`
+              }
+              target={SUPPORT_WHATSAPP ? "_blank" : undefined}
+              rel={SUPPORT_WHATSAPP ? "noreferrer" : undefined}
+              className="rounded-xl bg-teal-600 px-4 py-3 text-center text-sm font-black text-white hover:bg-teal-700"
+            >
+              💬 WhatsApp Support
+            </a>
 
-                    if (!window.confirm('Cancel this booking?')) return;
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+                `Support request - booking ${booking?._id || booking?.id || ''}`
+              )}`}
+              className="rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-black text-slate-700 hover:border-teal-300 hover:text-teal-700"
+            >
+              🎧 Contact StayGuwahati
+            </a>
+          </div>
+        </div>
 
-                    try {
-                      const response = await fetch(
-                        `${BACKEND_URL}/api/bookings/${booking?._id || booking?.id}/status`,
-                        {
-                          method: 'PATCH',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${token}`,
-                          },
-                          body: JSON.stringify({ status: 'Cancelled' }),
-                        }
-                      );
+        {status === 'confirmed' && (
+          <div className="rounded-2xl border border-teal-100 bg-teal-50/50 p-5 text-left">
+            <p className="text-xs font-black uppercase tracking-widest text-teal-700">
+              Your host
+            </p>
+            <h2 className="mt-2 text-lg font-black text-slate-900">
+              Contact {hostName}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Your booking is confirmed. You can contact the host directly.
+            </p>
 
-                      const data = await response.json().catch(() => ({}));
-
-                      if (!response.ok || !data.success) {
-                        window.alert(
-                          data.message || 'Unable to cancel this booking.'
-                        );
-                        return;
-                      }
-
-                      setBooking(data.data);
-                    } catch {
-                      window.alert('Unable to cancel this booking right now.');
-                    }
-                  }}
-                  className="flex-1 rounded-xl bg-rose-50 px-5 py-3.5 text-sm font-black text-rose-700 ring-1 ring-rose-200 hover:bg-rose-600 hover:text-white"
-                >
-                  Cancel Booking
-                </button>
+            <div className="mt-4 grid gap-2">
+              {hostPhone ? (
+                <>
+                  <a
+                    href={getWhatsAppUrl(
+                      hostPhone,
+                      `Hi ${hostName}, I have a confirmed StayGuwahati booking for ${booking?.propertyName || 'your property'}.`
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-black text-white hover:bg-green-700"
+                  >
+                    💬 WhatsApp Host
+                  </a>
+                  <a
+                    href={`tel:${hostPhone}`}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-black text-slate-700 hover:border-teal-300 hover:text-teal-700"
+                  >
+                    📞 Call Host
+                  </a>
+                </>
+              ) : (
+                <p className="rounded-xl bg-white px-4 py-3 text-xs font-semibold text-slate-500">
+                  Host contact details will appear here once the host has provided a phone number.
+                </p>
               )}
+            </div>
+          </div>
+        )}
+      </div>
 
+      <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <button
                 onClick={() => router.push('/')}
                 className="flex-1 rounded-xl bg-slate-950 px-5 py-3.5 text-sm font-black text-white hover:bg-teal-700"

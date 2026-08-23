@@ -41,6 +41,17 @@ interface Review {
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
+const SUPPORT_EMAIL = 'support@stayguwahati.in';
+const SUPPORT_WHATSAPP =
+  process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\\D/g, '') || '';
+
+const getWhatsAppUrl = (phone: string, message: string) => {
+  const digits = phone.replace(/\\D/g, '');
+  if (!digits) return '';
+  const normalized = digits.startsWith('91') ? digits : `91${digits}`;
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+};
+
 const getHostAvatarUrl = (host?: PropertyHost | string) => {
   if (!host) return null;
 
@@ -636,6 +647,57 @@ function PropertyDetailsContent() {
           </div>
         </div>
       </div>
+
+      {/* Guest Support */}
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal-50 text-xl">
+            💬
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-slate-900">Need help?</h2>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500">
+              Our support team can help with your booking, dates, or property questions.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <a
+            href={
+              SUPPORT_WHATSAPP
+                ? getWhatsAppUrl(
+                    SUPPORT_WHATSAPP,
+                    `Hi StayGuwahati Support, I need help with ${property.title}.`
+                  )
+                : `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+                    `Help with ${property.title}`
+                  )}`
+            }
+            target={SUPPORT_WHATSAPP ? "_blank" : undefined}
+            rel={SUPPORT_WHATSAPP ? "noreferrer" : undefined}
+            className="rounded-xl bg-teal-600 px-4 py-3 text-center text-sm font-black text-white hover:bg-teal-700 transition"
+          >
+            💬 WhatsApp Support
+          </a>
+
+          <a
+            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+              `Support request - ${property.title}`
+            )}`}
+            className="rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-black text-slate-700 hover:border-teal-300 hover:text-teal-700 transition"
+          >
+            🎧 Contact StayGuwahati
+          </a>
+        </div>
+
+        {!SUPPORT_WHATSAPP && (
+          <p className="mt-3 text-[11px] text-slate-400">
+            Configure NEXT_PUBLIC_SUPPORT_WHATSAPP to enable the direct WhatsApp button.
+          </p>
+        )}
+      </section>
+
     </main>
   );
 }
