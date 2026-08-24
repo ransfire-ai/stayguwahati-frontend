@@ -181,6 +181,80 @@ export default function HomePage() {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
   const t = translations[currentLang] || translations.en;
 
+
+  const handleLangChange = (lang: 'en' | 'as' | 'hi') => {
+    setCurrentLang(lang);
+    localStorage.setItem('preferredLang', lang);
+  };
+
+  const requireLoginToList = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!sessionStorage.getItem('token')) {
+      event.preventDefault();
+      router.push('/login?redirect=/list-property');
+    }
+  };
+
+  const handleLocalitySelect = (locality: string) => {
+    setSelectedFilterLocality(locality);
+    setSearchLocality(locality);
+  };
+
+  const handleReserveSpace = (stay: Property) => {
+    const propertyId = stay._id || stay.id;
+    if (!propertyId) return;
+    router.push(`/property-details?id=${encodeURIComponent(propertyId)}`);
+  };
+
+  const changeGalleryImage = (propertyId: string, length: number, direction: number) => {
+    if (length <= 0) return;
+    setGalleryIndexes((current) => {
+      const index = current[propertyId] || 0;
+      return { ...current, [propertyId]: (index + direction + length) % length };
+    });
+  };
+
+  const fetchHomestays = async () => {
+    setLoading(true);
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 12000);
+      const response = await fetch(`${BACKEND_URL}/api/homestays`, {
+        method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller.signal,
+      });
+      window.clearTimeout(timeout);
+      if (!response.ok) throw new Error(`Property API returned ${response.status}`);
+      const raw = await response.json();
+      const list = Array.isArray(raw) ? raw : Array.isArray(raw.data) ? raw.data : Array.isArray(raw.homestays) ? raw.homestays : Array.isArray(raw.properties) ? raw.properties : [];
+      setProperties(list.map((item: any) => ({
+        ...item, _id: item._id || item.id, title: item.title || item.name || 'Homestay',
+        locality: item.locality || item.city || 'Guwahati', pricePerNight: Number(item.pricePerNight ?? item.price ?? 0),
+        images: Array.isArray(item.images) ? item.images : [], rating: typeof item.rating === 'number' ? item.rating : undefined,
+        reviewsCount: Number(item.reviewsCount || 0),
+      })));
+    } catch (error) {
+      console.error('Failed to load homestays:', error);
+      setProperties([]);
+    } finally { setLoading(false); }
+  };
+
+  const filteredProperties = properties.filter((property) => {
+    const locality = (property.locality || '').toLowerCase();
+    const title = (property.title || '').toLowerCase();
+    const localityFilter = (selectedFilterLocality || searchLocality).trim().toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
+    return (!localityFilter || locality.includes(localityFilter)) && (!query || title.includes(query) || locality.includes(query));
+  });
+
+  useEffect(() => {
+    const savedWishlist = localStorage.getItem('stayguwahati_wishlist');
+    if (savedWishlist) {
+      try {
+        const parsed = JSON.parse(savedWishlist);
+        if (Array.isArray(parsed)) setWishlist(parsed);
+      } catch { localStorage.removeItem('stayguwahati_wishlist'); }
+    }
+  }, []);
+
   useEffect(() => {
     const TOKEN_KEY = 'token';
     const PROFILE_KEY = 'userProfile';
@@ -384,12 +458,26 @@ export default function HomePage() {
 
     fetchHomestays();
 
-    const toggleWishlist = (propertyId: string) => {
-    setWishlist((current) =>
-      current.includes(propertyId)
+    return () => {
+      window.clearInterval(sessionTimer);
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, recordActivity);
+      });
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [router]);
+
+  const toggleWishlist = (propertyId: string) => {
+    setWishlist((current) => {
+      const next = current.includes(propertyId)
         ? current.filter((id) => id !== propertyId)
-        : [...current, propertyId]
-    );
+        : [...current, propertyId];
+      localStorage.setItem('stayguwahati_wishlist', JSON.stringify(next));
+      return next;
+    });
   };
 
   const openSearch = () => {
