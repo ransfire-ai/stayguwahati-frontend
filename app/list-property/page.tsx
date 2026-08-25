@@ -12,6 +12,7 @@ const dictionary = {
     lLocality: 'LOCALITY (NEIGHBORHOOD)',
     lPrice: 'PRICE PER NIGHT (₹)',
     lBedrooms: 'NUMBER OF BEDROOMS',
+    lBathrooms: 'BATHROOMS',
     lAmenities: 'AMENITIES (WHAT THIS PLACE OFFERS)',
     lImages: 'PROPERTY IMAGES (EXACTLY 4)',
     lHostName: 'FULL NAME',
@@ -29,6 +30,7 @@ const dictionary = {
     lLocality: 'এলাকা',
     lPrice: 'প্ৰতি ৰাতিৰ মূল্য (₹)',
     lBedrooms: 'শোৱা কোঠা (Bedrooms)',
+    lBathrooms: 'বাথৰুম',
     lAmenities: 'সুবিধাসমূহ (এই স্থানত কি কি পোৱা যায়)',
     lImages: 'সম্পত্তিৰ ছবি (ঠিক ৪ খন)',
     lHostName: 'সম্পূৰ্ণ নাম',
@@ -46,6 +48,7 @@ const dictionary = {
     lLocality: 'स्थान',
     lPrice: 'प्रति रात्रि मूल्य (₹)',
     lBedrooms: 'बेडरूम की संख्या',
+    lBathrooms: 'बाथरूम',
     lAmenities: 'सुविधाएं (इस स्थान पर क्या उपलब्ध है)',
     lImages: 'संपत्ति छवियां (ठीक 4)',
     lHostName: 'पूरा नाम',
@@ -86,6 +89,15 @@ export default function ListPropertyPage() {
   const [locality, setLocality] = useState('');
   const [price, setPrice] = useState('');
   const [bedrooms, setBedrooms] = useState<number>(2);
+
+  // Bathroom breakdown used by the backend schema.
+  // We keep the three real bathroom types instead of inventing fractional totals.
+  const [bathrooms, setBathrooms] = useState({
+    privateAttached: 0,
+    dedicated: 0,
+    shared: 0,
+  });
+
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
@@ -110,6 +122,11 @@ export default function ListPropertyPage() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraTarget, setCameraTarget] = useState<'property' | 'host'>('property');
   const [cameraError, setCameraError] = useState('');
+  const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
+  const [photoPickerTarget, setPhotoPickerTarget] = useState<'property' | 'host'>('property');
+
+  const propertyFileInputRef = useRef<HTMLInputElement | null>(null);
+  const hostFileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
 
@@ -180,7 +197,7 @@ export default function ListPropertyPage() {
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError(
-        'Camera access is not supported by this browser. Please use Choose from phone instead.'
+        'Camera access is not supported by this browser. Please use the photo picker and choose Photo Library or Files instead.'
       );
       setCameraOpen(true);
       return;
@@ -213,7 +230,7 @@ export default function ListPropertyPage() {
       setCameraError(
         error?.name === 'NotAllowedError'
           ? 'Camera permission was denied. Allow camera access in your browser settings and try again.'
-          : 'Could not open the camera. Please use Choose from phone instead.'
+          : 'Could not open the camera. Please use the photo picker and choose Photo Library or Files instead.'
       );
       setCameraOpen(true);
     }
@@ -286,6 +303,59 @@ export default function ListPropertyPage() {
   useEffect(() => {
     return () => stopCamera();
   }, []);
+
+  const bathroomTotal =
+    bathrooms.privateAttached + bathrooms.dedicated + bathrooms.shared;
+
+  const updateBathroom = (
+    type: 'privateAttached' | 'dedicated' | 'shared',
+    delta: number
+  ) => {
+    setBathrooms((current) => ({
+      ...current,
+      [type]: Math.max(0, Math.min(10, current[type] + delta)),
+    }));
+  };
+
+  const openPhotoPicker = (target: 'property' | 'host') => {
+    setPhotoPickerTarget(target);
+    setPhotoPickerOpen(true);
+  };
+
+  const closePhotoPicker = () => {
+    setPhotoPickerOpen(false);
+  };
+
+  const choosePhotoLibrary = () => {
+    closePhotoPicker();
+
+    requestAnimationFrame(() => {
+      if (photoPickerTarget === 'host') {
+        hostFileInputRef.current?.click();
+      } else {
+        propertyFileInputRef.current?.click();
+      }
+    });
+  };
+
+  const choosePhotoCamera = () => {
+    closePhotoPicker();
+    requestAnimationFrame(() => {
+      openCamera(photoPickerTarget);
+    });
+  };
+
+  const chooseFiles = () => {
+    closePhotoPicker();
+
+    requestAnimationFrame(() => {
+      if (photoPickerTarget === 'host') {
+        hostFileInputRef.current?.click();
+      } else {
+        propertyFileInputRef.current?.click();
+      }
+    });
+  };
 
   const handleHostPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -528,6 +598,13 @@ export default function ListPropertyPage() {
         description: description.trim(),
         locality: locality,
         pricePerNight: parsedPrice,
+        bedrooms,
+        bathrooms: {
+          privateAttached: bathrooms.privateAttached,
+          dedicated: bathrooms.dedicated,
+          shared: bathrooms.shared,
+          total: bathroomTotal,
+        },
         lat: isNaN(parsedLat) ? 26.1445 : parsedLat,
         lng: isNaN(parsedLng) ? 91.7362 : parsedLng,
         images: uploadedImageUrls,
@@ -586,16 +663,16 @@ export default function ListPropertyPage() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans flex flex-col justify-between">
+    <div className="min-h-screen bg-[#f5f8f8] text-[#07152f] font-sans flex flex-col justify-between">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
+      <header className="bg-white/95 backdrop-blur-md border-b border-[#dce9e8] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-0 sm:h-16 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-0">
           <div
             className="flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0"
             onClick={() => router.push('/')}
           >
             <span className="text-xl sm:text-2xl">🏠</span>
-            <span className="text-lg sm:text-xl font-bold text-teal-800">StayGuwahati</span>
+            <span className="text-lg sm:text-xl font-black tracking-tight text-[#07152f]">Stay<span className="text-[#008f86]">Guwahati</span></span>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
@@ -620,46 +697,55 @@ export default function ListPropertyPage() {
       </header>
 
       {/* Main Form Content */}
-      <main className="flex-1 max-w-3xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 sm:p-8 space-y-6">
-          <div>
-            <h1 className="text-2xl font-black text-gray-900 tracking-tight">{t.title}</h1>
-            <p className="text-gray-400 text-xs mt-1">{t.sub}</p>
-          </div>
+      <main className="flex-1 w-full">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-10">
+          <div className="bg-white border border-[#dce9e8] rounded-[28px] shadow-[0_14px_45px_rgba(7,21,47,0.07)] overflow-hidden">
+            <div className="bg-[#07152f] px-6 sm:px-9 py-7 sm:py-9 text-white">
+              <div className="inline-flex items-center rounded-full border border-[#31d6c7]/50 bg-[#0b2739] px-3 py-1 text-[10px] font-black tracking-[0.18em] text-[#55e4d7] uppercase">
+                LOCAL HOSTS · STAYGUWAHATI
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight mt-3">{t.title}</h1>
+              <p className="text-slate-300 text-xs sm:text-sm mt-2 max-w-2xl">{t.sub}</p>
+            </div>
+
+            <div className="p-5 sm:p-8 space-y-6">
+          <div className="mb-1">
+              <p className="text-[10px] font-black tracking-[0.16em] text-[#008f86] uppercase">Property details</p>
+            </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="block text-gray-400 font-medium mb-1">{t.lTitle}</label>
+              <label className="block text-[#78909c] font-black text-[10px] tracking-[0.12em] mb-1 uppercase">{t.lTitle}</label>
               <input
                 type="text"
                 required
                 placeholder="e.g., Cozy Riverside Orchid Villa"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900"
+                className="w-full border border-[#d7e4e3] rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#008f86]/20 focus:border-[#008f86] font-medium text-gray-900"
               />
             </div>
 
             <div>
-              <label className="block text-gray-400 font-medium mb-1">{t.lDesc}</label>
+              <label className="block text-[#78909c] font-black text-[10px] tracking-[0.12em] mb-1 uppercase">{t.lDesc}</label>
               <textarea
                 rows={3}
                 required
                 placeholder="Describe the ambiance, amenities, and unique features..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900"
+                className="w-full border border-[#d7e4e3] rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#008f86]/20 focus:border-[#008f86] font-medium text-gray-900"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-gray-400 font-medium mb-1">{t.lLocality}</label>
+                <label className="block text-[#78909c] font-black text-[10px] tracking-[0.12em] mb-1 uppercase">{t.lLocality}</label>
                 <select
                   required
                   value={locality}
                   onChange={(e) => setLocality(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium bg-white text-gray-900"
+                  className="w-full border border-[#d7e4e3] rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#008f86]/20 focus:border-[#008f86] font-medium bg-white text-gray-900"
                 >
                   <option value="" disabled>Select locality...</option>
                   {localities.map((loc) => (
@@ -669,44 +755,97 @@ export default function ListPropertyPage() {
               </div>
 
               <div>
-                <label className="block text-gray-400 font-medium mb-1">{t.lPrice}</label>
+                <label className="block text-[#78909c] font-black text-[10px] tracking-[0.12em] mb-1 uppercase">{t.lPrice}</label>
                 <input
                   type="number"
                   required
                   placeholder="2500"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900"
+                  className="w-full border border-[#d7e4e3] rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#008f86]/20 focus:border-[#008f86] font-medium text-gray-900"
                 />
               </div>
             </div>
 
-            {/* Bedroom Selector Block */}
-            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div>
-                <label className="block text-gray-700 font-bold text-sm">{t.lBedrooms}</label>
-                <p className="text-gray-400 text-xs">Select how many bedrooms are available for guests.</p>
+            {/* Bedroom + Bathroom Selectors */}
+            <div className="space-y-3">
+              <div className="p-4 bg-[#f7faf9] border border-[#dce9e8] rounded-[22px] flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <label className="block text-gray-700 font-bold text-sm">{t.lBedrooms}</label>
+                  <p className="text-gray-400 text-xs">Select how many bedrooms are available for guests.</p>
+                </div>
+
+                <div className="flex items-center gap-3 bg-white p-1.5 border border-gray-200 rounded-xl shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setBedrooms((prev) => Math.max(1, prev - 1))}
+                    className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold flex items-center justify-center text-sm transition"
+                  >
+                    −
+                  </button>
+                  <div className="text-center min-w-[3.5rem]">
+                    <span className="text-base font-extrabold text-gray-900">{bedrooms}</span>
+                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Bedrooms</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBedrooms((prev) => Math.min(10, prev + 1))}
+                    className="w-8 h-8 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold flex items-center justify-center text-sm transition"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3 bg-white p-1.5 border border-gray-200 rounded-xl shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setBedrooms((prev) => Math.max(1, prev - 1))}
-                  className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold flex items-center justify-center text-sm transition"
-                >
-                  −
-                </button>
-                <div className="text-center min-w-[3rem]">
-                  <span className="text-base font-extrabold text-gray-900">{bedrooms}</span>
-                  <p className="text-[10px] text-gray-400 uppercase font-semibold">Bedrooms</p>
+              <div className="p-4 bg-[#f7faf9] border border-[#dce9e8] rounded-[22px]">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                  <div>
+                    <label className="block text-gray-700 font-bold text-sm">{t.lBathrooms}</label>
+                    <p className="text-gray-400 text-xs">
+                      Enter the actual number of bathrooms by type. Total: <span className="font-bold text-teal-700">{bathroomTotal}</span>
+                    </p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setBedrooms((prev) => Math.min(10, prev + 1))}
-                  className="w-8 h-8 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold flex items-center justify-center text-sm transition"
-                >
-                  +
-                </button>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {[
+                    { key: 'privateAttached' as const, label: 'Private & attached' },
+                    { key: 'dedicated' as const, label: 'Dedicated' },
+                    { key: 'shared' as const, label: 'Shared' },
+                  ].map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-xl p-2.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-800 truncate">{item.label}</p>
+                        <p className="text-[10px] text-gray-400">Bathrooms</p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => updateBathroom(item.key, -1)}
+                          className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold flex items-center justify-center"
+                          aria-label={`Decrease ${item.label} bathrooms`}
+                        >
+                          −
+                        </button>
+                        <span className="w-6 text-center text-sm font-extrabold text-gray-900">
+                          {bathrooms[item.key]}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateBathroom(item.key, 1)}
+                          className="w-7 h-7 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold flex items-center justify-center"
+                          aria-label={`Increase ${item.label} bathrooms`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -752,33 +891,29 @@ export default function ListPropertyPage() {
               <div className={`rounded-2xl p-4 sm:p-5 transition ${
                 imageError
                   ? 'border-2 border-rose-300 bg-rose-50/30'
-                  : 'border-2 border-dashed border-teal-200 bg-teal-50/30'
+                  : 'border-2 border-dashed border-[#7edbd3] bg-[#f0fbf9]'
               }`}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="flex items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 cursor-pointer transition shadow-sm">
-                    🖼️ <span>Choose from phone</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/png, image/jpeg, image/webp"
-                      onChange={addPropertyImages}
-                      className="hidden"
-                    />
-                  </label>
+                <button
+                  type="button"
+                  onClick={() => openPhotoPicker('property')}
+                  disabled={selectedFiles.length >= 4}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#008f86] hover:bg-[#007b74] text-white font-bold py-3 px-4 cursor-pointer transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  📷 <span>Add / choose property photos</span>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => openCamera('property')}
-                    disabled={selectedFiles.length >= 4}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-teal-50 text-teal-800 font-bold py-3 px-4 cursor-pointer transition border border-teal-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    📷 <span>Take photo with camera</span>
-                  </button>
-                </div>
+                <input
+                  ref={propertyFileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/png, image/jpeg, image/webp"
+                  onChange={addPropertyImages}
+                  className="hidden"
+                />
 
                 <p className="text-center text-gray-400 text-xs mt-3">
-                  Add exactly 4 property photos. Choose from your gallery or use the camera.
-                  On Android, the camera opens directly inside StayGuwahati.
+                  Add exactly 4 property photos. One button gives you Camera, Photo Library and Files
+                  on Android, iPhone and desktop.
                 </p>
 
                 {previews.length > 0 ? (
@@ -844,7 +979,7 @@ export default function ListPropertyPage() {
             </div>
 
             {/* Exact Property Location */}
-            <div className="p-4 sm:p-5 bg-slate-50 border border-slate-100 rounded-2xl">
+            <div className="p-4 sm:p-5 bg-[#f7faf9] border border-[#dce9e8] rounded-[22px]">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-lg shrink-0">
                   📍
@@ -861,7 +996,7 @@ export default function ListPropertyPage() {
                 type="button"
                 onClick={useCurrentLocation}
                 disabled={locationLoading}
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 flex items-center justify-center gap-2"
+                className="w-full bg-[#008f86] hover:bg-[#007b74] text-white font-bold py-3 rounded-xl transition disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {locationLoading ? '⏳ Getting GPS location…' : '📍 Use my current location'}
               </button>
@@ -874,7 +1009,7 @@ export default function ListPropertyPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <label className="block text-gray-400 font-medium mb-1">
+                  <label className="block text-[#78909c] font-black text-[10px] tracking-[0.12em] mb-1 uppercase">
                     LATITUDE COORDINATE
                   </label>
                   <input
@@ -887,12 +1022,12 @@ export default function ListPropertyPage() {
                     value={lat}
                     onChange={(e) => setLat(e.target.value)}
                     placeholder="e.g. 26.144500"
-                    className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900 bg-white"
+                    className="w-full border border-[#d7e4e3] rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#008f86]/20 focus:border-[#008f86] font-medium text-gray-900 bg-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-400 font-medium mb-1">
+                  <label className="block text-[#78909c] font-black text-[10px] tracking-[0.12em] mb-1 uppercase">
                     LONGITUDE COORDINATE
                   </label>
                   <input
@@ -905,7 +1040,7 @@ export default function ListPropertyPage() {
                     value={lng}
                     onChange={(e) => setLng(e.target.value)}
                     placeholder="e.g. 91.736200"
-                    className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900 bg-white"
+                    className="w-full border border-[#d7e4e3] rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#008f86]/20 focus:border-[#008f86] font-medium text-gray-900 bg-white"
                   />
                 </div>
               </div>
@@ -940,47 +1075,44 @@ export default function ListPropertyPage() {
                 <div className="flex-1">
                   <label className="block text-gray-700 font-bold mb-0.5">{t.lHostPhoto}</label>
                   <p className="text-gray-400 text-[11px] mb-2">Upload a photo, or we will automatically generate an initial avatar from your name.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <label className="inline-flex items-center gap-1.5 bg-white hover:bg-gray-100 text-teal-800 font-semibold px-3 py-1.5 rounded-xl border border-gray-200 text-xs cursor-pointer shadow-sm transition">
-                      🖼️ Photo Library
-                      <input
-                        type="file"
-                        accept="image/png, image/jpeg, image/webp"
-                        onChange={handleHostPhotoChange}
-                        className="hidden"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => openCamera('host')}
-                      className="inline-flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold px-3 py-1.5 rounded-xl border border-teal-600 text-xs cursor-pointer shadow-sm transition"
-                    >
-                      📷 Take photo
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openPhotoPicker('host')}
+                    className="inline-flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-2 rounded-xl border border-teal-600 text-xs cursor-pointer shadow-sm transition"
+                  >
+                    📷 Add / change host photo
+                  </button>
+
+                  <input
+                    ref={hostFileInputRef}
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={handleHostPhotoChange}
+                    className="hidden"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-gray-400 font-medium mb-1">{t.lHostName}</label>
+                  <label className="block text-[#78909c] font-black text-[10px] tracking-[0.12em] mb-1 uppercase">{t.lHostName}</label>
                   <input
                     type="text"
                     required
                     value={hostName}
                     onChange={(e) => setHostName(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900"
+                    className="w-full border border-[#d7e4e3] rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#008f86]/20 focus:border-[#008f86] font-medium text-gray-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-400 font-medium mb-1">{t.lHostPhone}</label>
+                  <label className="block text-[#78909c] font-black text-[10px] tracking-[0.12em] mb-1 uppercase">{t.lHostPhone}</label>
                   <input
                     type="text"
                     required
                     placeholder="10-digit mobile number"
                     value={hostPhone}
                     onChange={(e) => setHostPhone(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl p-3 focus:outline-teal-500 font-medium text-gray-900"
+                    className="w-full border border-[#d7e4e3] rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#008f86]/20 focus:border-[#008f86] font-medium text-gray-900"
                   />
                 </div>
               </div>
@@ -989,13 +1121,95 @@ export default function ListPropertyPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-teal-600 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition shadow-sm mt-4 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="w-full bg-[#07152f] hover:bg-[#008f86] text-white font-bold py-3.5 rounded-xl transition shadow-sm mt-4 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               ☁️ {submitting ? 'Processing...' : t.btn}
             </button>
           </form>
+            </div>
+          </div>
         </div>
       </main>
+
+      {/* Unified photo picker. The same UI is used on Android, iPhone and desktop. */}
+      {photoPickerOpen && (
+        <div
+          className="fixed inset-0 z-[90] bg-black/50 flex items-end sm:items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="photo-picker-title"
+        >
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 id="photo-picker-title" className="font-black text-gray-900">
+                    {photoPickerTarget === 'host' ? 'Add host photo' : 'Add property photo'}
+                  </h2>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Choose how you want to add the photo.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closePhotoPicker}
+                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold"
+                  aria-label="Close photo picker"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-2.5">
+              <button
+                type="button"
+                onClick={choosePhotoCamera}
+                disabled={photoPickerTarget === 'property' && selectedFiles.length >= 4}
+                className="w-full flex items-center gap-3 rounded-xl border border-teal-200 bg-teal-50 hover:bg-teal-100 px-4 py-3 text-left transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="text-2xl">📷</span>
+                <span>
+                  <span className="block text-sm font-bold text-gray-900">Take photo</span>
+                  <span className="block text-[11px] text-gray-500">Use your device camera</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={choosePhotoLibrary}
+                className="w-full flex items-center gap-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 px-4 py-3 text-left transition"
+              >
+                <span className="text-2xl">🖼️</span>
+                <span>
+                  <span className="block text-sm font-bold text-gray-900">Photo Library</span>
+                  <span className="block text-[11px] text-gray-500">Choose photos from your gallery</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={chooseFiles}
+                className="w-full flex items-center gap-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 px-4 py-3 text-left transition"
+              >
+                <span className="text-2xl">📁</span>
+                <span>
+                  <span className="block text-sm font-bold text-gray-900">Choose Files</span>
+                  <span className="block text-[11px] text-gray-500">Select an image from your device files</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={closePhotoPicker}
+                className="w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 mt-1"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cross-browser camera modal. This avoids Android Chrome/Samsung browser
           differences with <input capture> and gives the host an explicit camera UI. */}
@@ -1058,7 +1272,7 @@ export default function ListPropertyPage() {
                   <button
                     type="button"
                     onClick={takeCameraPhoto}
-                    className="flex-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-white py-3 font-black"
+                    className="flex-1 rounded-xl bg-[#008f86] hover:bg-[#007b74] text-white py-3 font-black"
                   >
                     📷 Capture
                   </button>
@@ -1070,7 +1284,7 @@ export default function ListPropertyPage() {
       )}
 
       {/* Footer */}
-      <footer className="text-center py-4 text-xs text-gray-400 border-t border-gray-100 bg-white mt-12">
+      <footer className="text-center py-6 text-xs text-[#7a8b9b] border-t border-[#dce9e8] bg-white mt-10">
         {t.footer}
       </footer>
     </div>
