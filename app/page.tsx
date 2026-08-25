@@ -11,6 +11,13 @@ interface Property {
   description?: string;
   features?: string[];
   pricePerNight: number;
+  bedrooms?: number | string;
+  bathrooms?: {
+    privateAttached?: number | string;
+    dedicated?: number | string;
+    shared?: number | string;
+    total?: number | string;
+  };
   images?: string[];
   rating?: number;
   reviewsCount?: number;
@@ -177,7 +184,6 @@ export default function HomePage() {
   const [galleryIndexes, setGalleryIndexes] = useState<Record<string, number>>({});
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
   const t = translations[currentLang] || translations.en;
@@ -216,91 +222,38 @@ export default function HomePage() {
 
   const fetchHomestays = async () => {
     setLoading(true);
-    setApiError(null);
-
     try {
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), 12000);
-
       const response = await fetch(`${BACKEND_URL}/api/homestays`, {
-  method: 'GET',
-  cache: 'no-store',
-  headers: {
-    Accept: 'application/json',
-  },
-  signal: controller.signal,
-});
-
+        method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller.signal,
+      });
       window.clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(`Property API returned HTTP ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`Property API returned ${response.status}`);
       const raw = await response.json();
-
-      if (raw?.success === false) {
-        throw new Error(raw?.message || 'Property API returned an unsuccessful response');
-      }
-
-      // Current backend response: { success: true, count: 2, data: [...] }
-      const list = Array.isArray(raw?.data)
-        ? raw.data
-        : Array.isArray(raw)
-          ? raw
-          : Array.isArray(raw?.homestays)
-            ? raw.homestays
-            : Array.isArray(raw?.properties)
-              ? raw.properties
-              : [];
-
-      const normalized = list
-        .filter(Boolean)
-        .map((item: any) => ({
-          ...item,
-          _id: item._id || item.id,
-          title: item.title || item.name || 'Homestay',
-          locality: item.locality || item.city || 'Guwahati',
-          description: item.description || '',
-          pricePerNight: Number(item.pricePerNight ?? item.price ?? 0),
-          images: Array.isArray(item.images) ? item.images : [],
-          rating: typeof item.rating === 'number' ? item.rating : undefined,
-          reviewsCount: Number(item.reviewsCount || 0),
-          status: item.status || 'approved',
-        }));
-
-      console.info(`[StayGuwahati] /api/homestays returned ${normalized.length} properties`);
-      setProperties(normalized);
+      const list = Array.isArray(raw) ? raw : Array.isArray(raw.data) ? raw.data : Array.isArray(raw.homestays) ? raw.homestays : Array.isArray(raw.properties) ? raw.properties : [];
+      setProperties(list.map((item: any) => ({
+        ...item, _id: item._id || item.id, title: item.title || item.name || 'Homestay',
+        locality: item.locality || item.city || 'Guwahati',
+        pricePerNight: Number(item.pricePerNight ?? item.price ?? 0),
+        bedrooms: item.bedrooms ?? item.bedroomCount ?? undefined,
+        bathrooms: item.bathrooms ?? undefined,
+        images: Array.isArray(item.images) ? item.images : [],
+        rating: typeof item.rating === 'number' ? item.rating : undefined,
+        reviewsCount: Number(item.reviewsCount || 0),
+      })));
     } catch (error) {
-      const message =
-        error instanceof DOMException && error.name === 'AbortError'
-          ? 'The property server took too long to respond.'
-          : error instanceof Error
-            ? error.message
-            : 'Unable to load properties right now.';
-
-      console.error('[StayGuwahati] Failed to load homestays:', error);
-      setApiError(message);
+      console.error('Failed to load homestays:', error);
       setProperties([]);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const filteredProperties = properties.filter((property) => {
-    // The backend already returns approved/available properties.
-    // Do not hide valid older records when optional fields are absent.
-    if (property.status && property.status !== 'approved') return false;
-
     const locality = (property.locality || '').toLowerCase();
     const title = (property.title || '').toLowerCase();
     const localityFilter = (selectedFilterLocality || searchLocality).trim().toLowerCase();
     const query = searchQuery.trim().toLowerCase();
-
-    return (
-      (!localityFilter || locality.includes(localityFilter)) &&
-      (!query || title.includes(query) || locality.includes(query))
-    );
+    return (!localityFilter || locality.includes(localityFilter)) && (!query || title.includes(query) || locality.includes(query));
   });
 
   useEffect(() => {
@@ -543,111 +496,93 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5faf8] text-slate-900 font-sans pb-20 lg:pb-0">
-      <nav className="sticky top-0 z-50 border-b border-teal-100 bg-[#f5faf8]/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <button onClick={() => router.push('/')} className="flex items-center gap-2.5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-700 text-xl">🏠</span>
-            <span className="text-xl font-black">Stay<span className="text-teal-700">Guwahati</span></span>
+    <div className="min-h-screen bg-white text-slate-900 font-sans pb-20 lg:pb-0">
+      {/* Desktop navigation */}
+      <nav className="hidden lg:block sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+          <button onClick={() => router.push('/')} className="flex items-center gap-2">
+            <span className="text-xl">🏠</span>
+            <span className="text-xl font-black tracking-tight">Stay<span className="text-teal-600">Guwahati</span></span>
           </button>
-          <div className="hidden items-center gap-2 lg:flex">
-            <button onClick={() => router.push('/')} className="rounded-full bg-teal-50 px-4 py-2 text-sm font-bold text-teal-800">{t.nav_home}</button>
-            <a href="/list-property" onClick={requireLoginToList} className="rounded-full px-4 py-2 text-sm font-semibold">{t.nav_list_property}</a>
-            <button onClick={() => router.push('/refer-a-host')} className="rounded-full px-4 py-2 text-sm font-semibold">{t.nav_refer_host}</button>
-            <button onClick={() => router.push('/map')} className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white">Explore Map</button>
-            <button onClick={() => router.push('/support')} className="rounded-full px-4 py-2 text-sm font-semibold">{t.nav_support}</button>
-            <select value={currentLang} onChange={(e) => handleLangChange(e.target.value as 'en' | 'as' | 'hi')} className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold">
+          <div className="flex items-center gap-6 text-sm font-semibold">
+            <button onClick={() => router.push('/')} className="text-teal-600">{t.nav_home}</button>
+            <a href="/list-property" onClick={requireLoginToList}>{t.nav_list_property}</a>
+            <button onClick={() => router.push('/refer-a-host')}>{t.nav_refer_host}</button>
+            <button onClick={() => router.push('/map')} className="rounded-full bg-slate-950 px-4 py-2 text-white">🗺️ {t.nav_explore_map}</button>
+            <button onClick={() => router.push('/support')}>{t.nav_support}</button>
+            <select value={currentLang} onChange={(e) => handleLangChange(e.target.value as 'en' | 'as' | 'hi')} className="rounded-full border border-slate-300 px-3 py-2 text-xs font-semibold">
               <option value="en">English</option><option value="as">অসমীয়া</option><option value="hi">हिंदी</option>
             </select>
-            <button onClick={() => router.push(userProfile ? '/dashboard' : '/login')} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold shadow-sm">
-              {userProfile ? `👤 ${userProfile.name || t.nav_dashboard}` : t.nav_sign_in}
+            <button onClick={() => router.push(userProfile ? '/dashboard' : '/login')} className="rounded-full border border-slate-300 px-4 py-2">
+              {userProfile ? '👤 ' + (userProfile.name || t.nav_dashboard) : t.nav_sign_in}
             </button>
           </div>
         </div>
       </nav>
 
-      <section className="relative overflow-hidden bg-[#073b39] text-white">
-        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-teal-300/20 blur-3xl" />
-        <div className="absolute -bottom-28 -left-20 h-80 w-80 rounded-full bg-amber-300/10 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-5 py-12 sm:py-16 lg:px-8">
-          <div className="max-w-3xl">
-            <span className="inline-flex rounded-full border border-teal-200/30 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-teal-100">✦ Made for Guwahati</span>
-            <h1 className="mt-5 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">Stay local.<br /><span className="text-amber-300">Feel Guwahati.</span></h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-teal-50/80 sm:text-lg">Handpicked homestays, warm local hosts and neighbourhoods worth discovering — all in one place.</p>
-            <button onClick={openSearch} className="mt-7 rounded-2xl bg-amber-300 px-6 py-3.5 text-sm font-black text-[#173b38]">Discover a stay →</button>
-          </div>
-          <div className="mt-9 grid max-w-4xl gap-3 rounded-3xl bg-white p-3 text-slate-900 shadow-2xl sm:grid-cols-[1fr_auto]">
-            <div className="rounded-2xl bg-[#f2f8f6] px-4 py-3">
-              <div className="text-[11px] font-black uppercase tracking-wider text-teal-700">Where</div>
-              <input value={searchLocality} onChange={(e) => { setSearchLocality(e.target.value); setSelectedFilterLocality(null); }} placeholder="Search Guwahati neighbourhood" className="mt-1 w-full bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400" />
-            </div>
-            <button onClick={openSearch} className="rounded-2xl bg-teal-700 px-7 py-3 text-sm font-black text-white">Search stays</button>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 pt-9 lg:px-8">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-700">Explore your way</p>
-        <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Guwahati, neighbourhood by neighbourhood</h2>
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            ['🌊', 'Riverside', 'Uzan Bazar'],
-            ['🌿', 'Quiet stays', 'Beltola'],
-            ['🚆', 'City access', 'Paltan Bazar'],
-            ['🍜', 'Food & life', 'Ganeshguri'],
-          ].map(([icon, title, locality]) => (
-            <button key={locality} onClick={() => { handleLocalitySelect(locality); openSearch(); }} className="rounded-3xl border border-teal-100 bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-              <span className="text-2xl">{icon}</span>
-              <h3 className="mt-4 font-black">{title}</h3>
-              <p className="mt-1 text-xs font-medium text-slate-500">{locality}</p>
+      {/* Airbnb-style mobile search header */}
+      <header className="sticky top-0 z-40 bg-white px-4 pb-4 pt-3 shadow-[0_4px_18px_rgba(0,0,0,0.08)] lg:static lg:px-6 lg:py-8 lg:shadow-none">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex items-center gap-3">
+            <button onClick={() => window.history.back()} aria-label="Go back" className="flex h-10 w-10 shrink-0 items-center justify-center text-3xl font-light lg:hidden">‹</button>
+            <button onClick={openSearch} className="min-w-0 flex-1 rounded-[30px] border border-slate-300 bg-white px-5 py-3 text-left shadow-[0_2px_10px_rgba(0,0,0,0.08)] lg:mx-auto lg:max-w-2xl">
+              <div className="truncate text-[17px] font-bold text-slate-900">Homes in Guwahati</div>
+              <div className="mt-0.5 text-sm font-medium text-slate-500">Any weekend <span className="px-1">•</span> Add guests</div>
             </button>
-          ))}
+            <button onClick={() => setShowFilters(!showFilters)} aria-label="Filters" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-300 text-xl lg:hidden">☷</button>
+          </div>
+
+          <div className="mt-4 flex gap-3 overflow-x-auto pb-1 lg:mx-auto lg:max-w-2xl">
+            <button onClick={() => setShowFilters(!showFilters)} className="shrink-0 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold shadow-sm">Price <span className="ml-2">⌄</span></button>
+            <button onClick={() => setShowFilters(!showFilters)} className="shrink-0 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold shadow-sm">Type of place <span className="ml-2">⌄</span></button>
+            <button onClick={() => setShowFilters(!showFilters)} className="shrink-0 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold shadow-sm">Bedrooms <span className="ml-2">⌄</span></button>
+          </div>
+
+          {showFilters && (
+            <div className="mx-auto mt-3 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4 shadow-lg lg:hidden">
+              <p className="text-sm font-bold">Search by locality</p>
+              <div className="mt-3 flex gap-2 overflow-x-auto">
+                <button onClick={() => { setSelectedFilterLocality(null); setSearchLocality(''); setShowFilters(false); }} className="shrink-0 rounded-full bg-slate-950 px-4 py-2 text-xs font-bold text-white">All Guwahati</button>
+                {['Uzan Bazar', 'Paltan Bazar', 'Dispur', 'Beltola', 'Ganeshguri', 'GS Road'].map((locality) => (
+                  <button key={locality} onClick={() => { handleLocalitySelect(locality); setShowFilters(false); }} className="shrink-0 rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold">{locality}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Desktop hero */}
+      <section className="hidden lg:block bg-slate-50 px-6 py-10">
+        <div className="mx-auto max-w-7xl rounded-3xl bg-slate-950 px-8 py-12 text-white">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-300">{t.hero_tag}</p>
+          <h1 className="mt-3 max-w-3xl text-4xl font-black">{t.hero_title}</h1>
+          <p className="mt-3 max-w-2xl text-slate-300">{t.hero_subtitle}</p>
         </div>
       </section>
 
-      <main id="listings" className="mx-auto max-w-7xl scroll-mt-24 px-5 pb-10 pt-10 lg:px-8">
-        <div className="mb-6 flex items-end justify-between gap-4">
+      {/* Listings */}
+      <main id="listings" className="mx-auto max-w-7xl scroll-mt-28 px-4 pt-4 sm:px-6 lg:pt-10">
+        <div className="mb-5 hidden items-end justify-between lg:flex">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-600">Local stays</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Places worth coming home to</h2>
+            <h2 className="text-2xl font-black">{t.sec2_title}</h2>
             <p className="mt-1 text-sm text-slate-500">{filteredProperties.length} {t.active_options_text}</p>
           </div>
-          <button onClick={() => { setSelectedFilterLocality(null); setSearchLocality(''); setSearchQuery(''); }} className="hidden rounded-full bg-white px-4 py-2 text-xs font-bold text-teal-700 shadow-sm ring-1 ring-teal-100 sm:block">All stays</button>
-        </div>
-
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-          {['All', 'Uzan Bazar', 'Paltan Bazar', 'Beltola', 'Ganeshguri', 'Dispur'].map((locality) => (
-            <button key={locality} onClick={() => { if (locality === 'All') { setSelectedFilterLocality(null); setSearchLocality(''); } else { handleLocalitySelect(locality); } }} className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600">
-              {locality}
-            </button>
-          ))}
         </div>
 
         {loading ? (
-          <div className="rounded-3xl border border-teal-100 bg-white py-24 text-center shadow-sm">
-            <div className="text-3xl animate-pulse">🏡</div>
-            <p className="mt-3 text-sm font-semibold text-slate-500">Loading live stays...</p>
-          </div>
-        ) : apiError ? (
-          <div className="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-20 text-center shadow-sm">
-            <div className="text-5xl">📡</div>
-            <p className="mt-4 text-lg font-black">We could not load the live stays</p>
-            <p className="mx-auto mt-2 max-w-lg text-sm text-slate-600">{apiError}</p>
-            <button onClick={fetchHomestays} className="mt-5 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-bold text-white">Retry</button>
+          <div className="py-20 text-center text-slate-400">
+            <div className="animate-spin text-3xl">⏳</div>
+            <p className="mt-3 text-sm">{t.pipeline_loading}</p>
           </div>
         ) : filteredProperties.length === 0 ? (
-          <div className="rounded-3xl border border-teal-100 bg-white px-6 py-20 text-center shadow-sm">
-            <div className="text-5xl">🌴</div>
-            <p className="mt-4 text-lg font-black">
-              {properties.length > 0 ? 'No stays match this search' : t.no_properties}
-            </p>
-            <p className="mt-2 text-sm text-slate-500">
-              {properties.length > 0 ? 'Try another neighbourhood or clear the search.' : t.no_properties_sub}
-            </p>
-            <button onClick={() => { setSelectedFilterLocality(null); setSearchLocality(''); setSearchQuery(''); }} className="mt-5 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-bold text-white">Show all stays</button>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-16 text-center">
+            <div className="text-4xl">🏠</div>
+            <p className="mt-3 font-bold">{t.no_properties}</p>
+            <button onClick={() => { setSelectedFilterLocality(null); setSearchLocality(''); setSearchQuery(''); }} className="mt-4 font-bold text-teal-600">{t.show_all}</button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-9 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
             {filteredProperties.map((stay, idx) => {
               const gallery = Array.isArray(stay.images) ? stay.images.filter(Boolean).slice(0, 8) : [];
               const propertyId = stay._id || stay.id || `prop-${idx}`;
@@ -657,36 +592,85 @@ export default function HomePage() {
               const reviews = stay.reviewsCount || 0;
               const isFavourite = rating !== null && rating >= 4.8 && reviews >= 10;
               const isSaved = wishlist.includes(propertyId);
+
               return (
-                <article key={propertyId} className="group overflow-hidden rounded-[30px] border border-teal-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+                <article key={propertyId} className="min-w-0">
+                  <div className="relative aspect-[1.08/1] overflow-hidden rounded-[28px] bg-slate-100 sm:aspect-[1.1/1]">
                     <button type="button" onClick={() => handleReserveSpace(stay)} className="absolute inset-0 z-0 h-full w-full">
-                      <img src={img} alt={stay.title} loading={idx < 3 ? 'eager' : 'lazy'} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" onError={(e) => { if (e.currentTarget.src !== FALLBACK_PROPERTY_IMAGE) e.currentTarget.src = FALLBACK_PROPERTY_IMAGE; }} />
+                      <img src={img} alt={stay.title} loading={idx < 3 ? 'eager' : 'lazy'} className="h-full w-full object-cover" onError={(e) => { if (e.currentTarget.src !== FALLBACK_PROPERTY_IMAGE) e.currentTarget.src = FALLBACK_PROPERTY_IMAGE; }} />
                     </button>
-                    <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
-                      <span className="rounded-full bg-amber-300 px-3 py-1.5 text-[11px] font-black text-[#173b38]">{isFavourite ? 'LOCAL FAVOURITE' : 'STAYGUWAHATI'}</span>
-                      <button type="button" onClick={() => toggleWishlist(propertyId)} aria-label={isSaved ? 'Remove from wishlist' : 'Add to wishlist'} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl shadow-md">{isSaved ? '♥' : '♡'}</button>
-                    </div>
+
+                    {isFavourite && (
+                      <span className="absolute left-4 top-4 z-10 rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-900 shadow-sm">Guest favourite</span>
+                    )}
+
+                    <button type="button" onClick={() => toggleWishlist(propertyId)} aria-label={isSaved ? 'Remove from wishlist' : 'Add to wishlist'} className="absolute right-4 top-4 z-10 text-3xl leading-none text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+                      {isSaved ? '♥' : '♡'}
+                    </button>
+
                     {gallery.length > 1 && (
-                      <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
-                        {gallery.slice(0, 6).map((_, photoIndex) => (
-                          <button key={photoIndex} type="button" aria-label={`Show photo ${photoIndex + 1}`} onClick={(e) => { e.stopPropagation(); setGalleryIndexes((current) => ({ ...current, [propertyId]: photoIndex })); }} className={`h-1.5 rounded-full ${photoIndex === currentIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/70'}`} />
-                        ))}
-                      </div>
+                      <>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); changeGalleryImage(propertyId, gallery.length, -1); }} className="absolute left-3 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-xl shadow-md sm:flex">‹</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); changeGalleryImage(propertyId, gallery.length, 1); }} className="absolute right-3 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-xl shadow-md sm:flex">›</button>
+                        <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+                          {gallery.slice(0, 6).map((_, photoIndex) => (
+                            <button key={photoIndex} type="button" aria-label={`Show photo ${photoIndex + 1}`} onClick={(e) => { e.stopPropagation(); setGalleryIndexes((current) => ({ ...current, [propertyId]: photoIndex })); }} className={`h-1.5 rounded-full shadow ${photoIndex === currentIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/70'}`} />
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
-                  <button type="button" onClick={() => handleReserveSpace(stay)} className="block w-full p-5 text-left">
+
+                  <button type="button" onClick={() => handleReserveSpace(stay)} className="mt-3 block w-full text-left">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="truncate text-lg font-black">{stay.title || 'Guwahati homestay'}</h3>
-                        <p className="mt-1 text-sm font-semibold text-teal-700">{stay.locality || 'Guwahati'}, Assam</p>
+                        <h3 className="truncate text-[18px] font-semibold text-slate-900">{stay.title || 'Place to stay in Guwahati'}</h3>
+                        <p className="mt-1 text-[16px] text-slate-500">{stay.locality || 'Guwahati'}, Guwahati</p>
+
+                        {(() => {
+                          const bedroomCount = Number(stay.bedrooms);
+                          const bathroomData = stay.bathrooms || {};
+                          const explicitBathroomTotal = Number(bathroomData.total);
+                          const calculatedBathroomTotal =
+                            Number.isFinite(explicitBathroomTotal) && explicitBathroomTotal > 0
+                              ? explicitBathroomTotal
+                              : [
+                                  Number(bathroomData.privateAttached) || 0,
+                                  Number(bathroomData.dedicated) || 0,
+                                  Number(bathroomData.shared) || 0,
+                                ].reduce((sum, value) => sum + value, 0);
+
+                          const hasBedrooms = Number.isFinite(bedroomCount) && bedroomCount > 0;
+                          const hasBathrooms = calculatedBathroomTotal > 0;
+
+                          if (!hasBedrooms && !hasBathrooms) {
+                            return (
+                              <p className="mt-1 text-[16px] text-slate-500">
+                                Homestay · Local host
+                              </p>
+                            );
+                          }
+
+                          return (
+                            <>
+                              <p className="mt-1 text-[16px] font-medium text-slate-600">
+                                {hasBedrooms ? `${bedroomCount} ${bedroomCount === 1 ? 'bedroom' : 'bedrooms'}` : ''}
+                                {hasBedrooms && hasBathrooms ? ' · ' : ''}
+                                {hasBathrooms ? `${calculatedBathroomTotal} ${calculatedBathroomTotal === 1 ? 'bathroom' : 'bathrooms'}` : ''}
+                              </p>
+                              <p className="mt-1 text-[14px] text-slate-500">
+                                Homestay · Local host
+                              </p>
+                            </>
+                          );
+                        })()}
                       </div>
-                      {rating !== null && <div className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-700">★ {rating.toFixed(1)}</div>}
+                      {rating !== null && (
+                        <div className="shrink-0 pt-0.5 text-[16px] font-semibold text-slate-900">★ {rating.toFixed(2)} {reviews > 0 && <span className="font-normal">({reviews})</span>}</div>
+                      )}
                     </div>
-                    <p className="mt-3 line-clamp-2 text-sm leading-5 text-slate-500">{stay.description || 'A comfortable local stay with a warm Guwahati welcome.'}</p>
-                    <div className="mt-4 flex items-end justify-between border-t border-slate-100 pt-4">
-                      <div><span className="text-lg font-black">₹{Number(stay.pricePerNight || 0).toLocaleString('en-IN')}</span><span className="ml-1 text-xs text-slate-500">/ night</span></div>
-                      <span className="text-xs font-black text-teal-700">View stay →</span>
+                    <div className="mt-2 text-[16px] text-slate-600">
+                      <span className="font-bold text-slate-900">₹{Number(stay.pricePerNight || 0).toLocaleString('en-IN')}</span> night
                     </div>
                   </button>
                 </article>
@@ -696,24 +680,30 @@ export default function HomePage() {
         )}
       </main>
 
-      <section className="mx-auto mb-10 max-w-7xl px-5 lg:px-8">
-        <div className="rounded-[32px] bg-[#e6f3ef] p-7 sm:p-9 lg:flex lg:items-center lg:justify-between">
-          <div><p className="text-xs font-black uppercase tracking-[0.18em] text-teal-700">For local hosts</p><h2 className="mt-2 text-2xl font-black">Your spare room could welcome someone to Guwahati.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">List your property on StayGuwahati and connect with guests looking for genuine local stays.</p></div>
-          <a href="/list-property" onClick={requireLoginToList} className="mt-5 inline-flex rounded-2xl bg-teal-700 px-6 py-3 text-sm font-black text-white lg:mt-0">List your property →</a>
-        </div>
-      </section>
+      {/* Floating map button */}
+      <button onClick={() => router.push('/map')} className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-slate-900 px-6 py-3.5 text-sm font-bold text-white shadow-xl lg:bottom-8">
+        Map 🗺️
+      </button>
 
-      <button onClick={() => router.push('/map')} className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#073b39] px-6 py-3.5 text-sm font-black text-white shadow-xl lg:bottom-8">Explore Map 🗺️</button>
-
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-teal-100 bg-white/95 px-5 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden">
+      {/* Mobile bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 px-5 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md items-center justify-around">
-          <button onClick={openSearch} className="flex min-w-20 flex-col items-center gap-1 py-1 text-teal-700"><span className="text-2xl">⌕</span><span className="text-xs font-black">Explore</span></button>
-          <button onClick={() => router.push('/wishlist')} className="flex min-w-20 flex-col items-center gap-1 py-1 text-slate-500"><span className="text-2xl">♡</span><span className="text-xs font-semibold">Saved</span></button>
-          <button onClick={() => router.push(userProfile ? '/dashboard' : '/login')} className="flex min-w-20 flex-col items-center gap-1 py-1 text-slate-500"><span className="text-2xl">◯</span><span className="text-xs font-semibold">{userProfile ? 'Profile' : 'Sign in'}</span></button>
+          <button onClick={openSearch} className="flex min-w-20 flex-col items-center gap-1 py-1 text-teal-700">
+            <span className="text-3xl leading-none">⌕</span><span className="text-xs font-bold">Explore</span>
+          </button>
+          <button onClick={() => setWishlist(wishlist.length ? [] : wishlist)} className="flex min-w-20 flex-col items-center gap-1 py-1 text-slate-500">
+            <span className="text-3xl leading-none">♡</span><span className="text-xs">Wishlists</span>
+          </button>
+          <button onClick={() => router.push(userProfile ? '/dashboard' : '/login')} className="flex min-w-20 flex-col items-center gap-1 py-1 text-slate-500">
+            <span className="text-3xl leading-none">◯</span><span className="text-xs">{userProfile ? 'Profile' : 'Log in'}</span>
+          </button>
         </div>
       </nav>
 
-      <footer className="border-t border-teal-100 bg-white px-5 py-8 text-center text-xs text-slate-500">© 2026 StayGuwahati · Local stays, local stories.</footer>
+      {/* Desktop footer */}
+      <footer className="mt-16 hidden border-t border-slate-200 bg-white px-6 py-8 text-center text-xs text-slate-500 lg:block">
+        © 2026 StayGuwahati. All rights reserved.
+      </footer>
     </div>
   );
 }
