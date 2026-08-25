@@ -36,6 +36,8 @@ interface PropertyData {
   };
   host?: PropertyHost | string;
   cancellationPolicy?: 'flexible' | 'moderate' | 'strict' | string;
+  rating?: number;
+
 }
 
 interface Review {
