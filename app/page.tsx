@@ -177,6 +177,7 @@ export default function HomePage() {
   const [galleryIndexes, setGalleryIndexes] = useState<Record<string, number>>({});
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
   const t = translations[currentLang] || translations.en;
@@ -215,34 +216,92 @@ export default function HomePage() {
 
   const fetchHomestays = async () => {
     setLoading(true);
+    setApiError(null);
+
     try {
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), 12000);
+
       const response = await fetch(`${BACKEND_URL}/api/homestays`, {
-        method: 'GET', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller.signal,
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        signal: controller.signal,
       });
+
       window.clearTimeout(timeout);
-      if (!response.ok) throw new Error(`Property API returned ${response.status}`);
+
+      if (!response.ok) {
+        throw new Error(`Property API returned HTTP ${response.status}`);
+      }
+
       const raw = await response.json();
-      const list = Array.isArray(raw) ? raw : Array.isArray(raw.data) ? raw.data : Array.isArray(raw.homestays) ? raw.homestays : Array.isArray(raw.properties) ? raw.properties : [];
-      setProperties(list.map((item: any) => ({
-        ...item, _id: item._id || item.id, title: item.title || item.name || 'Homestay',
-        locality: item.locality || item.city || 'Guwahati', pricePerNight: Number(item.pricePerNight ?? item.price ?? 0),
-        images: Array.isArray(item.images) ? item.images : [], rating: typeof item.rating === 'number' ? item.rating : undefined,
-        reviewsCount: Number(item.reviewsCount || 0),
-      })));
+
+      if (raw?.success === false) {
+        throw new Error(raw?.message || 'Property API returned an unsuccessful response');
+      }
+
+      // Current backend response: { success: true, count: 2, data: [...] }
+      const list = Array.isArray(raw?.data)
+        ? raw.data
+        : Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.homestays)
+            ? raw.homestays
+            : Array.isArray(raw?.properties)
+              ? raw.properties
+              : [];
+
+      const normalized = list
+        .filter(Boolean)
+        .map((item: any) => ({
+          ...item,
+          _id: item._id || item.id,
+          title: item.title || item.name || 'Homestay',
+          locality: item.locality || item.city || 'Guwahati',
+          description: item.description || '',
+          pricePerNight: Number(item.pricePerNight ?? item.price ?? 0),
+          images: Array.isArray(item.images) ? item.images : [],
+          rating: typeof item.rating === 'number' ? item.rating : undefined,
+          reviewsCount: Number(item.reviewsCount || 0),
+          status: item.status || 'approved',
+        }));
+
+      console.info(`[StayGuwahati] /api/homestays returned ${normalized.length} properties`);
+      setProperties(normalized);
     } catch (error) {
-      console.error('Failed to load homestays:', error);
+      const message =
+        error instanceof DOMException && error.name === 'AbortError'
+          ? 'The property server took too long to respond.'
+          : error instanceof Error
+            ? error.message
+            : 'Unable to load properties right now.';
+
+      console.error('[StayGuwahati] Failed to load homestays:', error);
+      setApiError(message);
       setProperties([]);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredProperties = properties.filter((property) => {
+    // The backend already returns approved/available properties.
+    // Do not hide valid older records when optional fields are absent.
+    if (property.status && property.status !== 'approved') return false;
+
     const locality = (property.locality || '').toLowerCase();
     const title = (property.title || '').toLowerCase();
     const localityFilter = (selectedFilterLocality || searchLocality).trim().toLowerCase();
     const query = searchQuery.trim().toLowerCase();
-    return (!localityFilter || locality.includes(localityFilter)) && (!query || title.includes(query) || locality.includes(query));
+
+    return (
+      (!localityFilter || locality.includes(localityFilter)) &&
+      (!query || title.includes(query) || locality.includes(query))
+    );
   });
 
   useEffect(() => {
@@ -566,9 +625,28 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <div className="rounded-3xl border border-teal-100 bg-white py-24 text-center shadow-sm"><div className="text-3xl animate-pulse">🏡</div><p className="mt-3 text-sm font-semibold text-slate-500">{t.pipeline_loading}</p></div>
+          <div className="rounded-3xl border border-teal-100 bg-white py-24 text-center shadow-sm">
+            <div className="text-3xl animate-pulse">🏡</div>
+            <p className="mt-3 text-sm font-semibold text-slate-500">Loading live stays...</p>
+          </div>
+        ) : apiError ? (
+          <div className="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-20 text-center shadow-sm">
+            <div className="text-5xl">📡</div>
+            <p className="mt-4 text-lg font-black">We could not load the live stays</p>
+            <p className="mx-auto mt-2 max-w-lg text-sm text-slate-600">{apiError}</p>
+            <button onClick={fetchHomestays} className="mt-5 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-bold text-white">Retry</button>
+          </div>
         ) : filteredProperties.length === 0 ? (
-          <div className="rounded-3xl border border-teal-100 bg-white px-6 py-20 text-center shadow-sm"><div className="text-5xl">🌴</div><p className="mt-4 text-lg font-black">{t.no_properties}</p><p className="mt-2 text-sm text-slate-500">{t.no_properties_sub}</p><button onClick={() => { setSelectedFilterLocality(null); setSearchLocality(''); setSearchQuery(''); }} className="mt-5 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-bold text-white">Show all stays</button></div>
+          <div className="rounded-3xl border border-teal-100 bg-white px-6 py-20 text-center shadow-sm">
+            <div className="text-5xl">🌴</div>
+            <p className="mt-4 text-lg font-black">
+              {properties.length > 0 ? 'No stays match this search' : t.no_properties}
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              {properties.length > 0 ? 'Try another neighbourhood or clear the search.' : t.no_properties_sub}
+            </p>
+            <button onClick={() => { setSelectedFilterLocality(null); setSearchLocality(''); setSearchQuery(''); }} className="mt-5 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-bold text-white">Show all stays</button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProperties.map((stay, idx) => {
