@@ -376,54 +376,66 @@ function PropertyDetailsContent() {
         </button>
       </div>
 
-      {/* Property Title & Top Actions */}
-      <div className="w-full mb-6 bg-[#07152f] rounded-[26px] px-5 sm:px-8 py-6 sm:py-8 text-white shadow-[0_16px_40px_rgba(7,21,47,0.10)] flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-        <div>
-          <div className="inline-flex items-center rounded-full border border-[#3bd8ca]/40 bg-[#0b2739] px-3 py-1 text-[9px] font-black tracking-[0.16em] uppercase text-[#55e4d7]">
-            VERIFIED LOCAL STAY
-          </div>
-        <div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
-            {property.title}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-2 flex items-center gap-2 font-medium">
-            <span className="text-teal-600 animate-pulse">📍</span> {property.locality || 'Guwahati'}, Guwahati
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700">
-            {bedroomCount > 0 && (
-              <span className="rounded-full bg-white border border-slate-200 px-3 py-1.5 shadow-sm">
-                🛏️ {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
-              </span>
-            )}
-            {bathroomCount > 0 && (
-              <span className="rounded-full bg-white border border-slate-200 px-3 py-1.5 shadow-sm">
-                🚿 {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Property Title & Top Actions — unique StayGuwahati style */}
+      <section className="w-full mb-6 bg-[#07152f] rounded-[26px] px-5 sm:px-8 lg:px-9 py-6 sm:py-8 text-white shadow-[0_16px_40px_rgba(7,21,47,0.12)]">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+          <div className="min-w-0">
+            <div className="inline-flex items-center rounded-full border border-[#3bd8ca]/40 bg-[#0b2739] px-3 py-1 text-[9px] font-black tracking-[0.16em] uppercase text-[#55e4d7]">
+              VERIFIED LOCAL STAY
+            </div>
 
-        <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-600">
-          <button
-            onClick={handleShareProperty}
-            className="flex items-center gap-2 hover:text-teal-600 transition bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm"
-          >
-            <span>🔗</span> Share
-          </button>
-          <button
-            onClick={handleToggleWishlist}
-            className={`flex items-center gap-2 transition px-3 py-2 rounded-xl border shadow-sm ${
-              isSaved
-                ? 'text-rose-600 border-rose-200 bg-rose-50'
-                : 'text-slate-600 hover:text-rose-600 border-slate-200 bg-white'
-            }`}
-          >
-            <span>{isSaved ? '❤️' : '🤍'}</span>
-            <span>{isSaved ? 'Saved' : 'Save'}</span>
-          </button>
+            <h1 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white leading-tight">
+              {property.title}
+            </h1>
+
+            <p className="text-xs sm:text-sm text-slate-300 mt-2 flex items-center gap-2 font-medium">
+              <span className="text-[#55e4d7]">📍</span>
+              {property.locality || 'Guwahati'}, Assam
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold">
+              {bedroomCount > 0 && (
+                <span className="rounded-full bg-white text-[#07152f] border border-white/20 px-3 py-1.5 shadow-sm">
+                  🛏️ {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
+                </span>
+              )}
+
+              {bathroomCount > 0 && (
+                <span className="rounded-full bg-white text-[#07152f] border border-white/20 px-3 py-1.5 shadow-sm">
+                  🚿 {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
+                </span>
+              )}
+
+              <span className="rounded-full bg-[#fff4bd] text-[#07152f] px-3 py-1.5 shadow-sm">
+                ★ {Number(property.rating || 0).toFixed(1)}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleShareProperty}
+              className="flex items-center gap-2 hover:bg-white/15 transition bg-white/10 text-white px-3.5 py-2.5 rounded-full border border-white/15 text-xs font-black"
+            >
+              🔗 Share
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleWishlist}
+              className={`flex items-center gap-2 transition px-3.5 py-2.5 rounded-full border text-xs font-black ${
+                isSaved
+                  ? 'text-[#07152f] border-[#fff4bd] bg-[#fff4bd]'
+                  : 'text-[#07152f] hover:bg-[#e9fbf8] border-white bg-white'
+              }`}
+            >
+              <span>{isSaved ? '♥' : '♡'}</span>
+              <span>{isSaved ? 'Saved' : 'Save'}</span>
+            </button>
+          </div>
         </div>
-        </div>
-      </div>
+      </section>
 
       {/* Dynamic Image Gallery Grid Container */}
       <div className="w-full mb-6 sm:mb-8 bg-white border border-[#dce9e8] rounded-[26px] p-2 sm:p-3 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
