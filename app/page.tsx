@@ -223,14 +223,13 @@ export default function HomePage() {
       const timeout = window.setTimeout(() => controller.abort(), 12000);
 
       const response = await fetch(`${BACKEND_URL}/api/homestays`, {
-        method: 'GET',
-        cache: 'no-store',
-        headers: {
-          Accept: 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-        signal: controller.signal,
-      });
+  method: 'GET',
+  cache: 'no-store',
+  headers: {
+    Accept: 'application/json',
+  },
+  signal: controller.signal,
+});
 
       window.clearTimeout(timeout);
 
