@@ -294,7 +294,7 @@ function PropertyDetailsContent() {
   if (!property) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-        <div className="text-slate-500 font-medium animate-pulse">Loading property details...</div>
+        <div className="text-[#64798b] font-medium animate-pulse">Loading property details...</div>
       </div>
     );
   }
@@ -379,36 +379,36 @@ function PropertyDetailsContent() {
       </div>
 
       {/* Property Title & Top Actions — unique StayGuwahati style */}
-      <section className="w-full mb-6 bg-[#07152f] rounded-[26px] px-5 sm:px-8 lg:px-9 py-6 sm:py-8 text-white shadow-[0_16px_40px_rgba(7,21,47,0.12)]">
+      <section className="w-full mb-6 bg-gradient-to-br from-[#e8f7f4] via-[#f3faf8] to-[#eef7f6] rounded-[26px] px-5 sm:px-8 lg:px-9 py-6 sm:py-8 text-[#17324d] border border-[#cfe6e1] shadow-[0_12px_32px_rgba(23,50,77,0.08)]">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
           <div className="min-w-0">
-            <div className="inline-flex items-center rounded-full border border-[#3bd8ca]/40 bg-[#0b2739] px-3 py-1 text-[9px] font-black tracking-[0.16em] uppercase text-[#55e4d7]">
+            <div className="inline-flex items-center rounded-full border border-[#b8e1db] bg-white px-3 py-1.5 text-[9px] font-black tracking-[0.16em] uppercase text-[#087f78]">
               VERIFIED LOCAL STAY
             </div>
 
-            <h1 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white leading-tight">
+            <h1 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-[#17324d] leading-tight">
               {property.title}
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-300 mt-2 flex items-center gap-2 font-medium">
-              <span className="text-[#55e4d7]">📍</span>
+            <p className="text-xs sm:text-sm text-[#64798b] mt-2 flex items-center gap-2 font-medium">
+              <span className="text-[#087f78]">📍</span>
               {property.locality || 'Guwahati'}, Assam
             </p>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold">
               {bedroomCount > 0 && (
-                <span className="rounded-full bg-white text-[#07152f] border border-white/20 px-3 py-1.5 shadow-sm">
+                <span className="rounded-full bg-white text-[#17324d] border border-white/20 px-3 py-1.5 shadow-sm">
                   🛏️ {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
                 </span>
               )}
 
               {bathroomCount > 0 && (
-                <span className="rounded-full bg-white text-[#07152f] border border-white/20 px-3 py-1.5 shadow-sm">
+                <span className="rounded-full bg-white text-[#17324d] border border-white/20 px-3 py-1.5 shadow-sm">
                   🚿 {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
                 </span>
               )}
 
-              <span className="rounded-full bg-[#fff4bd] text-[#07152f] px-3 py-1.5 shadow-sm">
+              <span className="rounded-full bg-[#fff7d6] text-[#6a5414] border border-[#eadb9c] px-3 py-1.5 shadow-sm">
                 ★ {Number(property.rating || 0).toFixed(1)}
               </span>
             </div>
@@ -428,8 +428,8 @@ function PropertyDetailsContent() {
               onClick={handleToggleWishlist}
               className={`flex items-center gap-2 transition px-3.5 py-2.5 rounded-full border text-xs font-black ${
                 isSaved
-                  ? 'text-[#07152f] border-[#fff4bd] bg-[#fff4bd]'
-                  : 'text-[#07152f] hover:bg-[#e9fbf8] border-white bg-white'
+                  ? 'text-[#17324d] border-[#eadb9c] bg-[#fff7d6]'
+                  : 'text-[#17324d] hover:bg-[#eefaf7] border-white bg-white'
               }`}
             >
               <span>{isSaved ? '♥' : '♡'}</span>
@@ -440,7 +440,7 @@ function PropertyDetailsContent() {
       </section>
 
       {/* Dynamic Image Gallery Grid Container */}
-      <div className="w-full mb-6 sm:mb-8 bg-white border border-[#dce9e8] rounded-[26px] p-2 sm:p-3 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+      <div className="w-full mb-6 sm:mb-8 bg-white border border-[#dfe9e7] rounded-[26px] p-2 sm:p-3 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
         <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 md:grid md:grid-cols-4 md:grid-rows-2 h-[280px] sm:h-[350px] md:h-[450px] pb-2 md:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {totalImages === 1 && (
             <div className="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-4 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group">
@@ -528,23 +528,23 @@ function PropertyDetailsContent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-start w-full">
         <div className="lg:col-span-2 space-y-6">
           {/* About Space Box */}
-          <div className="bg-white border border-[#dce9e8] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+          <div className="bg-white border border-[#dfe9e7] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
               <span className="text-teal-600">ℹ️</span> About This Space
             </h2>
-            <p className="text-slate-600 leading-relaxed text-sm sm:text-base">
+            <p className="text-[#53697a] leading-relaxed text-sm sm:text-base">
               {property.description || 'No description provided by host.'}
             </p>
 
             <div className="border-t border-[#e0eae9] mt-6 pt-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+              <h3 className="text-xs font-bold text-[#80909d] uppercase tracking-wider mb-3">
                 Amenities & Highlights
               </h3>
               <div className="flex flex-wrap gap-2">
                 {featuresList.map((feat, idx) => (
                   <span
                     key={idx}
-                    className="bg-[#e9fbf8] text-[#007c74] text-xs font-black px-3.5 py-2 rounded-full border border-[#ccefea] flex items-center gap-1.5"
+                    className="bg-[#eefaf7] text-[#087f78] text-xs font-black px-3.5 py-2 rounded-full border border-[#cfece6] flex items-center gap-1.5"
                   >
                     <span>✓</span> {feat}
                   </span>
@@ -554,14 +554,14 @@ function PropertyDetailsContent() {
           </div>
 
           {/* Property Details / Bedroom & Bathroom Summary */}
-          <div className="bg-white border border-[#dce9e8] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+          <div className="bg-white border border-[#dfe9e7] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
               <span className="text-teal-600">🏡</span> Property Details
             </h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="rounded-xl border border-[#e0eae9] bg-slate-50 p-4">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                <div className="text-xs font-bold uppercase tracking-wider text-[#80909d]">
                   Bedrooms
                 </div>
                 <div className="mt-1 text-base sm:text-lg font-black text-slate-900">
@@ -570,7 +570,7 @@ function PropertyDetailsContent() {
               </div>
 
               <div className="rounded-xl border border-[#e0eae9] bg-slate-50 p-4">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                <div className="text-xs font-bold uppercase tracking-wider text-[#80909d]">
                   Bathrooms
                 </div>
                 <div className="mt-1 text-base sm:text-lg font-black text-slate-900">
@@ -578,7 +578,7 @@ function PropertyDetailsContent() {
                 </div>
               </div>
 
-              <div className="col-span-2 sm:col-span-1 rounded-xl border border-[#ccefea] bg-[#e9fbf8] p-4">
+              <div className="col-span-2 sm:col-span-1 rounded-xl border border-[#cfece6] bg-[#eefaf7] p-4">
                 <div className="text-xs font-bold uppercase tracking-wider text-teal-700">
                   Guest summary
                 </div>
@@ -592,7 +592,7 @@ function PropertyDetailsContent() {
 
             {bathroomTypeItems.length > 0 && (
               <div className="mt-5 border-t border-[#e0eae9] pt-5">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                <h3 className="text-xs font-bold text-[#80909d] uppercase tracking-wider mb-3">
                   Bathroom types
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -611,26 +611,26 @@ function PropertyDetailsContent() {
 
           {/* Host Profile */}
           {property.host && (
-            <div className="bg-white border border-[#dce9e8] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+            <div className="bg-white border border-[#dfe9e7] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">
+                  <h3 className="text-xs sm:text-sm font-bold text-[#80909d] uppercase tracking-wider">
                     Hosted by
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-[#80909d] mt-1">
                     Get to know your local StayGuwahati host
                   </p>
                 </div>
 
                 {hostIsVerified && (
-                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-teal-50 text-teal-700 border border-[#ccefea] px-2.5 py-1 text-[10px] font-black">
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-teal-50 text-teal-700 border border-[#cfece6] px-2.5 py-1 text-[10px] font-black">
                     ✓ StayGuwahati Verified
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-50 border border-[#ccefea] shrink-0 flex items-center justify-center relative shadow-sm">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-50 border border-[#cfece6] shrink-0 flex items-center justify-center relative shadow-sm">
                   <img
                     src={
                       hostAvatarUrl ||
@@ -656,7 +656,7 @@ function PropertyDetailsContent() {
                     {hostName}
                   </h4>
 
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  <p className="text-xs text-[#64798b] font-medium mt-0.5">
                     {hostPhone}
                   </p>
 
@@ -664,7 +664,7 @@ function PropertyDetailsContent() {
                     <span className="text-xs font-bold text-amber-500">
                       ★ Host profile
                     </span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-[#80909d]">
                       • Local host
                     </span>
                   </div>
@@ -673,7 +673,7 @@ function PropertyDetailsContent() {
 
               <Link
                 href={hostProfileHref}
-                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#07152f] hover:bg-[#008f86] text-white font-bold py-3 px-4 text-sm transition shadow-sm"
+                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#07152f] hover:bg-[#087f78] text-white font-bold py-3 px-4 text-sm transition shadow-sm"
               >
                 View Host Profile
                 <span>→</span>
@@ -682,14 +682,14 @@ function PropertyDetailsContent() {
           )}
 
           {/* Dynamic Reviews Section */}
-          <div className="bg-white border border-[#dce9e8] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+          <div className="bg-white border border-[#dfe9e7] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
               <span className="text-teal-600">💬</span> Verified Guest Reviews
             </h2>
             {reviewsLoading ? (
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">Loading reviews...</p>
+              <p className="text-xs sm:text-sm text-[#64798b] font-medium">Loading reviews...</p>
             ) : reviews.length === 0 ? (
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">No reviews yet for this property.</p>
+              <p className="text-xs sm:text-sm text-[#64798b] font-medium">No reviews yet for this property.</p>
             ) : (
               <div className="space-y-4">
                 {reviews.map((rev) => (
@@ -698,7 +698,7 @@ function PropertyDetailsContent() {
                       <span className="font-bold text-slate-900 text-xs sm:text-sm">
                         {rev.guestName || 'Verified Guest'}
                       </span>
-                      <span className="text-[10px] sm:text-xs text-slate-400 font-medium">
+                      <span className="text-[10px] sm:text-xs text-[#80909d] font-medium">
                         {rev.createdAt
                           ? new Date(rev.createdAt).toLocaleDateString('en-US', {
                               month: 'long',
@@ -711,7 +711,7 @@ function PropertyDetailsContent() {
                       {'★'.repeat(rev.rating)}
                       {'☆'.repeat(5 - rev.rating)}
                     </div>
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-[#53697a] leading-relaxed">
                       {rev.comment || 'No comment provided.'}
                     </p>
                   </div>
@@ -723,32 +723,32 @@ function PropertyDetailsContent() {
 
         {/* Booking Sidebar Sticky Card */}
         <div className="lg:sticky lg:top-24 z-10 w-full">
-          <div className="bg-white border border-[#dce9e8] rounded-[26px] p-5 sm:p-6 shadow-[0_16px_45px_rgba(7,21,47,0.09)] space-y-5 sm:space-y-6 w-full">
+          <div className="bg-white border border-[#dfe9e7] rounded-[26px] p-5 sm:p-6 shadow-[0_12px_32px_rgba(23,50,77,0.08)] space-y-5 sm:space-y-6 w-full">
             <div className="flex justify-between items-center border-b border-[#e8efee] pb-4">
               <div>
                 <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   ₹{priceFormatted}
                 </span>
-                <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block mt-0.5">
+                <span className="text-[11px] sm:text-xs font-semibold text-[#80909d] block mt-0.5">
                   / night value
                 </span>
               </div>
-              <div className="bg-[#e9fbf8] text-[#007c74] font-bold px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs border border-[#ccefea] flex items-center gap-1">
+              <div className="bg-[#eefaf7] text-[#087f78] font-bold px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs border border-[#cfece6] flex items-center gap-1">
                 <span>🛡️</span> Verified Stay
               </div>
             </div>
 
             <div className="space-y-3">
-              <div className="bg-[#f5f8f8] border border-[#e0eae9] rounded-2xl p-4">
+              <div className="bg-[#f8faf9] border border-[#e0eae9] rounded-2xl p-4">
                 <div className="flex justify-between items-center text-xs font-semibold">
-                  <span className="text-slate-500">Cancellation Policy</span>
+                  <span className="text-[#64798b]">Cancellation Policy</span>
                   <span className="text-teal-700">{getCancellationPolicy(property.cancellationPolicy).title}</span>
                 </div>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-[#64798b]">
                   {getCancellationPolicy(property.cancellationPolicy).short}
                 </p>
               </div>
-              <div className="bg-[#f5f8f8] border border-[#e0eae9] rounded-2xl p-4 flex justify-between items-center text-xs font-semibold text-slate-500">
+              <div className="bg-[#f8faf9] border border-[#e0eae9] rounded-2xl p-4 flex justify-between items-center text-xs font-semibold text-[#64798b]">
                 <span>Check-in Status</span>
                 <span className="text-slate-800">Self Check-in</span>
               </div>
@@ -756,7 +756,7 @@ function PropertyDetailsContent() {
 
             <button
               onClick={handleReserveSpace}
-              className="w-full bg-[#07152f] hover:bg-[#008f86] text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2 group text-sm sm:text-base cursor-pointer"
+              className="w-full bg-[#07152f] hover:bg-[#087f78] text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2 group text-sm sm:text-base cursor-pointer"
             >
               Proceed to Reservation{' '}
               <span className="text-sm transition-transform group-hover:translate-x-1">→</span>
@@ -773,7 +773,7 @@ function PropertyDetailsContent() {
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-black text-slate-900">Need help?</h2>
-            <p className="mt-1 text-xs sm:text-sm text-slate-500">
+            <p className="mt-1 text-xs sm:text-sm text-[#64798b]">
               Our support team can help with your booking, dates, or property questions.
             </p>
           </div>
@@ -839,23 +839,23 @@ function getCancellationPolicy(policy?: string) {
 
 export default function PropertyPage() {
   return (
-    <div className="bg-[#f5f8f8] text-[#07152f] font-sans antialiased min-h-screen flex flex-col">
+    <div className="bg-[#f8faf9] text-[#17324d] font-sans antialiased min-h-screen flex flex-col">
       {/* Navigation Bar */}
-      <nav className="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-[#dce9e8] shrink-0">
+      <nav className="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-[#dfe9e7] shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2 cursor-pointer">
-            <span className="h-8 w-8 rounded-full bg-[#008f86] grid place-items-center text-base">🏠</span>
-            <span className="text-lg sm:text-xl font-black text-[#07152f] tracking-tight">
+            <span className="h-8 w-8 rounded-full bg-[#087f78] grid place-items-center text-base">🏠</span>
+            <span className="text-lg sm:text-xl font-black text-[#17324d] tracking-tight">
               Stay<span className="text-teal-600">Guwahati</span>
             </span>
           </Link>
           <div className="flex gap-3 sm:gap-6 items-center text-xs sm:text-sm">
-            <Link href="/" className="font-bold text-[#07152f] hover:text-[#008f86] transition">
+            <Link href="/" className="font-bold text-[#17324d] hover:text-[#087f78] transition">
               Home
             </Link>
             <Link
               href="/map"
-              className="bg-[#07152f] text-white px-3 sm:px-4 py-2.5 rounded-full font-black hover:bg-[#008f86] transition shadow-sm"
+              className="bg-[#07152f] text-white px-3 sm:px-4 py-2.5 rounded-full font-black hover:bg-[#087f78] transition shadow-sm"
             >
               Explore Map
             </Link>
@@ -863,12 +863,12 @@ export default function PropertyPage() {
         </div>
       </nav>
 
-      <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading...</div>}>
+      <Suspense fallback={<div className="p-8 text-center text-[#64798b]">Loading...</div>}>
         <PropertyDetailsContent />
       </Suspense>
 
       {/* Footer */}
-      <footer className="max-w-6xl w-full mx-auto py-6 px-4 text-center text-xs text-gray-400 border-t border-[#dce9e8] mt-8 shrink-0">
+      <footer className="max-w-6xl w-full mx-auto py-6 px-4 text-center text-xs text-gray-400 border-t border-[#dfe9e7] mt-8 shrink-0">
         &copy; 2026 StayGuwahati. All rights reserved.
       </footer>
     </div>
