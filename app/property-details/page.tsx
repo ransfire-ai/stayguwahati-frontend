@@ -380,8 +380,8 @@ function PropertyDetailsContent() {
 
       {/* Property Title & Top Actions — unique StayGuwahati style */}
       <section className="w-full mb-6 bg-gradient-to-br from-[#e8f7f4] via-[#f3faf8] to-[#eef7f6] rounded-[26px] px-5 sm:px-8 lg:px-9 py-6 sm:py-8 text-[#17324d] border border-[#cfe6e1] shadow-[0_12px_32px_rgba(23,50,77,0.08)]">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-          <div className="min-w-0">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div className="min-w-0 flex-1">
             <div className="inline-flex items-center rounded-full border border-[#b8e1db] bg-white px-3 py-1.5 text-[9px] font-black tracking-[0.16em] uppercase text-[#087f78]">
               VERIFIED LOCAL STAY
             </div>
@@ -418,7 +418,7 @@ function PropertyDetailsContent() {
             <button
               type="button"
               onClick={handleShareProperty}
-              className="flex items-center gap-2 hover:bg-white/15 transition bg-white/10 text-white px-3.5 py-2.5 rounded-full border border-white/15 text-xs font-black"
+              className="flex items-center gap-2 hover:bg-white/15 transition bg-white/10 text-white px-4 py-2.5 rounded-full border border-white/15 text-xs font-black"
             >
               🔗 Share
             </button>
@@ -426,7 +426,7 @@ function PropertyDetailsContent() {
             <button
               type="button"
               onClick={handleToggleWishlist}
-              className={`flex items-center gap-2 transition px-3.5 py-2.5 rounded-full border text-xs font-black ${
+              className={`flex items-center gap-2 transition px-4 py-2.5 rounded-full border text-xs font-black ${
                 isSaved
                   ? 'text-[#17324d] border-[#eadb9c] bg-[#fff7d6]'
                   : 'text-[#17324d] hover:bg-[#eefaf7] border-white bg-white'
