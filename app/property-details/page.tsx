@@ -329,9 +329,6 @@ function PropertyDetailsContent() {
   ].filter(Boolean) as string[];
 
   const totalImages = property.images.length;
-  const img2 = property.images[1] || selectedMainImage;
-  const img3 = property.images[2] || selectedMainImage;
-  const img4 = property.images[3] || selectedMainImage;
   
   const hostAvatarUrl = getHostAvatarUrl(property.host);
   const hostName =
@@ -359,274 +356,400 @@ function PropertyDetailsContent() {
     : `name=${encodeURIComponent(hostName || 'Host')}`}`;
 
   return (
-    <main className="flex-1 bg-[#f6f4ef]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
-        {/* Back */}
+    <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7 flex-1">
+      {/* Back button - return to the actual previous page */}
+      <div className="w-full mb-6">
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== 'undefined' && window.history.length > 1) router.back();
-            else router.push('/');
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/map');
+            }
           }}
-          className="mb-5 sm:mb-7 inline-flex items-center gap-2 text-sm font-extrabold text-[#0f766e] hover:text-[#064e4a] transition"
+          className="text-xs sm:text-sm font-bold text-teal-600 hover:text-teal-700 inline-flex items-center gap-2 group transition"
         >
-          <span className="text-lg">←</span> Back to stays
+          <span className="transition-transform group-hover:-translate-x-1">←</span>
+          Back
         </button>
+      </div>
 
-        {/* Homepage-matched property hero */}
-        <section className="relative overflow-hidden rounded-[28px] sm:rounded-[36px] bg-[#103d3a] px-5 py-6 sm:px-8 sm:py-9 lg:px-10 lg:py-11 text-white shadow-[0_18px_50px_rgba(15,61,58,0.16)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(45,143,132,0.30),transparent_38%),linear-gradient(120deg,#0b302e,#164944)]" />
-          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <span className="inline-flex items-center rounded-full border border-[#7bd1c6]/40 bg-white/10 px-3 py-1.5 text-[9px] font-black tracking-[0.18em] uppercase text-[#a9ebe2]">
-                ✦ VERIFIED LOCAL STAY
-              </span>
+      {/* Property Title & Top Actions — unique StayGuwahati style */}
+      <section className="w-full mb-6 bg-[#07152f] rounded-[26px] px-5 sm:px-8 lg:px-9 py-6 sm:py-8 text-white shadow-[0_16px_40px_rgba(7,21,47,0.12)]">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+          <div className="min-w-0">
+            <div className="inline-flex items-center rounded-full border border-[#3bd8ca]/40 bg-[#0b2739] px-3 py-1 text-[9px] font-black tracking-[0.16em] uppercase text-[#55e4d7]">
+              VERIFIED LOCAL STAY
+            </div>
 
-              <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                {property.title}
-              </h1>
+            <h1 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white leading-tight">
+              {property.title}
+            </h1>
 
-              <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-[#d3e8e4] sm:text-base">
-                <span className="text-[#ffd24a]">●</span>
-                {property.locality || 'Guwahati'}, Assam
-              </p>
+            <p className="text-xs sm:text-sm text-slate-300 mt-2 flex items-center gap-2 font-medium">
+              <span className="text-[#55e4d7]">📍</span>
+              {property.locality || 'Guwahati'}, Assam
+            </p>
 
-              <div className="mt-6 flex flex-wrap gap-2.5">
-                {bedroomCount > 0 && (
-                  <span className="rounded-full border border-[#7bd1c6]/35 bg-[#164b47] px-4 py-2.5 text-sm font-extrabold text-white">
-                    🛏️ {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
-                  </span>
-                )}
-                {bathroomCount > 0 && (
-                  <span className="rounded-full border border-[#7bd1c6]/35 bg-[#164b47] px-4 py-2.5 text-sm font-extrabold text-white">
-                    🚿 {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
-                  </span>
-                )}
-                <span className="rounded-full bg-[#ffd24a] px-4 py-2.5 text-sm font-black text-[#123633] shadow-sm">
-                  ★ {Number(property.rating || 0).toFixed(1)}
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold">
+              {bedroomCount > 0 && (
+                <span className="rounded-full bg-white text-[#07152f] border border-white/20 px-3 py-1.5 shadow-sm">
+                  🛏️ {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
                 </span>
+              )}
+
+              {bathroomCount > 0 && (
+                <span className="rounded-full bg-white text-[#07152f] border border-white/20 px-3 py-1.5 shadow-sm">
+                  🚿 {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
+                </span>
+              )}
+
+              <span className="rounded-full bg-[#fff4bd] text-[#07152f] px-3 py-1.5 shadow-sm">
+                ★ {Number(property.rating || 0).toFixed(1)}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleShareProperty}
+              className="flex items-center gap-2 hover:bg-white/15 transition bg-white/10 text-white px-3.5 py-2.5 rounded-full border border-white/15 text-xs font-black"
+            >
+              🔗 Share
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleWishlist}
+              className={`flex items-center gap-2 transition px-3.5 py-2.5 rounded-full border text-xs font-black ${
+                isSaved
+                  ? 'text-[#07152f] border-[#fff4bd] bg-[#fff4bd]'
+                  : 'text-[#07152f] hover:bg-[#e9fbf8] border-white bg-white'
+              }`}
+            >
+              <span>{isSaved ? '♥' : '♡'}</span>
+              <span>{isSaved ? 'Saved' : 'Save'}</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Image Gallery — exactly 4 slots for exactly 4 uploaded photos */}
+      <div className="w-full mb-6 sm:mb-8 bg-white border border-[#dce9e8] rounded-[26px] p-2 sm:p-3 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+        {totalImages >= 4 ? (
+          <div className="grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr] md:grid-rows-2 gap-2 sm:gap-3 h-[420px] sm:h-[520px] md:h-[500px]">
+            <button type="button" onClick={() => setSelectedMainImage(property.images[0])} className="col-span-2 md:col-span-1 md:row-span-2 min-h-0 rounded-2xl overflow-hidden bg-slate-100 relative group text-left focus:outline-none">
+              <img src={property.images[0]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Main Property View" />
+            </button>
+            <button type="button" onClick={() => setSelectedMainImage(property.images[1])} className="min-h-0 rounded-2xl overflow-hidden bg-slate-100 relative group text-left focus:outline-none">
+              <img src={property.images[1]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Property View 2" />
+            </button>
+            <button type="button" onClick={() => setSelectedMainImage(property.images[2])} className="min-h-0 rounded-2xl overflow-hidden bg-slate-100 relative group text-left focus:outline-none">
+              <img src={property.images[2]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Property View 3" />
+            </button>
+            <button type="button" onClick={() => setSelectedMainImage(property.images[3])} className="col-span-2 md:col-span-1 md:row-span-2 min-h-0 rounded-2xl overflow-hidden bg-slate-100 relative group text-left focus:outline-none">
+              <img src={property.images[3]} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Property View 4" />
+              <span className="absolute bottom-3 right-3 bg-white/95 backdrop-blur text-[#17324d] px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-black shadow-md border border-[#dce9e8] pointer-events-none">🖼️ 4 Photos</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 h-[320px] sm:h-[420px]">
+            {property.images.map((image, index) => (
+              <button key={`${image}-${index}`} type="button" onClick={() => setSelectedMainImage(image)} className="min-h-0 rounded-2xl overflow-hidden bg-slate-100 relative group text-left focus:outline-none">
+                <img src={image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={`Property View ${index + 1}`} />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Content & Sidebar Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-start w-full">
+        <div className="lg:col-span-2 space-y-6">
+          {/* About Space Box */}
+          <div className="bg-white border border-[#dce9e8] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span className="text-teal-600">ℹ️</span> About This Space
+            </h2>
+            <p className="text-slate-600 leading-relaxed text-sm sm:text-base">
+              {property.description || 'No description provided by host.'}
+            </p>
+
+            <div className="border-t border-[#e0eae9] mt-6 pt-6">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                Amenities & Highlights
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {featuresList.map((feat, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-[#e9fbf8] text-[#007c74] text-xs font-black px-3.5 py-2 rounded-full border border-[#ccefea] flex items-center gap-1.5"
+                  >
+                    <span>✓</span> {feat}
+                  </span>
+                ))}
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-2.5 lg:justify-end">
-              <button
-                type="button"
-                onClick={handleShareProperty}
-                className="rounded-full border border-white/30 bg-white/10 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-white/20"
-              >
-                ↗ Share
-              </button>
-              <button
-                type="button"
-                onClick={handleToggleWishlist}
-                className={`rounded-full px-5 py-3 text-sm font-extrabold transition ${
-                  isSaved
-                    ? 'bg-[#ffd24a] text-[#123633]'
-                    : 'bg-white text-[#123633] hover:bg-[#fff8dc]'
-                }`}
-              >
-                {isSaved ? '♥ Saved' : '♡ Save'}
-              </button>
-            </div>
           </div>
-        </section>
 
-        {/* Gallery */}
-        <section className="mt-5 sm:mt-7 overflow-hidden rounded-[28px] border border-[#d7e2dd] bg-white p-2.5 sm:p-3 shadow-[0_12px_35px_rgba(18,54,51,0.07)]">
-          <div className="grid h-[310px] grid-cols-2 gap-2.5 sm:h-[430px] md:h-[520px] md:grid-cols-4">
-            <button
-              type="button"
-              onClick={() => setSelectedMainImage(property.images[0])}
-              className="group relative col-span-2 row-span-2 overflow-hidden rounded-[20px] bg-[#e8eeeb] text-left"
-            >
-              <img src={selectedMainImage} alt={`${property.title} main view`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
-            </button>
+          {/* Property Details / Bedroom & Bathroom Summary */}
+          <div className="bg-white border border-[#dce9e8] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span className="text-teal-600">🏡</span> Property Details
+            </h2>
 
-            <button
-              type="button"
-              onClick={() => setSelectedMainImage(img2)}
-              className="group relative overflow-hidden rounded-[20px] bg-[#e8eeeb]"
-            >
-              <img src={img2} alt={`${property.title} view 2`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedMainImage(img3)}
-              className="group relative overflow-hidden rounded-[20px] bg-[#e8eeeb]"
-            >
-              <img src={img3} alt={`${property.title} view 3`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedMainImage(img4)}
-              className="group relative overflow-hidden rounded-[20px] bg-[#e8eeeb]"
-            >
-              <img src={img4} alt={`${property.title} view 4`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
-              <span className="absolute bottom-3 right-3 rounded-full bg-white/95 px-3 py-2 text-xs font-black text-[#123633] shadow">
-                🖼 {totalImages} Photos
-              </span>
-            </button>
-          </div>
-        </section>
-
-        {/* Main content */}
-        <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <div className="space-y-5 sm:space-y-6">
-            <section className="rounded-[24px] border border-[#d7e2dd] bg-white p-5 sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
-              <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#e1f1ed] text-[#0f766e]">ℹ</span>
-                <div>
-                  <h2 className="text-lg font-black text-[#18302f] sm:text-xl">About this stay</h2>
-                  <p className="text-xs text-[#71807b]">A local space, handpicked for your stay</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl border border-[#e0eae9] bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Bedrooms
+                </div>
+                <div className="mt-1 text-base sm:text-lg font-black text-slate-900">
+                  {bedroomCount > 0 ? bedroomCount : '—'}
                 </div>
               </div>
-              <p className="mt-5 text-sm leading-7 text-[#52635f] sm:text-base">
-                {property.description || 'No description provided by host.'}
-              </p>
-              <div className="mt-6 border-t border-[#e6ece9] pt-5">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-[#69807a]">Amenities & highlights</h3>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {featuresList.map((feat, idx) => (
-                    <span key={idx} className="rounded-full border border-[#b9ddd6] bg-[#f2faf7] px-3 py-2 text-xs font-bold text-[#176b63]">
-                      ✓ {feat}
+
+              <div className="rounded-xl border border-[#e0eae9] bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Bathrooms
+                </div>
+                <div className="mt-1 text-base sm:text-lg font-black text-slate-900">
+                  {bathroomCount > 0 ? bathroomCountLabel : '—'}
+                </div>
+              </div>
+
+              <div className="col-span-2 sm:col-span-1 rounded-xl border border-[#ccefea] bg-[#e9fbf8] p-4">
+                <div className="text-xs font-bold uppercase tracking-wider text-teal-700">
+                  Guest summary
+                </div>
+                <div className="mt-1 text-sm sm:text-base font-black text-slate-900">
+                  {bedroomCount > 0 || bathroomCount > 0
+                    ? `${bedroomCount || 0} bedrooms · ${bathroomCountLabel || 0} bathrooms`
+                    : 'Details not provided'}
+                </div>
+              </div>
+            </div>
+
+            {bathroomTypeItems.length > 0 && (
+              <div className="mt-5 border-t border-[#e0eae9] pt-5">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Bathroom types
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {bathroomTypeItems.map((item) => (
+                    <span
+                      key={item}
+                      className="bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl border border-slate-200"
+                    >
+                      🚿 {item}
                     </span>
                   ))}
                 </div>
               </div>
-            </section>
-
-            <section className="rounded-[24px] border border-[#d7e2dd] bg-white p-5 sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
-              <h2 className="text-lg font-black text-[#18302f] sm:text-xl">🏡 Property details</h2>
-              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-[#dce6e2] bg-[#fafcfb] p-4">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#77857f]">Bedrooms</p>
-                  <p className="mt-2 text-2xl font-black text-[#173532]">{bedroomCount || '—'}</p>
-                </div>
-                <div className="rounded-2xl border border-[#dce6e2] bg-[#fafcfb] p-4">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#77857f]">Bathrooms</p>
-                  <p className="mt-2 text-2xl font-black text-[#173532]">{bathroomCount > 0 ? bathroomCountLabel : '—'}</p>
-                </div>
-                <div className="col-span-2 rounded-2xl border border-[#b9ddd6] bg-[#eaf7f3] p-4 sm:col-span-1">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#34746c]">Stay summary</p>
-                  <p className="mt-2 text-sm font-black leading-5 text-[#173532]">
-                    {bedroomCount > 0 || bathroomCount > 0 ? `${bedroomCount || 0} bedrooms · ${bathroomCountLabel || 0} bathrooms` : 'Details not provided'}
-                  </p>
-                </div>
-              </div>
-
-              {bathroomTypeItems.length > 0 && (
-                <div className="mt-5 border-t border-[#e6ece9] pt-5">
-                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#69807a]">Bathroom type</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {bathroomTypeItems.map((item) => (
-                      <span key={item} className="rounded-full border border-[#dce6e2] bg-[#fafcfb] px-3 py-2 text-xs font-bold text-[#43534f]">
-                        🚿 {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {property.host && (
-              <section className="rounded-[24px] border border-[#d7e2dd] bg-white p-5 sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
-                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#69807a]">Hosted by</p>
-                <div className="mt-4 flex items-center gap-4">
-                  <img
-                    src={hostAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName)}&background=0d9488&color=fff&size=128`}
-                    alt={hostName}
-                    className="h-16 w-16 rounded-full border-2 border-[#d5ebe5] object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName || 'Host')}&background=0d9488&color=fff&size=128`;
-                    }}
-                  />
-                  <div className="min-w-0">
-                    <h3 className="truncate text-lg font-black text-[#18302f]">{hostName}</h3>
-                    <p className="mt-1 text-xs font-semibold text-[#70807b]">{hostPhone}</p>
-                    <p className="mt-2 text-xs font-bold text-[#d09b00]">★ Local StayGuwahati host {hostIsVerified ? '· Verified' : ''}</p>
-                  </div>
-                </div>
-                <Link href={hostProfileHref} className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-[#103d3a] px-4 py-3 text-sm font-black text-white transition hover:bg-[#0a2f2c]">
-                  View Host Profile →
-                </Link>
-              </section>
             )}
-
-            <section className="rounded-[24px] border border-[#d7e2dd] bg-white p-5 sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
-              <h2 className="text-lg font-black text-[#18302f] sm:text-xl">💬 Guest reviews</h2>
-              <div className="mt-5">
-                {reviewsLoading ? (
-                  <p className="text-sm text-[#71807b]">Loading reviews...</p>
-                ) : reviews.length === 0 ? (
-                  <p className="text-sm text-[#71807b]">No reviews yet for this property.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {reviews.map((rev) => (
-                      <div key={rev._id} className="rounded-2xl border border-[#e0e8e5] bg-[#fafcfb] p-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <strong className="text-sm text-[#18302f]">{rev.guestName || 'Verified Guest'}</strong>
-                          <span className="text-xs text-[#73817d]">{rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recent'}</span>
-                        </div>
-                        <div className="mt-2 text-sm text-[#d09b00]">{'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}</div>
-                        <p className="mt-2 text-sm leading-6 text-[#596965]">{rev.comment || 'No comment provided.'}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
           </div>
 
-          {/* Reservation card */}
-          <aside className="lg:sticky lg:top-24">
-            <div className="overflow-hidden rounded-[26px] border border-[#d7e2dd] bg-white p-5 shadow-[0_16px_40px_rgba(18,54,51,0.10)] sm:p-6">
-              <div className="flex items-start justify-between gap-3 border-b border-[#e5ece8] pb-5">
+          {/* Host Profile */}
+          {property.host && (
+            <div className="bg-white border border-[#dce9e8] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+              <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                  <p className="text-3xl font-black tracking-tight text-[#18302f]">₹{priceFormatted}</p>
-                  <p className="mt-1 text-xs font-semibold text-[#74817d]">per night</p>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">
+                    Hosted by
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Get to know your local StayGuwahati host
+                  </p>
                 </div>
-                <span className="rounded-full border border-[#b9ddd6] bg-[#edf8f5] px-3 py-2 text-xs font-black text-[#176b63]">🛡 Verified stay</span>
+
+                {hostIsVerified && (
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-teal-50 text-teal-700 border border-[#ccefea] px-2.5 py-1 text-[10px] font-black">
+                    ✓ StayGuwahati Verified
+                  </span>
+                )}
               </div>
 
-              <div className="mt-4 space-y-3">
-                <div className="rounded-2xl border border-[#e0e8e5] bg-[#fafcfb] p-4">
-                  <div className="flex items-center justify-between gap-3 text-xs font-black">
-                    <span className="text-[#5f6f6a]">Cancellation policy</span>
-                    <span className="text-[#176b63]">{getCancellationPolicy(property.cancellationPolicy).title}</span>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-50 border border-[#ccefea] shrink-0 flex items-center justify-center relative shadow-sm">
+                  <img
+                    src={
+                      hostAvatarUrl ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        hostName
+                      )}&background=0d9488&color=fff&size=128`
+                    }
+                    alt={hostName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        hostName || 'Host'
+                      )}&background=0d9488&color=fff&size=128`;
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-black text-slate-900 text-base sm:text-lg truncate">
+                    {hostName}
+                  </h4>
+
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {hostPhone}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-xs font-bold text-amber-500">
+                      ★ Host profile
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      • Local host
+                    </span>
                   </div>
-                  <p className="mt-2 text-xs leading-5 text-[#74817d]">{getCancellationPolicy(property.cancellationPolicy).short}</p>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-[#e0e8e5] bg-[#fafcfb] p-4 text-xs font-bold text-[#5f6f6a]">
-                  <span>Check-in</span><span className="text-[#18302f]">Self check-in</span>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleReserveSpace}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ffd24a] px-4 py-4 text-sm font-black text-[#173532] shadow-[0_10px_24px_rgba(255,210,74,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ffc928]"
+              <Link
+                href={hostProfileHref}
+                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#07152f] hover:bg-[#008f86] text-white font-bold py-3 px-4 text-sm transition shadow-sm"
               >
-                Reserve this stay <span>→</span>
-              </button>
+                View Host Profile
+                <span>→</span>
+              </Link>
+            </div>
+          )}
 
-              <div className="mt-5 rounded-2xl bg-[#103d3a] p-4 text-white">
-                <p className="text-sm font-black">Need help?</p>
-                <p className="mt-1 text-xs leading-5 text-[#cfe2de]">Questions about this stay? Our local support team is here to help.</p>
-                <a
-                  href={SUPPORT_WHATSAPP ? getWhatsAppUrl(SUPPORT_WHATSAPP, `Hi StayGuwahati Support, I need help with ${property.title}.`) : `mailto:${SUPPORT_EMAIL}`}
-                  target={SUPPORT_WHATSAPP ? "_blank" : undefined}
-                  rel={SUPPORT_WHATSAPP ? "noreferrer" : undefined}
-                  className="mt-3 inline-flex rounded-xl bg-white px-4 py-2.5 text-xs font-black text-[#103d3a]"
-                >
-                  💬 WhatsApp support
-                </a>
+          {/* Dynamic Reviews Section */}
+          <div className="bg-white border border-[#dce9e8] rounded-[24px] p-5 sm:p-7 shadow-[0_10px_30px_rgba(7,21,47,0.05)]">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <span className="text-teal-600">💬</span> Verified Guest Reviews
+            </h2>
+            {reviewsLoading ? (
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">Loading reviews...</p>
+            ) : reviews.length === 0 ? (
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">No reviews yet for this property.</p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((rev) => (
+                  <div key={rev._id} className="bg-[#f7faf9] p-4 rounded-xl border border-[#e0eae9]">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                        {rev.guestName || 'Verified Guest'}
+                      </span>
+                      <span className="text-[10px] sm:text-xs text-slate-400 font-medium">
+                        {rev.createdAt
+                          ? new Date(rev.createdAt).toLocaleDateString('en-US', {
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : 'Recent'}
+                      </span>
+                    </div>
+                    <div className="text-amber-400 text-xs mb-2">
+                      {'★'.repeat(rev.rating)}
+                      {'☆'.repeat(5 - rev.rating)}
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {rev.comment || 'No comment provided.'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Booking Sidebar Sticky Card */}
+        <div className="lg:sticky lg:top-24 z-10 w-full">
+          <div className="bg-white border border-[#dce9e8] rounded-[26px] p-5 sm:p-6 shadow-[0_16px_45px_rgba(7,21,47,0.09)] space-y-5 sm:space-y-6 w-full">
+            <div className="flex justify-between items-center border-b border-[#e8efee] pb-4">
+              <div>
+                <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  ₹{priceFormatted}
+                </span>
+                <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block mt-0.5">
+                  / night value
+                </span>
+              </div>
+              <div className="bg-[#e9fbf8] text-[#007c74] font-bold px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs border border-[#ccefea] flex items-center gap-1">
+                <span>🛡️</span> Verified Stay
               </div>
             </div>
-          </aside>
+
+            <div className="space-y-3">
+              <div className="bg-[#f5f8f8] border border-[#e0eae9] rounded-2xl p-4">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-slate-500">Cancellation Policy</span>
+                  <span className="text-teal-700">{getCancellationPolicy(property.cancellationPolicy).title}</span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {getCancellationPolicy(property.cancellationPolicy).short}
+                </p>
+              </div>
+              <div className="bg-[#f5f8f8] border border-[#e0eae9] rounded-2xl p-4 flex justify-between items-center text-xs font-semibold text-slate-500">
+                <span>Check-in Status</span>
+                <span className="text-slate-800">Self Check-in</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleReserveSpace}
+              className="w-full bg-[#07152f] hover:bg-[#008f86] text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2 group text-sm sm:text-base cursor-pointer"
+            >
+              Proceed to Reservation{' '}
+              <span className="text-sm transition-transform group-hover:translate-x-1">→</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Guest Support */}
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal-50 text-xl">
+            💬
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-slate-900">Need help?</h2>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500">
+              Our support team can help with your booking, dates, or property questions.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <a
+            href={
+              SUPPORT_WHATSAPP
+                ? getWhatsAppUrl(
+                    SUPPORT_WHATSAPP,
+                    `Hi StayGuwahati Support, I need help with ${property.title}.`
+                  )
+                : `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+                    `Help with ${property.title}`
+                  )}`
+            }
+            target={SUPPORT_WHATSAPP ? "_blank" : undefined}
+            rel={SUPPORT_WHATSAPP ? "noreferrer" : undefined}
+            className="rounded-xl bg-teal-600 px-4 py-3 text-center text-sm font-black text-white hover:bg-teal-700 transition"
+          >
+            💬 WhatsApp Support
+          </a>
+
+          <a
+            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+              `Support request - ${property.title}`
+            )}`}
+            className="rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-black text-slate-700 hover:border-teal-300 hover:text-teal-700 transition"
+          >
+            🎧 Contact StayGuwahati
+          </a>
+        </div>
+      </section>
+
     </main>
   );
 }
@@ -657,23 +780,23 @@ function getCancellationPolicy(policy?: string) {
 
 export default function PropertyPage() {
   return (
-    <div className="bg-[#f6f4ef] text-[#18302f] font-sans antialiased min-h-screen flex flex-col">
+    <div className="bg-[#f5f8f8] text-[#07152f] font-sans antialiased min-h-screen flex flex-col">
       {/* Navigation Bar */}
-      <nav className="bg-[#f8f7f2]/95 backdrop-blur-md sticky top-0 z-50 border-b border-[#d7e2dd] shrink-0">
+      <nav className="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-[#dce9e8] shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2 cursor-pointer">
-            <span className="h-9 w-9 rounded-full bg-[#0f766e] grid place-items-center text-base shadow-sm">🏠</span>
-            <span className="text-lg sm:text-xl font-black text-[#18302f] tracking-tight">
-              Stay<span className="text-[#0f766e]">Guwahati</span>
+            <span className="h-8 w-8 rounded-full bg-[#008f86] grid place-items-center text-base">🏠</span>
+            <span className="text-lg sm:text-xl font-black text-[#07152f] tracking-tight">
+              Stay<span className="text-teal-600">Guwahati</span>
             </span>
           </Link>
           <div className="flex gap-3 sm:gap-6 items-center text-xs sm:text-sm">
-            <Link href="/" className="font-bold text-[#18302f] hover:text-[#0f766e] transition">
+            <Link href="/" className="font-bold text-[#07152f] hover:text-[#008f86] transition">
               Home
             </Link>
             <Link
               href="/map"
-              className="bg-[#103d3a] text-white px-4 sm:px-5 py-2.5 rounded-full font-black hover:bg-[#0a2f2c] transition shadow-sm"
+              className="bg-[#07152f] text-white px-3 sm:px-4 py-2.5 rounded-full font-black hover:bg-[#008f86] transition shadow-sm"
             >
               Explore Map
             </Link>
@@ -686,7 +809,7 @@ export default function PropertyPage() {
       </Suspense>
 
       {/* Footer */}
-      <footer className="max-w-7xl w-full mx-auto py-7 px-4 text-center text-xs text-[#82908b] border-t border-[#d7e2dd] shrink-0">
+      <footer className="max-w-6xl w-full mx-auto py-6 px-4 text-center text-xs text-gray-400 border-t border-[#dce9e8] mt-8 shrink-0">
         &copy; 2026 StayGuwahati. All rights reserved.
       </footer>
     </div>
