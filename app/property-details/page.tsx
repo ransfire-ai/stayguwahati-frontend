@@ -213,7 +213,7 @@ function BookStayContent() {
 
   if (!property) {
     return (
-      <main className="min-h-screen bg-[#f6f7f5] px-5 py-8 text-[#173c3a]">
+      <main className="sg-shell min-h-screen bg-[#f6f7f5] px-5 py-8 text-[#173c3a]">
         <div className="mx-auto max-w-xl">
           <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-[#1b7772]">
             <ArrowLeft className="h-4 w-4" /> Back to stays

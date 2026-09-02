@@ -237,7 +237,7 @@ function CheckoutContent() {
 
   if (loading) {
     return (
-      <main className="min-h-screen grid place-items-center bg-slate-50 text-slate-500">
+      <main className="min-h-screen grid place-items-center bg-[#f5f1e8] text-[#61756e]">
         Loading your stay…
       </main>
     );
@@ -245,13 +245,13 @@ function CheckoutContent() {
 
   if (error && !property) {
     return (
-      <main className="min-h-screen grid place-items-center bg-slate-50 p-6">
+      <main className="min-h-screen grid place-items-center bg-[#f5f1e8] p-6">
         <div className="max-w-md text-center">
           <div className="text-4xl">⚠️</div>
           <p className="mt-4 font-semibold text-red-600">{error}</p>
           <button
             onClick={() => router.back()}
-            className="mt-5 rounded-xl bg-slate-900 px-5 py-3 font-bold text-white"
+            className="mt-5 rounded-2xl bg-slate-900 px-5 py-3 font-bold text-white"
           >
             Go Back
           </button>
@@ -261,11 +261,11 @@ function CheckoutContent() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:py-12">
+    <main className="min-h-screen bg-[#f5f1e8] px-4 py-8 pb-28 sm:py-12">
       <div className="mx-auto max-w-5xl">
         <button
           onClick={() => router.back()}
-          className="mb-5 text-sm font-bold text-slate-600 hover:text-teal-700"
+          className="mb-5 text-sm font-bold text-[#35534c] hover:text-teal-700"
         >
           ← Back to property
         </button>
@@ -273,35 +273,34 @@ function CheckoutContent() {
         <div className="grid gap-6 lg:grid-cols-[1.25fr_.75fr]">
           <form
             onSubmit={submitBooking}
-            className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-8"
+            className="rounded-[2rem] bg-[#fffdf7] p-5 shadow-sm ring-1 ring-slate-200 sm:p-8"
           >
-            <p className="text-xs font-black uppercase tracking-widest text-teal-600">
-              Request your stay
+            <p className="text-xs font-black uppercase tracking-widest text-[#2f7f72]">
+              StayGuwahati booking
             </p>
-            <h1 className="mt-2 text-3xl font-black text-slate-950">
-              Guest details
+            <h1 className="mt-2 text-3xl font-black text-[#123c35]">
+              Complete your booking
             </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Submit your request to the host. You will not be charged online.
-              Your booking becomes confirmed only after the host accepts it.
+            <p className="mt-2 text-sm leading-6 text-[#61756e]">
+              Almost there. Share your details to send a stay request directly to your host.
             </p>
 
             <div className="mt-7 grid gap-4 sm:grid-cols-2">
               <label className="sm:col-span-2">
-                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+                <span className="mb-1.5 block text-xs font-bold text-[#35534c]">
                   Full name *
                 </span>
                 <input
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-500"
+                  className="w-full rounded-2xl border border-[#d9ddd2] px-4 py-3 outline-none focus:border-[#2f7f72]"
                   placeholder="Your full name"
                 />
               </label>
 
               <label>
-                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+                <span className="mb-1.5 block text-xs font-bold text-[#35534c]">
                   Email *
                 </span>
                 <input
@@ -309,13 +308,13 @@ function CheckoutContent() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-500"
+                  className="w-full rounded-2xl border border-[#d9ddd2] px-4 py-3 outline-none focus:border-[#2f7f72]"
                   placeholder="you@example.com"
                 />
               </label>
 
               <label>
-                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+                <span className="mb-1.5 block text-xs font-bold text-[#35534c]">
                   Phone *
                 </span>
                 <input
@@ -323,13 +322,13 @@ function CheckoutContent() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-500"
+                  className="w-full rounded-2xl border border-[#d9ddd2] px-4 py-3 outline-none focus:border-[#2f7f72]"
                   placeholder="10-digit mobile number"
                 />
               </label>
 
               <label>
-                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+                <span className="mb-1.5 block text-xs font-bold text-[#35534c]">
                   Check-in *
                 </span>
                 <input
@@ -346,12 +345,12 @@ function CheckoutContent() {
                       setCheckOut(nextDay.toISOString().split('T')[0]);
                     }
                   }}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-500"
+                  className="w-full rounded-2xl border border-[#d9ddd2] px-4 py-3 outline-none focus:border-[#2f7f72]"
                 />
               </label>
 
               <label>
-                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+                <span className="mb-1.5 block text-xs font-bold text-[#35534c]">
                   Check-out *
                 </span>
                 <input
@@ -360,18 +359,18 @@ function CheckoutContent() {
                   min={checkIn || todayString()}
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-500"
+                  className="w-full rounded-2xl border border-[#d9ddd2] px-4 py-3 outline-none focus:border-[#2f7f72]"
                 />
               </label>
 
               <label>
-                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+                <span className="mb-1.5 block text-xs font-bold text-[#35534c]">
                   Guests *
                 </span>
                 <select
                   value={guests}
                   onChange={(e) => setGuests(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-500"
+                  className="w-full rounded-2xl border border-[#d9ddd2] px-4 py-3 outline-none focus:border-[#2f7f72]"
                 >
                   {[1, 2, 3, 4].map((n) => (
                     <option key={n} value={n}>
@@ -383,7 +382,7 @@ function CheckoutContent() {
               </label>
 
               <label className="sm:col-span-2">
-                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+                <span className="mb-1.5 block text-xs font-bold text-[#35534c]">
                   Special requests{' '}
                   <span className="font-normal text-slate-400">(optional)</span>
                 </span>
@@ -391,64 +390,64 @@ function CheckoutContent() {
                   value={specialRequests}
                   onChange={(e) => setSpecialRequests(e.target.value)}
                   rows={4}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-teal-500"
+                  className="w-full rounded-2xl border border-[#d9ddd2] px-4 py-3 outline-none focus:border-[#2f7f72]"
                   placeholder="Arrival time, accessibility needs, or anything the host should know."
                 />
               </label>
             </div>
 
             {error && (
-              <div className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              <div className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                 {error}
               </div>
             )}
 
             <button
               disabled={submitting || !property?.isAvailable}
-              className="mt-6 w-full rounded-xl bg-teal-600 py-3.5 text-sm font-black text-white shadow-lg shadow-teal-600/20 transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 w-full rounded-2xl bg-[#1d5b4f] py-3.5 text-sm font-black text-white shadow-lg shadow-[#1d5b4f]/20 transition hover:bg-[#123c35] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? 'Sending request…' : 'Request Booking'}
+              {submitting ? 'Sending request…' : 'Confirm your stay request'}
             </button>
 
             <p className="mt-3 text-center text-xs text-slate-400">
-              No online payment is taken. Host approval is required.
+              Your request is sent securely. Host approval is required before confirmation.
             </p>
           </form>
 
-          <aside className="h-fit rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-6">
+          <aside className="h-fit rounded-[2rem] bg-[#fffdf7] p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:sticky lg:top-6">
             <img
               src={resolveImage(property?.images?.[0])}
               alt={property?.title || 'Property'}
               className="h-48 w-full rounded-2xl object-cover"
             />
 
-            <h2 className="mt-4 text-xl font-black text-slate-950">
+            <h2 className="mt-4 text-xl font-black text-[#123c35]">
               {property?.title}
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-[#61756e]">
               📍 {property?.locality}, Guwahati
             </p>
 
-            <div className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm">
+            <div className="mt-5 space-y-3 border-t border-[#e5e5d9] pt-5 text-sm">
               <div className="flex justify-between gap-4">
-                <span className="text-slate-500">Check-in</span>
+                <span className="text-[#61756e]">Check-in</span>
                 <b>{dateLabel(checkIn)}</b>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-slate-500">Check-out</span>
+                <span className="text-[#61756e]">Check-out</span>
                 <b>{dateLabel(checkOut)}</b>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-slate-500">Guests</span>
+                <span className="text-[#61756e]">Guests</span>
                 <b>{guests}</b>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-slate-500">Nights</span>
+                <span className="text-[#61756e]">Nights</span>
                 <b>{nights}</b>
               </div>
             </div>
 
-            <div className="mt-5 border-t border-slate-100 pt-5">
+            <div className="mt-5 border-t border-[#e5e5d9] pt-5">
               <div className="flex justify-between text-sm">
                 <span>
                   ₹{Number(property?.pricePerNight || 0).toLocaleString('en-IN')} ×{' '}
@@ -462,11 +461,11 @@ function CheckoutContent() {
                 <span>₹{total.toLocaleString('en-IN')}</span>
               </div>
 
-              <div className="mt-4 rounded-xl bg-slate-50 p-3">
-                <p className="text-xs font-bold text-slate-600">
-                  Cancellation policy
+              <div className="mt-4 rounded-2xl bg-[#f5f1e8] p-3">
+                <p className="text-xs font-bold text-[#35534c]">
+                  Good to know
                 </p>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-[#61756e]">
                   {getCancellationPolicy(property?.cancellationPolicy)}
                 </p>
               </div>
@@ -487,9 +486,9 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-slate-50 px-4 py-16">
-          <div className="mx-auto max-w-3xl rounded-2xl bg-white p-8 text-center shadow-sm">
-            <p className="text-sm font-semibold text-slate-500">
+        <main className="min-h-screen bg-[#f5f1e8] px-4 py-16">
+          <div className="mx-auto max-w-3xl rounded-2xl bg-[#fffdf7] p-8 text-center shadow-sm">
+            <p className="text-sm font-semibold text-[#61756e]">
               Loading booking details…
             </p>
           </div>

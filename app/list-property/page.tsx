@@ -663,7 +663,7 @@ export default function ListPropertyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f8f8] text-[#07152f] font-sans flex flex-col justify-between">
+    <div className="sg-shell min-h-screen bg-[#f5f8f8] text-[#07152f] font-sans flex flex-col justify-between">
       {/* Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-[#dce9e8] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-0 sm:h-16 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-0">

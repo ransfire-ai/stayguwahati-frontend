@@ -243,7 +243,7 @@ function HostProfileContent() {
 
   if (error || !properties.length) {
     return (
-      <main className="min-h-screen bg-slate-50">
+      <main className="sg-shell min-h-screen bg-slate-50">
         <header className="border-b border-slate-200 bg-white">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
             <Link href="/" className="text-xl font-black">
