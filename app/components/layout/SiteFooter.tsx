@@ -1,0 +1,1 @@
+export default function SiteFooter(){return <footer className="sg-footer"><div className="sg-container"><b style={{fontSize:24}}>StayGuwahati</b><p style={{color:'#b9cbc6'}}>Discover local stays. Feel Guwahati.</p></div></footer>}

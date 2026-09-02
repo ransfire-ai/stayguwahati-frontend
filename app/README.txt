@@ -19,3 +19,11 @@ app/property-details/page.tsx
 app/book-stay/page.tsx
 
 Do not replace app/checkout/page.tsx with this package.
+
+UNIFIED DESIGN UPDATE
+- Shared design tokens added to globals.css
+- Shared header/footer/PageShell added under components/layout
+- Responsive image helper added under components/property
+- Homepage replaced with locality-first design while retaining /api/homestays
+- Added /profile route
+- Existing specialized pages remain intact to preserve current flows; they should be migrated to PageShell and shared tokens next rather than replaced blindly.

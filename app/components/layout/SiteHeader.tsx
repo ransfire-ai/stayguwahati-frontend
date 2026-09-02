@@ -1,0 +1,2 @@
+'use client'; import Link from 'next/link';
+export default function SiteHeader(){return <header className="sg-header"><div className="sg-container sg-header-inner"><Link className="sg-brand" href="/">StayGuwahati</Link><nav className="sg-nav"><Link href="/explore">Explore</Link><Link href="/map">Map</Link><Link href="/list-property">For Hosts</Link><Link href="/support">Support</Link><Link className="sg-btn sg-btn-primary" href="/login">Sign in</Link></nav><Link className="sg-mobile-menu sg-btn sg-btn-soft" href="/explore">Explore</Link></div></header>}

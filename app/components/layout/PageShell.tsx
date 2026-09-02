@@ -1,0 +1,1 @@
+import SiteHeader from './SiteHeader'; import SiteFooter from './SiteFooter'; export default function PageShell({children}:{children:React.ReactNode}){return <div className="sg-shell"><SiteHeader/>{children}<SiteFooter/></div>}
