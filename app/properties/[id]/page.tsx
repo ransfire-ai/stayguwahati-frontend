@@ -1,19 +1,31 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Heart, MapPin, Share2, ShieldCheck, Star, Users, BedDouble, Bath, Wifi, Car, CookingPot, Snowflake, Check } from 'lucide-react';
+import {
+  ArrowLeft, Heart, MapPin, Share2, ShieldCheck, Star, Users,
+  BedDouble, Bath, Wifi, Car, CookingPot, Snowflake, Check
+} from 'lucide-react';
+
+const API_BASE_URL =
+  (process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com').replace(/\/$/, '');
+
+function resolveImage(src: unknown) {
+  if (typeof src !== 'string' || !src.trim()) return '';
+  if (/^https?:\/\//i.test(src) || src.startsWith('data:')) return src;
+  return `${API_BASE_URL}${src.startsWith('/') ? '' : '/'}${src}`;
+}
 
 export default function PropertyPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params?.id as string;
+  const rawId = params?.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
 
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Booking Form State
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -24,85 +36,70 @@ export default function PropertyPage() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState('');
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
   useEffect(() => {
-    const fetchProperty = async () => {
+    let cancelled = false;
+
+    async function fetchProperty() {
+      if (!id) {
+        setError('Property ID is missing.');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        const res = await fetch(`${API_BASE_URL}/api/properties/${id}`);
-        const data = await res.json();
+        setError(null);
 
-        if (data.success && data.data) {
-          setProperty(data.data);
-        } else {
-          setError('Property details could not be found.');
+        // IMPORTANT: homepage data comes from /api/homestays.
+        // Use the same resource for the details page.
+        const response = await fetch(
+          `${API_BASE_URL}/api/homestays/${encodeURIComponent(id)}`,
+          { cache: 'no-store' }
+        );
+
+        let payload: any = null;
+        try {
+          payload = await response.json();
+        } catch {
+          throw new Error('The server returned an invalid response.');
         }
-      } catch (err) {
-        setError('Failed to load property data. Check backend connection.');
+
+        if (!response.ok) {
+          throw new Error(payload?.message || `Unable to load this stay (${response.status}).`);
+        }
+
+        // Supports { success, data }, { data }, or a direct property object.
+        const item =
+          payload?.data && !Array.isArray(payload.data) ? payload.data :
+          payload?.homestay && !Array.isArray(payload.homestay) ? payload.homestay :
+          payload;
+
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+          throw new Error('Property details could not be found.');
+        }
+
+        if (!cancelled) setProperty(item);
+      } catch (err: any) {
+        if (!cancelled) {
+          setProperty(null);
+          setError(err?.message || 'Failed to load property data. Please try again.');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
+    }
 
-    if (id) fetchProperty();
-  }, [id, API_BASE_URL]);
+    fetchProperty();
+    return () => { cancelled = true; };
+  }, [id]);
 
-  const calculateNights = () => {
+  const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
-  };
-
-  const nights = calculateNights();
-  const totalPrice = property ? nights * (property.pricePerNight || 0) : 0;
-
-  const handleBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBookingLoading(true);
-    setBookingError('');
-
-    if (nights <= 0) {
-      setBookingError('Check-out date must be after check-in date.');
-      setBookingLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/bookings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          phone,
-          homestayId: property._id,
-          propertyName: property.title || property.name || 'Property',
-          checkIn,
-          checkOut,
-          dates: `${checkIn} to ${checkOut}`,
-          nights,
-          totalPrice
-        })
-      });
-
-      const resData = await response.json();
-
-      if (resData.success) {
-        setBookingSuccess(true);
-      } else {
-        setBookingError(resData.message || 'Booking failed. Please try again.');
-      }
-    } catch (err) {
-      setBookingError('Network error while processing booking.');
-    } finally {
-      setBookingLoading(false);
-    }
-  };
+    const start = new Date(`${checkIn}T00:00:00`);
+    const end = new Date(`${checkOut}T00:00:00`);
+    const diff = end.getTime() - start.getTime();
+    return diff > 0 ? Math.ceil(diff / 86400000) : 0;
+  }, [checkIn, checkOut]);
 
   if (loading) {
     return (
@@ -122,7 +119,10 @@ export default function PropertyPage() {
           <MapPin className="mx-auto mb-4 text-[#176b5b]" size={34} />
           <h1 className="text-2xl font-bold text-[#173f36]">Stay not found</h1>
           <p className="mt-2 text-[#68736e]">{error || 'Property not found.'}</p>
-          <button onClick={() => router.push('/explore')} className="mt-6 rounded-full bg-[#176b5b] px-6 py-3 font-semibold text-white">
+          <button
+            onClick={() => router.push('/explore')}
+            className="mt-6 rounded-full bg-[#176b5b] px-6 py-3 font-semibold text-white"
+          >
             Explore stays
           </button>
         </div>
@@ -130,21 +130,37 @@ export default function PropertyPage() {
     );
   }
 
-  const title = property.title || property.name || 'Property Details';
-  const locality = property.address || property.locality || 'Guwahati, Assam';
-  const images = Array.isArray(property.images) && property.images.length
-    ? property.images.slice(0, 4)
-    : [property.imageUrl || property.image || `${API_BASE_URL}/api/homestays/${property._id}/image`];
-  const bathrooms = typeof property.bathrooms === 'object'
-    ? (property.bathrooms.total || property.bathrooms.privateAttached || property.bathrooms.dedicated || property.bathrooms.shared || 1)
-    : (property.bathrooms || 1);
-  const amenities = property.features?.length
+  const title = property.title || property.name || property.propertyName || 'Property Details';
+  const locality = property.locality || property.address || property.location || 'Guwahati, Assam';
+
+  const rawImages =
+    Array.isArray(property.images) ? property.images :
+    Array.isArray(property.photos) ? property.photos :
+    property.imageUrl || property.image ? [property.imageUrl || property.image] :
+    [];
+
+  const images = rawImages.map(resolveImage).filter(Boolean).slice(0, 4);
+  if (!images.length && property._id) {
+    images.push(`${API_BASE_URL}/api/homestays/${property._id}/image`);
+  }
+
+  const bathrooms =
+    typeof property.bathrooms === 'object' && property.bathrooms
+      ? (property.bathrooms.total || property.bathrooms.privateAttached || property.bathrooms.dedicated || property.bathrooms.shared || 1)
+      : (property.bathrooms || 1);
+
+  const amenities = Array.isArray(property.features) && property.features.length
     ? property.features
-    : ['Fast Wi-Fi', 'Air conditioning', 'Kitchen access', 'Free parking', 'Power backup'];
+    : Array.isArray(property.amenities) && property.amenities.length
+      ? property.amenities
+      : ['Fast Wi-Fi', 'Air conditioning', 'Kitchen access', 'Free parking', 'Power backup'];
+
+  const pricePerNight = Number(property.pricePerNight ?? property.price ?? 0);
+  const totalPrice = nights * pricePerNight;
   const today = new Date().toISOString().split('T')[0];
 
   const amenityIcon = (name: string) => {
-    const item = name.toLowerCase();
+    const item = String(name).toLowerCase();
     if (item.includes('wifi')) return <Wifi size={19} />;
     if (item.includes('parking')) return <Car size={19} />;
     if (item.includes('kitchen')) return <CookingPot size={19} />;
@@ -152,12 +168,53 @@ export default function PropertyPage() {
     return <Check size={19} />;
   };
 
+  const handleBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (nights <= 0) {
+      setBookingError('Check-out date must be after check-in date.');
+      return;
+    }
+
+    setBookingLoading(true);
+    setBookingError('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          phone,
+          homestayId: property._id || property.id || id,
+          propertyName: title,
+          checkIn,
+          checkOut,
+          dates: `${checkIn} to ${checkOut}`,
+          nights,
+          totalPrice
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok || result?.success === false) {
+        throw new Error(result?.message || 'Booking failed. Please try again.');
+      }
+      setBookingSuccess(true);
+    } catch (err: any) {
+      setBookingError(err?.message || 'Network error while processing booking.');
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f6f3ec] text-[#173f36]">
       <header className="border-b border-[#e6e1d8] bg-[#f6f3ec]/95 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <button onClick={() => router.back()} className="inline-flex items-center gap-2 font-semibold text-sm">
-            <ArrowLeft size={18} /> <span className="hidden sm:inline">Back to explore</span><span className="sm:hidden">Back</span>
+            <ArrowLeft size={18} /><span className="hidden sm:inline">Back to explore</span><span className="sm:hidden">Back</span>
           </button>
           <div className="flex gap-2">
             <button className="h-10 w-10 rounded-full border border-[#ded8cd] bg-white flex items-center justify-center"><Share2 size={17}/></button>
@@ -189,7 +246,6 @@ export default function PropertyPage() {
           {images.map((src: string, index: number) => (
             <div key={`${src}-${index}`} className={`${index === 0 ? 'col-span-2 row-span-2 aspect-[4/3]' : 'aspect-square'} relative overflow-hidden rounded-[22px] bg-[#e4e8e3]`}>
               <img src={src} alt={`${title} ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} className="w-full h-full object-cover" onError={(e: any) => { e.currentTarget.style.display = 'none'; }} />
-              {index === 0 && <div className="absolute left-4 bottom-4 rounded-full bg-[#173f36]/85 px-3 py-1.5 text-xs text-white">A stay in Guwahati</div>}
             </div>
           ))}
         </section>
@@ -197,19 +253,12 @@ export default function PropertyPage() {
         <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-8 lg:gap-12">
           <div className="space-y-9">
             <div className="rounded-[28px] bg-white border border-[#e7e1d8] p-6 sm:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] font-bold text-[#a26a32]">Hosted locally</p>
-                  <h2 className="mt-2 text-2xl font-bold">A comfortable base for your Guwahati visit</h2>
-                  <div className="mt-4 flex flex-wrap gap-3 text-sm text-[#617069]">
-                    <span className="inline-flex items-center gap-1.5"><BedDouble size={18}/>{property.bedrooms || 1} bedrooms</span>
-                    <span className="inline-flex items-center gap-1.5"><Bath size={18}/>{bathrooms} bathroom{Number(bathrooms) !== 1 ? 's' : ''}</span>
-                    <span className="inline-flex items-center gap-1.5"><Users size={18}/>Up to {property.maxGuests || 2} guests</span>
-                  </div>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-[#e7efe9] flex items-center justify-center font-bold text-[#176b5b]">
-                  {(property.host?.name || property.owner || 'H').slice(0,1).toUpperCase()}
-                </div>
+              <p className="text-xs uppercase tracking-[0.16em] font-bold text-[#a26a32]">Hosted locally</p>
+              <h2 className="mt-2 text-2xl font-bold">A comfortable base for your Guwahati visit</h2>
+              <div className="mt-4 flex flex-wrap gap-3 text-sm text-[#617069]">
+                <span className="inline-flex items-center gap-1.5"><BedDouble size={18}/>{property.bedrooms || 1} bedrooms</span>
+                <span className="inline-flex items-center gap-1.5"><Bath size={18}/>{bathrooms} bathroom{Number(bathrooms) !== 1 ? 's' : ''}</span>
+                <span className="inline-flex items-center gap-1.5"><Users size={18}/>Up to {property.maxGuests || property.guests || 2} guests</span>
               </div>
             </div>
 
@@ -228,19 +277,11 @@ export default function PropertyPage() {
                 ))}
               </div>
             </div>
-
-            <div className="border-t border-[#ded9cf] pt-8">
-              <p className="text-xs uppercase tracking-[0.16em] font-bold text-[#a26a32]">Your host</p>
-              <div className="mt-4 flex gap-4 items-center">
-                {property.host?.avatar ? <img src={property.host.avatar} alt="Host" className="h-14 w-14 rounded-full object-cover" /> : <div className="h-14 w-14 rounded-full bg-[#176b5b] text-white flex items-center justify-center font-bold">{(property.host?.name || property.owner || 'H').slice(0,1)}</div>}
-                <div><h3 className="font-bold text-lg">{property.host?.name || property.owner || 'Local Host'}</h3><p className="text-sm text-[#68736e]">Hosting guests in Guwahati</p></div>
-              </div>
-            </div>
           </div>
 
           <aside className="lg:sticky lg:top-6 h-fit rounded-[28px] bg-[#173f36] p-5 sm:p-6 text-white shadow-xl">
             <div className="flex items-baseline justify-between mb-6">
-              <div><span className="text-3xl font-bold">₹{property.pricePerNight || 0}</span><span className="text-[#c9d5cf] text-sm"> / night</span></div>
+              <div><span className="text-3xl font-bold">₹{pricePerNight}</span><span className="text-[#c9d5cf] text-sm"> / night</span></div>
               <span className="rounded-full bg-[#315d53] px-3 py-1 text-xs">Book direct</span>
             </div>
 
@@ -263,9 +304,8 @@ export default function PropertyPage() {
                 </div>
                 <input type="email" placeholder="Email address" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl bg-white px-3 py-3 text-sm text-[#173f36]"/>
                 <input type="tel" placeholder="Phone number" required value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-xl bg-white px-3 py-3 text-sm text-[#173f36]"/>
-                {nights > 0 && <div className="border-y border-[#3d685f] py-4 text-sm text-[#d9e3de]"><div className="flex justify-between"><span>₹{property.pricePerNight} × {nights} nights</span><span>₹{totalPrice}</span></div><div className="flex justify-between mt-3 text-base font-bold text-white"><span>Total</span><span>₹{totalPrice}</span></div></div>}
+                {nights > 0 && <div className="border-y border-[#3d685f] py-4 text-sm text-[#d9e3de]"><div className="flex justify-between"><span>₹{pricePerNight} × {nights} nights</span><span>₹{totalPrice}</span></div><div className="flex justify-between mt-3 text-base font-bold text-white"><span>Total</span><span>₹{totalPrice}</span></div></div>}
                 <button type="submit" disabled={bookingLoading} className="w-full rounded-full bg-[#d7a154] hover:bg-[#e0b165] text-[#173f36] font-bold py-3.5 transition disabled:opacity-60">{bookingLoading ? 'Processing...' : 'Reserve this stay'}</button>
-                <p className="text-center text-[11px] text-[#b8c8c1]">Your booking request is securely sent to StayGuwahati.</p>
               </form>
             )}
           </aside>
