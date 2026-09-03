@@ -1,296 +1,63 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Check, Heart, MapPin, Share2, ShieldCheck, Star, Users } from 'lucide-react';
+import PropertyImage from '../../../components/property/PropertyImage';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function PropertyPage() {
-  const params = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const id = params?.id as string;
-
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Booking Form State
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [bookingError, setBookingError] = useState('');
-
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const fetchProperty = async () => {
+    if (!id) return;
+    const c = new AbortController();
+    (async () => {
       try {
-        setLoading(true);
-        const res = await fetch(`${API_BASE_URL}/api/properties/${id}`);
-        const data = await res.json();
+        setLoading(true); setError('');
+        let res = await fetch(`${API}/api/homestays/${encodeURIComponent(id)}`, { signal: c.signal, cache: 'no-store' });
+        if (!res.ok) res = await fetch(`${API}/api/properties/${encodeURIComponent(id)}`, { signal: c.signal, cache: 'no-store' });
+        if (!res.ok) throw new Error('Property details could not be found.');
+        const json = await res.json();
+        setProperty(json?.data || json?.homestay || json);
+      } catch (e:any) { if (e?.name !== 'AbortError') setError(e?.message || 'Unable to load this stay.'); }
+      finally { setLoading(false); }
+    })();
+    return () => c.abort();
+  }, [id]);
 
-        if (data.success && data.data) {
-          setProperty(data.data);
-        } else {
-          setError('Property details could not be found.');
-        }
-      } catch (err) {
-        setError('Failed to load property data. Check backend connection.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const images = useMemo(() => {
+    const raw = Array.isArray(property?.images) ? property.images : [];
+    const list = raw.length ? raw : [property?.image, property?.imageUrl].filter(Boolean);
+    return list.filter(Boolean).slice(0, 5);
+  }, [property]);
+  const title = property?.title || property?.name || 'Local stay';
+  const locality = property?.locality || property?.address || property?.location || 'Guwahati, Assam';
+  const bathrooms = typeof property?.bathrooms === 'object' ? (property.bathrooms.total || property.bathrooms.privateAttached || 1) : (property?.bathrooms || 1);
+  const price = Number(property?.pricePerNight || property?.price || 0);
+  const book = () => router.push(`/book-stay?id=${encodeURIComponent(String(property?._id || id))}`);
 
-    if (id) fetchProperty();
-  }, [id, API_BASE_URL]);
+  if (loading) return <main className="min-h-screen grid place-items-center bg-[#f7f6f1] text-[#123f3b]"><div className="text-center"><div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[#d8e3e0] border-t-[#237c73]"/><p className="mt-4 font-semibold">Loading your stay…</p></div></main>;
+  if (error || !property) return <main className="sg-shell min-h-screen bg-[#f7f6f1] px-5 py-20"><Link href="/" className="inline-flex items-center gap-2 font-bold text-[#237c73]"><ArrowLeft size={18}/>Back to stays</Link><div className="mt-8 max-w-xl border border-[#d8e3e0] bg-[#fcfcf9] p-8"><h1 className="text-3xl font-black">Stay unavailable</h1><p className="mt-3 text-[#66727b]">{error || 'Property not found.'}</p></div></main>;
 
-  const calculateNights = () => {
-    if (!checkIn || !checkOut) return 0;
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
-  };
+  return <main className="min-h-screen bg-[#f7f6f1] pb-28 text-[#14243a]">
+    <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between py-2"><button onClick={()=>router.back()} className="inline-flex items-center gap-2 text-sm font-bold text-[#237c73]"><ArrowLeft size={18}/>Discover stays</button><div className="flex gap-2"><button aria-label="Share" className="grid h-10 w-10 place-items-center rounded-full border border-[#d8e3e0] bg-white"><Share2 size={18}/></button><button onClick={()=>setSaved(!saved)} aria-label="Save" className="grid h-10 w-10 place-items-center rounded-full border border-[#d8e3e0] bg-white"><Heart size={18} fill={saved?'currentColor':'none'} /></button></div></div>
 
-  const nights = calculateNights();
-  const totalPrice = property ? nights * (property.pricePerNight || 0) : 0;
+      <section className="py-8 md:py-12"><p className="mb-4 text-xs font-black tracking-[.2em] text-[#237c73]">VERIFIED LOCAL STAY</p><div className="grid gap-6 lg:grid-cols-[1fr_auto]"><div><h1 className="max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">{title}</h1><p className="mt-4 flex items-center gap-2 text-base text-[#66727b]"><MapPin size={18} className="text-[#237c73]"/>{locality}</p><div className="mt-5 flex flex-wrap gap-2 text-sm font-semibold"><span className="border border-[#d8e3e0] bg-white px-3 py-2">{property.bedrooms || 1} bedrooms</span><span className="border border-[#d8e3e0] bg-white px-3 py-2">{bathrooms} bathroom{bathrooms>1?'s':''}</span><span className="border border-[#d8e3e0] bg-white px-3 py-2 flex items-center gap-1"><Users size={15}/>{property.maxGuests || 2} guests</span><span className="border border-[#d8e3e0] bg-white px-3 py-2 flex items-center gap-1"><Star size={15} className="fill-[#f4c64e] text-[#d99a16]"/>{Number(property.rating || 0).toFixed(1)} {property.reviewsCount ? `(${property.reviewsCount})` : ''}</span></div></div><div className="hidden lg:block self-end text-right"><div className="text-3xl font-black">₹{price.toLocaleString('en-IN')}</div><div className="text-sm text-[#66727b]">per night</div></div></div></section>
 
-  const handleBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBookingLoading(true);
-    setBookingError('');
+      {images.length > 0 && <section className="grid gap-3 md:grid-cols-2"><div className="relative aspect-[16/10] overflow-hidden bg-[#eaf0ee]">{images[0] && <PropertyImage src={images[0]} alt={title} priority className="object-cover"/>}</div><div className="grid grid-cols-2 gap-3">{images.slice(1,5).map((src:string,i:number)=><div key={src+i} className="relative aspect-square overflow-hidden bg-[#eaf0ee]"><PropertyImage src={src} alt={`${title} photo ${i+2}`} className="object-cover"/></div>)}</div></section>}
 
-    if (nights <= 0) {
-      setBookingError('Check-out date must be after check-in date.');
-      setBookingLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/bookings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          phone,
-          homestayId: property._id,
-          propertyName: property.title || property.name || 'Property',
-          checkIn,
-          checkOut,
-          dates: `${checkIn} to ${checkOut}`,
-          nights,
-          totalPrice
-        })
-      });
-
-      const resData = await response.json();
-
-      if (resData.success) {
-        setBookingSuccess(true);
-      } else {
-        setBookingError(resData.message || 'Booking failed. Please try again.');
-      }
-    } catch (err) {
-      setBookingError('Network error while processing booking.');
-    } finally {
-      setBookingLoading(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="text-center py-20 text-gray-600 font-medium">Loading property details...</div>;
-  }
-
-  if (error || !property) {
-    return (
-      <div className="text-center py-20 text-red-600">
-        <p>{error || 'Property not found.'}</p>
-        <button onClick={() => router.push('/')} className="mt-4 px-4 py-2 bg-teal-600 text-white rounded">
-          Back to Listings
-        </button>
-      </div>
-    );
-  }
-
-  const mainImage = property.images?.[0] || property.imageUrl || property.image || `${API_BASE_URL}/api/homestays/${property._id}/image`;
-
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <button onClick={() => router.back()} className="mb-6 text-teal-600 font-semibold hover:underline">
-        ← Back to Search
-      </button>
-
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{property.title || property.name || 'Property Details'}</h1>
-        <p className="text-gray-600 mt-1 flex items-center gap-1">
-          📍 {property.address || property.locality || 'Guwahati, Assam'}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 rounded-xl overflow-hidden shadow-sm">
-        <div className="md:col-span-2 h-96 bg-gray-100">
-          <img
-            src={mainImage}
-            alt={property.title || 'Property Image'}
-            className="w-full h-full object-cover"
-            onError={(e: any) => {
-              e.target.src = 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80';
-            }}
-          />
-        </div>
-        <div className="hidden md:flex flex-col gap-4 h-96">
-          <img
-            src={property.images?.[1] || mainImage}
-            alt="Property interior"
-            className="w-full h-1/2 object-cover bg-gray-100"
-          />
-          <img
-            src={property.images?.[2] || mainImage}
-            alt="Property room"
-            className="w-full h-1/2 object-cover bg-gray-100"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="border-b pb-6">
-            <h2 className="text-xl font-semibold mb-2">Hosted by {property.host?.name || property.owner || 'Host'}</h2>
-            <div className="flex gap-4 text-sm text-gray-600">
-              <span>🛏️ {property.bedrooms || 1} Bedrooms</span>
-              <span>🚿 {property.bathrooms || 1} Bathrooms</span>
-              <span>👥 Up to {property.maxGuests || 2} Guests</span>
-            </div>
-          </div>
-
-          <div className="border-b pb-6">
-            <h3 className="text-lg font-semibold mb-2">About this space</h3>
-            <p className="text-gray-700 leading-relaxed">
-              {property.description || 'Enjoy a peaceful stay at this property located in Guwahati.'}
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Amenities</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {(property.features || ['Wi-Fi', 'Air Conditioning', 'Kitchen', 'Free Parking', 'Power Backup']).map((item: string, idx: number) => (
-                <div key={idx} className="flex items-center gap-2 text-gray-700 bg-gray-50 p-2 rounded border">
-                  <span>✓</span> {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border rounded-xl p-6 shadow-lg h-fit sticky top-6">
-          <div className="flex justify-between items-baseline mb-4">
-            <span className="text-2xl font-bold text-teal-700">₹{property.pricePerNight}</span>
-            <span className="text-gray-500">/ night</span>
-          </div>
-
-          {bookingSuccess ? (
-            <div className="bg-teal-50 border border-teal-200 text-teal-800 p-4 rounded-lg text-center">
-              <h4 className="font-bold text-lg mb-1">🎉 Reservation Received!</h4>
-              <p className="text-sm">A confirmation email has been dispatched with property details and location map.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleBooking} className="space-y-4">
-              {bookingError && (
-                <div className="bg-red-50 text-red-600 text-sm p-3 rounded border border-red-200">
-                  {bookingError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Check-In</label>
-                  <input
-                    type="date"
-                    required
-                    value={checkIn}
-                    onChange={(e) => setCheckIn(e.target.value)}
-                    className="w-full border rounded p-2 text-sm text-gray-900"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Check-Out</label>
-                  <input
-                    type="date"
-                    required
-                    value={checkOut}
-                    onChange={(e) => setCheckOut(e.target.value)}
-                    className="w-full border rounded p-2 text-sm text-gray-900"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder="First Name"
-                  required
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full border rounded p-2 text-sm text-gray-900"
-                />
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  required
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full border rounded p-2 text-sm text-gray-900"
-                />
-              </div>
-
-              <input
-                type="email"
-                placeholder="Email Address"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border rounded p-2 text-sm text-gray-900"
-              />
-
-              <input
-                type="tel"
-                placeholder="Phone Number"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full border rounded p-2 text-sm text-gray-900"
-              />
-
-              {nights > 0 && (
-                <div className="border-t pt-3 text-sm text-gray-600 space-y-1">
-                  <div className="flex justify-between">
-                    <span>₹{property.pricePerNight} x {nights} nights</span>
-                    <span>₹{totalPrice}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-gray-900 text-base pt-2 border-t">
-                    <span>Total</span>
-                    <span>₹{totalPrice}</span>
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={bookingLoading}
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-lg transition disabled:opacity-50"
-              >
-                {bookingLoading ? 'Processing...' : 'Reserve Now'}
-              </button>
-            </form>
-          )}
-        </div>
-      </div>
+      <section className="mt-12 grid gap-12 lg:grid-cols-[minmax(0,1fr)_340px]"><article className="space-y-12"><div><p className="text-xs font-black tracking-[.2em] text-[#237c73]">ABOUT THIS STAY</p><h2 className="mt-3 text-3xl font-black">A place to settle into Guwahati.</h2><p className="mt-5 max-w-3xl text-lg leading-8 text-[#66727b]">{property.description || 'Enjoy a comfortable local stay and discover Guwahati from a space hosted with care.'}</p></div><div className="border-t border-[#d8e3e0] pt-10"><p className="text-xs font-black tracking-[.2em] text-[#237c73]">WHAT’S INCLUDED</p><div className="mt-6 grid gap-3 sm:grid-cols-2">{(property.features?.length ? property.features : ['Comfortable stay','Local support','Flexible cancellation','Secure booking']).map((x:string)=><div key={x} className="flex items-center gap-3 border-b border-[#e4ebe8] py-3"><Check size={18} className="text-[#237c73]"/><span className="font-semibold">{x}</span></div>)}</div></div><div className="border-t border-[#d8e3e0] pt-10"><p className="text-xs font-black tracking-[.2em] text-[#237c73]">YOUR HOST</p><div className="mt-5 flex items-center gap-4"><div className="grid h-14 w-14 place-items-center rounded-full bg-[#123f3b] font-black text-[#f4c64e]">{(property.host?.name || 'H').slice(0,1)}</div><div><h3 className="text-xl font-black">{property.host?.name || property.owner || 'Your local host'}</h3><p className="text-[#66727b]">Hosting in Guwahati</p></div></div></div><div className="border-t border-[#d8e3e0] pt-10"><p className="text-xs font-black tracking-[.2em] text-[#237c73]">GUEST REVIEWS</p><div className="mt-5 flex items-center gap-3"><div className="text-4xl font-black">{Number(property.rating || 0).toFixed(1)}</div><div className="text-sm text-[#66727b]">Guest rating<br/>{property.reviewsCount || 0} verified reviews</div></div></div></article>
+        <aside className="hidden lg:block"><div className="sticky top-24 border border-[#cbded9] bg-[#fcfcf9] p-6"><ShieldCheck className="text-[#237c73]"/><p className="mt-5 text-xs font-black tracking-[.18em] text-[#237c73]">PLAN YOUR STAY</p><div className="mt-2 text-3xl font-black">₹{price.toLocaleString('en-IN')} <span className="text-base font-medium text-[#66727b]">/ night</span></div><p className="mt-3 text-sm leading-6 text-[#66727b]">Choose your dates and continue to a secure booking.</p><button onClick={book} className="mt-6 w-full bg-[#f4c64e] px-5 py-4 font-black text-[#14243a] transition hover:translate-y-[-1px]">Reserve this stay →</button></div></aside></section>
     </div>
-  );
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#d8e3e0] bg-[#fcfcf9]/95 p-3 backdrop-blur lg:hidden"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><div><div className="font-black">₹{price.toLocaleString('en-IN')} <span className="text-sm font-medium text-[#66727b]">/ night</span></div></div><button onClick={book} className="bg-[#f4c64e] px-5 py-3 text-sm font-black">Reserve →</button></div></div>
+  </main>;
 }
