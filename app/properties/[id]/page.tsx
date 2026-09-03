@@ -104,28 +104,6 @@ export default function PropertyPage() {
     }
   };
 
-  const title = property.title || property.name || 'Property Details';
-  const locality = property.address || property.locality || 'Guwahati, Assam';
-  const images = Array.isArray(property.images) && property.images.length
-    ? property.images.slice(0, 4)
-    : [property.imageUrl || property.image || `${API_BASE_URL}/api/homestays/${property._id}/image`];
-  const bathrooms = typeof property.bathrooms === 'object'
-    ? (property.bathrooms.total || property.bathrooms.privateAttached || property.bathrooms.dedicated || property.bathrooms.shared || 1)
-    : (property.bathrooms || 1);
-  const amenities = property.features?.length
-    ? property.features
-    : ['Fast Wi-Fi', 'Air conditioning', 'Kitchen access', 'Free parking', 'Power backup'];
-  const today = new Date().toISOString().split('T')[0];
-
-  const amenityIcon = (name: string) => {
-    const item = name.toLowerCase();
-    if (item.includes('wifi')) return <Wifi size={19} />;
-    if (item.includes('parking')) return <Car size={19} />;
-    if (item.includes('kitchen')) return <CookingPot size={19} />;
-    if (item.includes('air')) return <Snowflake size={19} />;
-    return <Check size={19} />;
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f6f3ec] flex items-center justify-center text-[#173f36]">
@@ -151,6 +129,28 @@ export default function PropertyPage() {
       </div>
     );
   }
+
+  const title = property.title || property.name || 'Property Details';
+  const locality = property.address || property.locality || 'Guwahati, Assam';
+  const images = Array.isArray(property.images) && property.images.length
+    ? property.images.slice(0, 4)
+    : [property.imageUrl || property.image || `${API_BASE_URL}/api/homestays/${property._id}/image`];
+  const bathrooms = typeof property.bathrooms === 'object'
+    ? (property.bathrooms.total || property.bathrooms.privateAttached || property.bathrooms.dedicated || property.bathrooms.shared || 1)
+    : (property.bathrooms || 1);
+  const amenities = property.features?.length
+    ? property.features
+    : ['Fast Wi-Fi', 'Air conditioning', 'Kitchen access', 'Free parking', 'Power backup'];
+  const today = new Date().toISOString().split('T')[0];
+
+  const amenityIcon = (name: string) => {
+    const item = name.toLowerCase();
+    if (item.includes('wifi')) return <Wifi size={19} />;
+    if (item.includes('parking')) return <Car size={19} />;
+    if (item.includes('kitchen')) return <CookingPot size={19} />;
+    if (item.includes('air')) return <Snowflake size={19} />;
+    return <Check size={19} />;
+  };
 
   return (
     <div className="min-h-screen bg-[#f6f3ec] text-[#173f36]">
