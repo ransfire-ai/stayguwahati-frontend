@@ -44,3 +44,50 @@ button,input,select,textarea{font:inherit}
  .sg-mobile-action{display:flex;position:fixed;z-index:60;bottom:0;left:0;right:0;padding:10px 14px;background:rgba(247,244,237,.96);backdrop-filter:blur(10px);border-top:1px solid var(--sg-line)}
  .sg-mobile-action .sg-btn{width:100%}
 }
+
+
+/* Account and mobile navigation fix */
+.sg-account-link{
+  background:#e7efec;
+  border:1px solid rgba(20,62,57,.08);
+  border-radius:999px;
+  padding:10px 16px!important;
+}
+.sg-menu-button{display:none;border:0;background:transparent;font-size:24px;color:#143e39;cursor:pointer}
+.sg-mobile-menu{display:none}
+.sg-auth-card{max-width:760px;margin-left:auto;margin-right:auto;text-align:center;padding:48px 28px}
+.sg-auth-card .sg-title-sm{margin:14px 0 10px}
+.sg-auth-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.sg-auth-note{font-size:14px;margin-top:22px;color:#6d7774}
+.sg-outline{background:#fff!important;color:#143e39!important;border:1px solid rgba(20,62,57,.22)!important}
+
+@media(max-width:700px){
+  .sg-nav{display:none!important}
+  .sg-menu-button{display:block}
+  .sg-header-inner{min-height:72px}
+  .sg-mobile-menu{
+    display:grid;
+    gap:8px;
+    padding:10px 0 16px;
+    border-top:1px solid rgba(20,62,57,.08);
+  }
+  .sg-mobile-menu a{
+    padding:13px 14px;
+    border-radius:14px;
+    color:#173a36;
+    text-decoration:none;
+    font-weight:600;
+  }
+  .sg-mobile-menu .sg-mobile-account{
+    background:#143e39;
+    color:white;
+    text-align:center;
+  }
+  .sg-mobile-nav a:last-child{
+    background:#143e39;
+    color:white;
+    border-radius:999px;
+    padding:8px 12px;
+  }
+  .sg-auth-card{padding:38px 20px}
+}
