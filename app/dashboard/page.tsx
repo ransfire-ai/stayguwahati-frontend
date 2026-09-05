@@ -941,7 +941,7 @@ export default function DashboardPage() {
             </Link>
 
             <div className="flex sm:hidden items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#173f3a] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              <div className="w-7 h-7 rounded-full bg-[#f3bd2f] text-[#173f3a] hover:bg-[#ffd35a] flex items-center justify-center font-bold text-xs shadow-xs">
                 {userInitial}
               </div>
               <button
@@ -993,7 +993,7 @@ export default function DashboardPage() {
             <div className="hidden sm:block h-6 w-px bg-gray-200 my-auto ml-1" />
 
             <div className="hidden sm:flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#173f3a] text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs">
+              <div className="w-8 h-8 rounded-full bg-[#f3bd2f] text-[#173f3a] hover:bg-[#ffd35a] flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs">
                 {userInitial}
               </div>
               <span className="text-xs font-bold text-gray-700">{currentUser.name || 'User'}</span>
@@ -1421,7 +1421,7 @@ export default function DashboardPage() {
                 />
                 <button
                   type="submit"
-                  className="bg-teal-600 hover:bg-[#173f3a] text-white font-bold px-3.5 sm:px-4 py-2 rounded-xl text-xs transition flex items-center gap-1 shadow-sm"
+                  className="bg-teal-600 hover:bg-[#f3bd2f] text-[#173f3a] hover:bg-[#ffd35a] font-bold px-3.5 sm:px-4 py-2 rounded-xl text-xs transition flex items-center gap-1 shadow-sm"
                 >
                   <span>Send</span> <Send className="w-3 h-3" />
                 </button>
@@ -1454,7 +1454,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setIsReceiptModalOpen(false)}
-                className="w-full bg-[#173f3a] text-white font-bold py-2.5 rounded-xl text-xs"
+                className="w-full bg-[#f3bd2f] text-[#173f3a] hover:bg-[#ffd35a] font-bold py-2.5 rounded-xl text-xs"
               >
                 Close
               </button>
