@@ -1027,12 +1027,12 @@ export default function DashboardPage() {
           {currentRole === 'host' && (
             <div className="w-full sm:w-auto">
               <Link
-                href="/list-property"
-                className="w-full sm:w-auto bg-[#173f3a] hover:bg-[#28655c] text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>{t.listProp}</span>
-              </Link>
+  href="/list-property"
+  className="inline-flex items-center gap-2 rounded-xl bg-[#f4c542] px-5 py-3 text-sm font-bold text-[#173f3a] shadow-md transition hover:bg-[#ffd766]"
+>
+  <Plus size={16} />
+  List New Property
+</Link>
             </div>
           )}
         </div>
