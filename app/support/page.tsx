@@ -12,6 +12,15 @@ import {
   UserCheck,
   Send,
   Loader2,
+  CalendarCheck,
+  CreditCard,
+  House,
+  ShieldAlert,
+  Search,
+  ArrowRight,
+  MessageCircle,
+  Clock3,
+  CheckCircle2,
 } from 'lucide-react';
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
@@ -165,252 +174,93 @@ export default function TrustSupportPage() {
   };
 
   return (
-    <div className="bg-[#f6f3ed] text-slate-800 font-sans antialiased min-h-screen w-full overflow-x-hidden">
-      {/* Sticky Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-[#e3e9e5] w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <Building2 className="w-6 h-6 sm:w-7 sm:h-7 text-[#28655c]" />
-            <span className="text-lg sm:text-xl font-black text-[#173f3a] tracking-tight">
-              Stay<span className="text-[#28655c]">Guwahati</span>
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-[#526662]">
-            <Link href="/" className="hover:text-[#28655c] transition">
-              {t.nav_home}
-            </Link>
-            <Link href="/login" className="hover:text-[#28655c] transition">
-              {t.nav_dashboard}
-            </Link>
-
-            <select
-              value={lang}
-              onChange={(e) => setLang(e.target.value as Language)}
-              className="bg-[#f6f3ed] border border-[#d6ded9] text-xs rounded-lg p-1.5 focus:outline-none focus:border-teal-500 font-semibold text-[#35544e] cursor-pointer transition"
-            >
-              <option value="en">English</option>
-              <option value="as">অসমীয়া (Assamese)</option>
-              <option value="hi">हिंदी (Hindi)</option>
-            </select>
-          </div>
-
-          {/* Mobile Controls */}
-          <div className="flex md:hidden items-center gap-3">
-            <select
-              value={lang}
-              onChange={(e) => setLang(e.target.value as Language)}
-              className="bg-[#f6f3ed] border border-[#d6ded9] text-xs rounded-lg p-1.5 focus:outline-none focus:border-teal-500 font-semibold text-[#35544e] cursor-pointer transition"
-            >
-              <option value="en">EN</option>
-              <option value="as">অসমীয়া</option>
-              <option value="hi">हिंदी</option>
-            </select>
-
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-[#526662] hover:text-[#28655c] focus:outline-none"
-              aria-label="Toggle Menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+    <div className="min-h-screen overflow-x-hidden bg-[#f5f1e9] text-[#173f3a]">
+      <nav className="sticky top-0 z-50 border-b border-[#d8dfd8] bg-[#f5f1e9]/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
+          <Link href="/" className="flex items-center gap-2 font-black"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[#173f3a] text-white"><Building2 className="h-5 w-5"/></span><span>Stay<span className="text-[#28655c]">Guwahati</span></span></Link>
+          <div className="hidden items-center gap-7 text-sm font-semibold md:flex"><Link href="/">Home</Link><Link href="/explore">Explore</Link><Link href="/dashboard">Dashboard</Link><select value={lang} onChange={e=>setLang(e.target.value as Language)} className="rounded-xl border border-[#cbd7d1] bg-white px-3 py-2 outline-none"><option value="en">English</option><option value="as">অসমীয়া</option><option value="hi">हिंदी</option></select></div>
+          <button onClick={()=>setMobileMenuOpen(!mobileMenuOpen)} className="grid h-10 w-10 place-items-center rounded-xl border border-[#cbd7d1] md:hidden">{mobileMenuOpen?<X/>:<Menu/>}</button>
         </div>
-
-        {/* Mobile Dropdown Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-[#e3e9e5] bg-white px-4 pt-3 pb-4 space-y-3">
-            <Link
-              href="/"
-              className="block text-sm font-semibold text-[#35544e] hover:text-[#28655c] py-1"
-            >
-              {t.nav_home}
-            </Link>
-            <Link
-              href="/login"
-              className="block text-sm font-semibold text-[#35544e] hover:text-[#28655c] py-1"
-            >
-              {t.nav_dashboard}
-            </Link>
-          </div>
-        )}
+        {mobileMenuOpen && <div className="border-t border-[#d8dfd8] bg-[#f5f1e9] px-5 py-4 md:hidden"><div className="flex flex-col gap-4 text-sm font-semibold"><Link href="/">Home</Link><Link href="/explore">Explore</Link><Link href="/dashboard">Dashboard</Link><select value={lang} onChange={e=>setLang(e.target.value as Language)} className="rounded-xl border border-[#cbd7d1] bg-white px-3 py-2"><option value="en">English</option><option value="as">অসমীয়া</option><option value="hi">हिंदी</option></select></div></div>}
       </nav>
 
-      {/* Main Container */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* Hero Header */}
-        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-16">
-          <span className="bg-[#e6f0ea] text-[#28655c] text-xs font-bold px-3 py-1 rounded-full border border-[#b9d2c8] inline-block">
-            {t.hub_badge}
-          </span>
-          <h1 className="text-2xl sm:text-4xl font-black text-[#173f3a] tracking-tight mt-3 mb-3 leading-tight">
-            {t.hub_heading}
-          </h1>
-          <p className="text-sm sm:text-base text-[#71827d] font-medium leading-relaxed">
-            {t.hub_subheading}
-          </p>
-        </div>
-
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-start">
-          {/* Left Side: FAQs and Features */}
-          <div className="md:col-span-2 space-y-6 sm:space-y-8">
-            {/* FAQ Card */}
-            <div className="bg-white border border-[#e3e9e5] rounded-2xl p-4 sm:p-6 shadow-xs">
-              <h2 className="text-lg sm:text-xl font-bold text-[#173f3a] mb-4 sm:mb-6 flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-[#28655c]" />
-                <span>{t.faq_title}</span>
-              </h2>
-
-              <div className="space-y-3 sm:space-y-4">
-                {/* FAQ 1 */}
-                <div className="border-b border-[#e3e9e5] pb-3 sm:pb-4">
-                  <button
-                    onClick={() => toggleAccordion('faq1')}
-                    className="w-full flex justify-between items-center text-left font-bold text-slate-800 hover:text-[#28655c] transition py-2 gap-2"
-                  >
-                    <span className="text-sm sm:text-base">{t.faq1_q}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-slate-400 transition-transform shrink-0 ${
-                        openFaq === 'faq1' ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
-                  {openFaq === 'faq1' && (
-                    <div className="mt-2 text-xs sm:text-sm text-[#526662] leading-relaxed">
-                      {t.faq1_a}
-                    </div>
-                  )}
-                </div>
-
-                {/* FAQ 2 */}
-                <div className="border-b border-[#e3e9e5] pb-3 sm:pb-4">
-                  <button
-                    onClick={() => toggleAccordion('faq2')}
-                    className="w-full flex justify-between items-center text-left font-bold text-slate-800 hover:text-[#28655c] transition py-2 gap-2"
-                  >
-                    <span className="text-sm sm:text-base">{t.faq2_q}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-slate-400 transition-transform shrink-0 ${
-                        openFaq === 'faq2' ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
-                  {openFaq === 'faq2' && (
-                    <div className="mt-2 text-xs sm:text-sm text-[#526662] leading-relaxed">
-                      {t.faq2_a}
-                    </div>
-                  )}
-                </div>
-
-                {/* FAQ 3 */}
-                <div className="border-b border-[#e3e9e5] pb-3 sm:pb-4">
-                  <button
-                    onClick={() => toggleAccordion('faq3')}
-                    className="w-full flex justify-between items-center text-left font-bold text-slate-800 hover:text-[#28655c] transition py-2 gap-2"
-                  >
-                    <span className="text-sm sm:text-base">{t.faq3_q}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-slate-400 transition-transform shrink-0 ${
-                        openFaq === 'faq3' ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
-                  {openFaq === 'faq3' && (
-                    <div className="mt-2 text-xs sm:text-sm text-[#526662] leading-relaxed">
-                      {t.faq3_a}
-                    </div>
-                  )}
-                </div>
-              </div>
+      <main>
+        <section className="relative overflow-hidden bg-[#123f39] px-5 py-14 text-white sm:py-20">
+          <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[#3d766c]/40 blur-3xl"/>
+          <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-[#e8b84c]/10 blur-3xl"/>
+          <div className="relative mx-auto max-w-7xl">
+            <div className="max-w-3xl">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[.18em] text-[#d7e9e2]"><MessageCircle className="h-4 w-4"/>StayGuwahati Help Centre</div>
+              <h1 className="text-4xl font-black leading-[1.05] sm:text-6xl">Your local stay,<br/><span className="text-[#f1c75b]">backed by real help.</span></h1>
+              <p className="mt-6 max-w-2xl text-base leading-7 text-[#c6d8d2] sm:text-lg">Whether you are planning a stay, managing a booking or hosting a home, start here and we will point you in the right direction.</p>
             </div>
+            <div className="mt-9 grid max-w-4xl gap-3 rounded-[24px] border border-white/15 bg-white/10 p-3 backdrop-blur sm:grid-cols-[1fr_auto]">
+              <div className="flex items-center gap-3 px-3"><Search className="h-5 w-5 text-[#f1c75b]"/><span className="text-sm text-[#d7e9e2]">What do you need help with?</span></div>
+              <a href="#support-desk" className="rounded-2xl bg-[#f1c75b] px-6 py-3 text-center text-sm font-black text-[#173f3a]">Get support <ArrowRight className="ml-1 inline h-4 w-4"/></a>
+            </div>
+          </div>
+        </section>
 
-            {/* Features Cards Grid */}
-            <div className="bg-white border border-[#e3e9e5] rounded-2xl p-4 sm:p-6 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-[#f6f3ed] border border-[#e3e9e5]/50 flex gap-3 items-start">
-                <ShieldCheck className="w-6 h-6 text-[#28655c] mt-0.5 shrink-0" />
-                <div>
-                  <h4 className="font-bold text-sm text-[#173f3a]">{t.feat_secure_title}</h4>
-                  <p className="text-xs text-[#71827d] mt-1 leading-normal">
-                    {t.feat_secure_desc}
-                  </p>
-                </div>
-              </div>
+        <section className="mx-auto max-w-7xl px-5 py-12 sm:py-16">
+          <div className="mb-7 flex items-end justify-between gap-5"><div><p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">Choose your path</p><h2 className="mt-2 text-3xl font-black sm:text-4xl">What can we help with?</h2></div><p className="hidden max-w-xs text-sm leading-6 text-[#71827d] md:block">Choose a topic to quickly find the answers most relevant to your StayGuwahati journey.</p></div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              [CalendarCheck,'Booking & stays','Check-ins, changes, cancellations and reservation questions.','booking'],
+              [CreditCard,'Payments & refunds','Invoices, payment issues, refunds and booking charges.','payment'],
+              [House,'Hosting & properties','Listing, verification and managing your property.','host'],
+              [ShieldAlert,'Safety & account','Account access, verification and staying safely.','safety']
+            ].map(([Icon,title,desc,key])=>{
+              const active=subject===key;
+              return <button key={String(key)} onClick={()=>{setSubject(String(key));document.getElementById('support-desk')?.scrollIntoView({behavior:'smooth'})}} className={`group min-h-[230px] rounded-[28px] border p-6 text-left transition duration-300 hover:-translate-y-1 ${active?'border-[#28655c] bg-[#173f3a] text-white shadow-xl':'border-[#d6ded9] bg-white hover:border-[#9eb8ae]'}`}>
+                <span className={`grid h-12 w-12 place-items-center rounded-2xl ${active?'bg-[#f1c75b] text-[#173f3a]':'bg-[#e6f0ea] text-[#28655c]'}`}>{React.createElement(Icon as any,{className:'h-6 w-6'})}</span>
+                <h3 className="mt-8 text-lg font-black">{title as string}</h3><p className={`mt-2 text-sm leading-6 ${active?'text-[#d4e4de]':'text-[#71827d]'}`}>{desc as string}</p><div className={`mt-5 text-xs font-black ${active?'text-[#f1c75b]':'text-[#28655c]'}`}>GET HELP <ArrowRight className="ml-1 inline h-3.5 w-3.5"/></div>
+              </button>
+            })}
+          </div>
+        </section>
 
-              <div className="p-4 rounded-xl bg-[#f6f3ed] border border-[#e3e9e5]/50 flex gap-3 items-start">
-                <UserCheck className="w-6 h-6 text-[#28655c] mt-0.5 shrink-0" />
-                <div>
-                  <h4 className="font-bold text-sm text-[#173f3a]">{t.feat_reviews_title}</h4>
-                  <p className="text-xs text-[#71827d] mt-1 leading-normal">
-                    {t.feat_reviews_desc}
-                  </p>
-                </div>
+        <section className="border-y border-[#d8dfd8] bg-[#e8eee9] px-5 py-12">
+          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[.8fr_1.2fr]">
+            <div className="rounded-[28px] bg-[#173f3a] p-7 text-white sm:p-9"><p className="text-xs font-black uppercase tracking-[.18em] text-[#f1c75b]">Popular right now</p><h2 className="mt-4 text-3xl font-black leading-tight">Quick answers for common stay questions.</h2><p className="mt-4 text-sm leading-6 text-[#c8d8d3]">Shortcuts to the topics guests and hosts ask about most often.</p>
+              <div className="mt-8 space-y-3"><a href="#faq" className="block rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold">Self check-in guide <ArrowRight className="float-right h-4 w-4 text-[#f1c75b]"/></a><a href="#faq" className="block rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold">Cancellation policy <ArrowRight className="float-right h-4 w-4 text-[#f1c75b]"/></a><a href="#support-desk" className="block rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold">Report a payment issue <ArrowRight className="float-right h-4 w-4 text-[#f1c75b]"/></a></div>
+            </div>
+            <div className="rounded-[28px] border border-[#d6ded9] bg-white p-5 sm:p-8">
+              <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">Local support, clearer stays</p>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl bg-[#f6f8f6] p-5"><UserCheck className="h-6 w-6 text-[#28655c]"/><h3 className="mt-4 font-black">Verified listings</h3><p className="mt-2 text-sm leading-6 text-[#71827d]">Understand how active StayGuwahati homes are reviewed.</p></div>
+                <div className="rounded-2xl bg-[#f6f8f6] p-5"><ShieldCheck className="h-6 w-6 text-[#28655c]"/><h3 className="mt-4 font-black">Safer journeys</h3><p className="mt-2 text-sm leading-6 text-[#71827d]">Find practical help around account and stay safety.</p></div>
+                <div className="rounded-2xl bg-[#f6f8f6] p-5 sm:col-span-2"><Clock3 className="h-6 w-6 text-[#28655c]"/><h3 className="mt-4 font-black">Support that starts with context</h3><p className="mt-2 text-sm leading-6 text-[#71827d]">Select a support path above and your ticket topic will be preselected below.</p></div>
               </div>
             </div>
           </div>
+        </section>
 
-          {/* Right Side: Contact Support Form */}
-          <div className="bg-white border border-[#d6ded9]/80 rounded-2xl p-5 sm:p-6 shadow-xl shadow-slate-100/50 w-full">
-            <h3 className="text-base sm:text-lg font-black text-[#173f3a] tracking-tight mb-1">
-              {t.form_title}
-            </h3>
-            <p className="text-xs font-semibold text-slate-400 mb-5">{t.form_subtitle}</p>
+        <section id="faq" className="mx-auto max-w-7xl px-5 py-14 sm:py-20">
+          <div className="grid gap-10 lg:grid-cols-[.75fr_1.25fr]"><div><p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">Answer library</p><h2 className="mt-3 text-4xl font-black leading-tight">A few answers before you open a ticket.</h2><p className="mt-4 text-sm leading-7 text-[#71827d]">Open a question to read the full guidance. If your situation is different, our support desk is just below.</p></div>
+            <div className="space-y-3">
+              {[
+                ['01',t.faq1_q,t.faq1_a],
+                ['02',t.faq2_q,t.faq2_a],
+                ['03',t.faq3_q,t.faq3_a],
+              ].map(([id,q,a])=><div key={id} className={`overflow-hidden rounded-3xl border transition ${openFaq===id?'border-[#28655c] bg-[#173f3a] text-white':'border-[#d6ded9] bg-white'}`}><button onClick={()=>toggleAccordion(id)} className="flex w-full items-center gap-4 p-5 text-left sm:p-6"><span className={`text-xs font-black ${openFaq===id?'text-[#f1c75b]':'text-[#28655c]'}`}>{id}</span><span className="flex-1 text-base font-black">{q}</span><ChevronDown className={`h-5 w-5 transition ${openFaq===id?'rotate-180 text-[#f1c75b]':''}`}/></button>{openFaq===id&&<div className="border-t border-white/10 px-6 pb-6 pl-16 text-sm leading-7 text-[#d5e2de]">{a}</div>}</div>)}
+            </div>
+          </div>
+        </section>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-[#71827d] mb-1 tracking-wide uppercase">
-                  {t.lbl_subject}
-                </label>
-                <select
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="w-full bg-[#f6f3ed] border border-[#d6ded9] focus:border-teal-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-sm font-medium transition outline-none"
-                >
-                  <option value="booking">{t.opt_booking}</option>
-                  <option value="verification">{t.opt_verification}</option>
-                  <option value="payment">{t.opt_payment}</option>
-                  <option value="other">{t.opt_other}</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#71827d] mb-1 tracking-wide uppercase">
-                  {t.lbl_description}
-                </label>
-                <textarea
-                  rows={4}
-                  required
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={t.placeholder_desc}
-                  className="w-full bg-[#f6f3ed] border border-[#d6ded9] focus:border-teal-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-sm font-medium transition outline-none resize-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className={`w-full bg-slate-900 hover:bg-[#28655c] text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2 text-sm ${
-                  submitting ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
-                  </>
-                ) : (
-                  <>
-                    <span>{t.btn_submit}</span>
-                    <Send className="w-4 h-4" />
-                  </>
-                )}
-              </button>
+        <section id="support-desk" className="bg-[#173f3a] px-5 py-14 sm:py-20">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
+            <div className="text-white"><div className="inline-flex rounded-full bg-[#f1c75b] px-4 py-2 text-xs font-black uppercase tracking-[.16em] text-[#173f3a]">Support Desk</div><h2 className="mt-6 text-4xl font-black leading-tight sm:text-5xl">Still need a hand?<br/>Tell us what happened.</h2><p className="mt-5 max-w-lg text-base leading-7 text-[#c8d8d3]">Send your issue with a little context. Your selected help path is carried into the support ticket.</p><div className="mt-8 space-y-4 text-sm text-[#d7e9e2]"><div className="flex gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-[#f1c75b]"/>Bookings, payments, hosting and account support</div><div className="flex gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-[#f1c75b]"/>Simple ticket submission from one place</div><div className="flex gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-[#f1c75b]"/>Built around StayGuwahati's existing support workflow</div></div></div>
+            <form onSubmit={handleSubmit} className="rounded-[32px] bg-[#f7f8f6] p-5 shadow-2xl sm:p-8">
+              <p className="text-xs font-black uppercase tracking-[.16em] text-[#28655c]">New support request</p><h3 className="mt-2 text-2xl font-black">Open a ticket</h3>
+              <label className="mt-7 block text-xs font-black uppercase tracking-wide text-[#526662]">{t.lbl_subject}</label>
+              <select value={subject} onChange={e=>setSubject(e.target.value)} className="mt-2 w-full rounded-2xl border border-[#cbd7d1] bg-white px-4 py-4 text-sm outline-none focus:border-[#28655c] focus:ring-4 focus:ring-[#28655c]/10"><option value="booking">{t.opt_booking}</option><option value="verification">{t.opt_verification}</option><option value="payment">{t.opt_payment}</option><option value="other">{t.opt_other}</option><option value="host">Hosting & property support</option><option value="safety">Safety & account support</option></select>
+              <label className="mt-6 block text-xs font-black uppercase tracking-wide text-[#526662]">{t.lbl_description}</label>
+              <textarea value={description} onChange={e=>setDescription(e.target.value)} required rows={7} placeholder={t.placeholder_desc} className="mt-2 w-full resize-none rounded-2xl border border-[#cbd7d1] bg-white px-4 py-4 text-sm leading-6 outline-none focus:border-[#28655c] focus:ring-4 focus:ring-[#28655c]/10"/>
+              <button disabled={submitting} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#f1c75b] px-5 py-4 text-sm font-black text-[#173f3a] transition hover:bg-[#ffd878] disabled:opacity-60">{submitting?<><Loader2 className="h-4 w-4 animate-spin"/>Sending your ticket...</>:<>{t.btn_submit}<Send className="h-4 w-4"/></>}</button>
+              <p className="mt-4 text-center text-xs leading-5 text-[#71827d]">Please include enough detail for our team to understand your issue.</p>
             </form>
           </div>
-        </div>
+        </section>
       </main>
     </div>
   );
