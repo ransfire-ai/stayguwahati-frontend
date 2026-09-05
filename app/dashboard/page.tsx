@@ -876,7 +876,7 @@ export default function DashboardPage() {
     return (
       <div
         key={b._id || b.id || Math.random()}
-        className="group bg-white border border-[#cfd9d4]/80 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
+        className="group bg-white border border-[#cbd7d1]/80 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
       >
         <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
           <img
@@ -887,35 +887,35 @@ export default function DashboardPage() {
               (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x250?text=No+Preview';
             }}
           />
-          <span className="absolute top-3 left-3 px-3 py-1 text-[11px] font-semibold rounded-full bg-white/95 backdrop-blur-md border border-[#cfd9d4]/80 text-[#214b46] shadow-sm">
+          <span className="absolute top-3 left-3 px-3 py-1 text-[11px] font-semibold rounded-full bg-white/95 backdrop-blur-md border border-[#cbd7d1]/80 text-teal-800 shadow-sm">
             {statusText}
           </span>
         </div>
 
         <div className="p-5 flex flex-col flex-grow justify-between gap-3">
           <div>
-            <div className="flex items-center gap-1.5 text-xs text-[#2d756b] font-medium mb-1">
-              <MapPin className="w-3 h-3 text-[#2d756b]" />
+            <div className="flex items-center gap-1.5 text-xs text-[#28655c] font-medium mb-1">
+              <MapPin className="w-3 h-3 text-[#28655c]" />
               <span>{location}</span>
             </div>
-            <h3 className="font-bold text-[#1f3431] text-base group-hover:text-[#24655d] transition-colors line-clamp-1">
+            <h3 className="font-bold text-gray-900 text-base group-hover:text-[#28655c] transition-colors line-clamp-1">
               {title}
             </h3>
-            <p className="text-xs text-[#6b7c78] mt-2 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-[#7d8c88]" />
+            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-gray-400" />
               <span>{dates}</span>
             </p>
           </div>
 
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-between mt-auto">
+          <div className="pt-3 border-t border-[#d7dfda] flex items-center justify-between mt-auto">
             <div>
-              <span className="text-[10px] text-[#7d8c88] uppercase tracking-wider block">Total Paid</span>
-              <span className="text-base font-extrabold text-[#214b46]">₹{price}</span>
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Total Paid</span>
+              <span className="text-base font-extrabold text-teal-800">₹{price}</span>
             </div>
 
             <button
               onClick={() => setIsReceiptModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2d756b] hover:text-[#214b46] transition-colors group/btn"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#28655c] hover:text-teal-800 transition-colors group/btn"
             >
               <span>View Receipt</span>
               <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
@@ -929,15 +929,15 @@ export default function DashboardPage() {
   const userInitial = (currentUser.name || 'U')[0].toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#f6f3ed] text-[#1f3431] font-sans flex flex-col">
+    <div className="bg-[#f6f3ed] min-h-screen font-sans flex flex-col justify-between">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-[#d8e0db] bg-[#f6f3ed]/95 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-4">
+      <header className="bg-[#f6f3ed]/95 backdrop-blur-md shadow-xs border-b border-[#d7dfda] sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-4">
           {/* Logo & Mobile Avatar */}
           <div className="flex items-center justify-between w-full sm:w-auto">
             <Link href="/" className="flex items-center gap-2">
-              <Home className="w-5 h-5 sm:w-6 sm:h-6 text-[#2d756b]" />
-              <span className="text-lg sm:text-xl font-bold text-[#214b46]">StayGuwahati</span>
+              <Home className="w-5 h-5 sm:w-6 sm:h-6 text-[#28655c]" />
+              <span className="text-lg sm:text-xl font-bold text-teal-800">StayGuwahati</span>
             </Link>
 
             <div className="flex sm:hidden items-center gap-2">
@@ -946,7 +946,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={handleLogOut}
-                className="text-[#7d8c88] hover:text-rose-600 text-sm p-1 transition cursor-pointer"
+                className="text-gray-400 hover:text-rose-600 text-sm p-1 transition cursor-pointer"
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4" />
@@ -954,11 +954,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-[#34514d]">
-            <Link href="/" className="hover:text-[#24655d] transition">Home</Link>
-            <Link href="/explore" className="hover:text-[#24655d] transition">Explore</Link>
-            <Link href="/list-property" className="hover:text-[#24655d] transition">List a stay</Link>
-            <Link href="/support" className="hover:text-[#24655d] transition">Support</Link>
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-gray-600">
+            <Link href="/" className="hover:text-[#28655c] transition">Home</Link>
+            <Link href="/explore" className="hover:text-[#28655c] transition">Explore</Link>
+            <Link href="/list-property" className="hover:text-[#28655c] transition">List a stay</Link>
+            <Link href="/support" className="hover:text-[#28655c] transition">Support</Link>
           </nav>
 
           {/* Language, Role Switcher & Desktop Avatar */}
@@ -966,7 +966,7 @@ export default function DashboardPage() {
             <select
               value={currentLang}
               onChange={(e) => handleLangChange(e.target.value as Language)}
-              className="bg-gray-50 border border-[#cfd9d4] text-xs font-semibold text-[#34514d] rounded-xl p-2 focus:outline-none focus:border-[#2d756b] cursor-pointer transition shrink-0"
+              className="bg-gray-50 border border-[#cbd7d1] text-xs font-semibold text-gray-700 rounded-xl p-2 focus:outline-none focus:border-teal-500 cursor-pointer transition shrink-0"
             >
               <option value="en">English</option>
               <option value="as">অসমীয়া (Assamese)</option>
@@ -975,7 +975,7 @@ export default function DashboardPage() {
 
             <button
               onClick={toggleUserRole}
-              className="bg-[#e7f0eb] hover:bg-[#dceae4] text-[#24655d] font-semibold px-3 py-2 rounded-xl text-xs transition border border-[#b8d2c8] flex items-center gap-1.5 shrink-0"
+              className="bg-[#e6f0ea] hover:bg-[#dceae4] text-[#28655c] font-semibold px-3 py-2 rounded-xl text-xs transition border border-[#b9d2c8] flex items-center gap-1.5 shrink-0"
             >
               {currentRole === 'traveler' ? (
                 <>
@@ -996,10 +996,10 @@ export default function DashboardPage() {
               <div className="w-8 h-8 rounded-full bg-[#173f3a] text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs">
                 {userInitial}
               </div>
-              <span className="text-xs font-bold text-[#34514d]">{currentUser.name || 'User'}</span>
+              <span className="text-xs font-bold text-gray-700">{currentUser.name || 'User'}</span>
               <button
                 onClick={handleLogOut}
-                className="text-[#7d8c88] hover:text-rose-600 text-sm pl-1 transition cursor-pointer"
+                className="text-gray-400 hover:text-rose-600 text-sm pl-1 transition cursor-pointer"
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4" />
@@ -1010,13 +1010,16 @@ export default function DashboardPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="mb-6 sm:mb-8 bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-semibold tracking-[-0.03em] text-white">
-              {t.welcome}, <span className="text-[#d8f0e7]">{currentUser.name || 'User'}</span>!
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8">
+        <div className="mb-7 sm:mb-9 rounded-[28px] bg-gradient-to-br from-[#103b36] via-[#173f3a] to-[#32675f] px-5 py-7 sm:px-9 sm:py-9 border border-[#24564f] shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
+          <div className="min-w-0">
+            <div className="inline-flex items-center rounded-full border border-[#7da89d]/40 bg-white/10 px-3 py-1 text-[10px] font-bold tracking-[0.18em] text-[#d9eee6] uppercase mb-3">
+              StayGuwahati workspace
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
+              {t.welcome}, <span className="text-[#d9eee6]">{currentUser.name || 'User'}</span>!
             </h1>
-            <p className="text-[#d4e2dd] text-sm mt-2 max-w-xl">
+            <p className="text-[#d2e0db] text-sm mt-2 max-w-2xl">
               {currentRole === 'host' ? t.subTextHost : t.subTextTraveler}
             </p>
           </div>
@@ -1025,7 +1028,7 @@ export default function DashboardPage() {
             <div className="w-full sm:w-auto">
               <Link
                 href="/list-property"
-                className="w-full sm:w-auto bg-[#173f3a] hover:bg-[#24655d] text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
+                className="w-full sm:w-auto bg-[#173f3a] hover:bg-[#28655c] text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.listProp}</span>
@@ -1036,20 +1039,20 @@ export default function DashboardPage() {
 
         {/* Traveler Section */}
         {currentRole === 'traveler' && (
-          <section className="space-y-7">
-            <h2 className="text-base sm:text-lg font-bold text-[#1f3431] flex items-center gap-2">
-              <Plane className="w-4 h-4 text-[#2d756b]" /> {t.travelerHead}
+          <section className="space-y-6">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Plane className="w-4 h-4 text-[#28655c]" /> {t.travelerHead}
             </h2>
 
             {/* Bookings */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loadingTraveler ? (
-                <p className="text-xs text-[#7d8c88] col-span-full text-center py-6 flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#2d756b]" /> Loading your bookings...
+                <p className="text-xs text-gray-400 col-span-full text-center py-6 flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#28655c]" /> Loading your bookings...
                 </p>
               ) : upcomingBookings.length === 0 ? (
-                <div className="col-span-full bg-white/80 border border-[#d7dfda] p-8 rounded-2xl text-center text-[#7d8c88] text-xs shadow-sm">
-                  <Plane className="w-8 h-8 mx-auto mb-2 text-[#aeb9b5]" />
+                <div className="col-span-full bg-white border border-[#d7dfda] p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm">
+                  <Plane className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   <p>{t.noBookings}</p>
                 </div>
               ) : (
@@ -1059,11 +1062,11 @@ export default function DashboardPage() {
 
             {/* Wishlists */}
             <div className="mt-8 sm:mt-12 pt-4">
-              <h3 className="text-sm sm:text-base font-bold text-[#1f3431] flex items-center gap-2 mb-4">
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 mb-4">
                 <Heart className="w-4 h-4 text-rose-500" /> {t.wishlistHead}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-white/80 border border-[#d7dfda] p-6 rounded-2xl text-center text-[#7d8c88] text-xs shadow-sm col-span-full">
+                <div className="bg-white border border-[#d7dfda] p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm col-span-full">
                   <p>{t.noWishlist}</p>
                 </div>
               </div>
@@ -1071,12 +1074,12 @@ export default function DashboardPage() {
 
             {/* Past Trips History */}
             <div className="mt-8 sm:mt-12 space-y-4 pt-2">
-              <h3 className="text-sm sm:text-base font-bold text-[#1f3431] flex items-center gap-2">
-                <History className="w-4 h-4 text-[#6b7c78]" /> {t.historyHead}
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
+                <History className="w-4 h-4 text-gray-500" /> {t.historyHead}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {pastBookings.length === 0 ? (
-                  <div className="bg-gray-50 border border-gray-100 p-6 rounded-2xl text-center text-[#7d8c88] text-xs shadow-sm col-span-full">
+                  <div className="bg-gray-50 border border-[#d7dfda] p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm col-span-full">
                     <p>{t.noHistory}</p>
                   </div>
                 ) : (
@@ -1086,33 +1089,33 @@ export default function DashboardPage() {
             </div>
 
             {/* Profile Credentials */}
-            <div className="mt-8 sm:mt-12 bg-white/80 border border-[#d7dfda] p-4 sm:p-6 rounded-2xl shadow-sm space-y-4">
-              <h3 className="text-sm sm:text-base font-bold text-[#1f3431] flex items-center gap-2">
-                <IdCard className="w-4 h-4 text-[#2d756b]" /> {t.profileHead}
+            <div className="mt-8 sm:mt-12 bg-white border border-[#d7dfda] p-4 sm:p-6 rounded-2xl shadow-sm space-y-4">
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
+                <IdCard className="w-4 h-4 text-[#28655c]" /> {t.profileHead}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block text-[#7d8c88] font-medium mb-1">{t.labelName}</label>
+                  <label className="block text-gray-400 font-medium mb-1">{t.labelName}</label>
                   <input
                     type="text"
                     value={editProfileName}
                     onChange={(e) => setEditProfileName(e.target.value)}
-                    className="w-full border border-[#cfd9d4] rounded-xl p-2.5 focus:outline-[#2d756b] font-medium"
+                    className="w-full border border-[#cbd7d1] rounded-xl p-2.5 focus:outline-teal-500 font-medium"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#7d8c88] font-medium mb-1">{t.labelEmail}</label>
+                  <label className="block text-gray-400 font-medium mb-1">{t.labelEmail}</label>
                   <input
                     type="email"
                     value={currentUser.email}
                     disabled
-                    className="w-full border border-[#cfd9d4] bg-gray-50 text-[#7d8c88] rounded-xl p-2.5 cursor-not-allowed"
+                    className="w-full border border-[#cbd7d1] bg-gray-50 text-gray-400 rounded-xl p-2.5 cursor-not-allowed"
                   />
                 </div>
               </div>
               <button
                 onClick={saveProfileChanges}
-                className="w-full sm:w-auto bg-[#173f3a] hover:bg-[#24655d] text-white font-bold px-4 py-2.5 sm:py-2 rounded-xl text-xs transition"
+                className="w-full sm:w-auto bg-[#173f3a] hover:bg-[#28655c] text-white font-bold px-4 py-2.5 sm:py-2 rounded-xl text-xs transition"
               >
                 {t.updateBtn}
               </button>
@@ -1122,27 +1125,27 @@ export default function DashboardPage() {
 
         {/* Host Section */}
         {currentRole === 'host' && (
-          <section className="space-y-7">
-            <h2 className="text-base sm:text-lg font-bold text-[#1f3431] flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-[#2d756b]" /> {t.hostHead}
+          <section className="space-y-6">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[#28655c]" /> {t.hostHead}
             </h2>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 mb-7">
-              <div className="bg-white/80 border border-[#d7dfda] p-4 rounded-xl shadow-sm text-center">
-                <p className="text-[#7d8c88] text-[10px] uppercase font-bold tracking-wider">{t.incomeLabel}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+              <div className="bg-white border border-[#d7dfda] p-4 rounded-xl shadow-sm text-center">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.incomeLabel}</p>
                 <p className="text-lg sm:text-xl font-black text-slate-900 mt-1">
                   ₹{monthlyIncome.toLocaleString('en-IN')}
                 </p>
               </div>
-              <div className="bg-white/80 border border-[#d7dfda] p-4 rounded-xl shadow-sm text-center">
-                <p className="text-[#7d8c88] text-[10px] uppercase font-bold tracking-wider">{t.listingsLabel}</p>
-                <p className="text-lg sm:text-xl font-black text-[#2d756b] mt-1">
+              <div className="bg-white border border-[#d7dfda] p-4 rounded-xl shadow-sm text-center">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.listingsLabel}</p>
+                <p className="text-lg sm:text-xl font-black text-[#28655c] mt-1">
                   {hostProperties.length} Properties
                 </p>
               </div>
-              <div className="bg-white/80 border border-[#d7dfda] p-4 rounded-xl shadow-sm text-center">
-                <p className="text-[#7d8c88] text-[10px] uppercase font-bold tracking-wider">{t.ratingLabel}</p>
+              <div className="bg-white border border-[#d7dfda] p-4 rounded-xl shadow-sm text-center">
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">{t.ratingLabel}</p>
                 <p className="text-lg sm:text-xl font-black text-amber-500 mt-1 flex items-center justify-center gap-1">
                   {hostRating.toFixed(1)} <Star className="w-3 h-3 fill-amber-500" />
                 </p>
@@ -1150,14 +1153,14 @@ export default function DashboardPage() {
             </div>
 
             {/* Reservation Control Pipeline */}
-            <div className="bg-white/80 border border-[#d7dfda] rounded-2xl shadow-sm p-4 sm:p-6 space-y-4">
-              <h3 className="text-sm sm:text-base font-bold text-[#1f3431] flex items-center gap-2">
-                <CalendarCheck className="w-4 h-4 text-[#2d756b]" /> {t.pipelineHead}
+            <div className="bg-white border border-[#d7dfda] rounded-2xl shadow-sm p-4 sm:p-6 space-y-4">
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
+                <CalendarCheck className="w-4 h-4 text-[#28655c]" /> {t.pipelineHead}
               </h3>
               <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                 <table className="w-full min-w-[600px] text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-100 text-[#7d8c88] font-medium">
+                    <tr className="border-b border-[#d7dfda] text-gray-400 font-medium">
                       <th className="pb-3 font-semibold">{t.thG}</th>
                       <th className="pb-3 font-semibold">{t.thP}</th>
                       <th className="pb-3 font-semibold">{t.thD}</th>
@@ -1166,16 +1169,16 @@ export default function DashboardPage() {
                       <th className="pb-3 font-semibold text-right">{t.thA}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50 text-[#34514d]">
+                  <tbody className="divide-y divide-gray-50 text-gray-700">
                     {loadingReservations ? (
                       <tr>
-                        <td colSpan={6} className="text-center py-4 text-xs text-[#7d8c88]">
-                          <Loader2 className="w-4 h-4 animate-spin inline mr-1 text-[#2d756b]" /> Loading pipeline...
+                        <td colSpan={6} className="text-center py-4 text-xs text-gray-400">
+                          <Loader2 className="w-4 h-4 animate-spin inline mr-1 text-[#28655c]" /> Loading pipeline...
                         </td>
                       </tr>
                     ) : hostReservations.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="text-center py-6 text-xs text-[#7d8c88]">
+                        <td colSpan={6} className="text-center py-6 text-xs text-gray-400">
                           {t.noReservations}
                         </td>
                       </tr>
@@ -1205,11 +1208,11 @@ export default function DashboardPage() {
                         const guestPhone = r.phone || r.guestPhone || r.recipientPhone || r.userPhone || '';
 
                         return (
-                          <tr key={r._id || r.id || i} className="hover:bg-[#f1f4f1]/55 transition">
-                            <td className="py-3.5 font-bold text-[#1f3431]">{formattedName}</td>
-                            <td className="py-3.5 text-[#526662]">{propName}</td>
-                            <td className="py-3.5 text-[#6b7c78]">{r.dates || r.checkInDate || 'N/A'}</td>
-                            <td className="py-3.5 font-black text-[#24655d]">
+                          <tr key={r._id || r.id || i} className="hover:bg-[#f0f4f1]/55 transition">
+                            <td className="py-3.5 font-bold text-gray-900">{formattedName}</td>
+                            <td className="py-3.5 text-gray-600">{propName}</td>
+                            <td className="py-3.5 text-gray-500">{r.dates || r.checkInDate || 'N/A'}</td>
+                            <td className="py-3.5 font-black text-[#28655c]">
                               ₹{r.totalPrice || r.payout || r.price || 0}
                             </td>
                             <td className="py-3.5">
@@ -1247,7 +1250,7 @@ export default function DashboardPage() {
                                 )}
                                 <button
                                   onClick={() => openMessageModal(formattedName, propName, guestPhone)}
-                                  className="bg-[#e7f0eb] hover:bg-[#24655d] hover:text-white text-[#24655d] border border-[#b8d2c8] px-3 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5"
+                                  className="bg-[#e6f0ea] hover:bg-[#28655c] hover:text-white text-[#28655c] border border-[#b9d2c8] px-3 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5"
                                 >
                                   <MessageSquare className="w-3 h-3" /> {t.msgBtn}
                                 </button>
@@ -1264,24 +1267,24 @@ export default function DashboardPage() {
 
             {/* Active Listings */}
             <div className="pt-4">
-              <h3 className="text-sm sm:text-base font-bold text-[#1f3431] mb-4 flex items-center gap-2">
-                <List className="w-4 h-4 text-[#526662]" /> {t.activeListHead}
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <List className="w-4 h-4 text-gray-600" /> {t.activeListHead}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {loadingHostProps ? (
-                  <p className="text-xs text-[#7d8c88] col-span-3 text-center py-6 flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-[#2d756b]" /> Loading properties...
+                  <p className="text-xs text-gray-400 col-span-3 text-center py-6 flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-[#28655c]" /> Loading properties...
                   </p>
                 ) : hostProperties.length === 0 ? (
-                  <div className="col-span-full bg-white/80 border border-[#d7dfda] p-8 rounded-2xl text-center text-[#7d8c88] text-xs shadow-sm">
-                    <Building2 className="w-8 h-8 mx-auto mb-2 text-[#aeb9b5]" />
+                  <div className="col-span-full bg-white border border-[#d7dfda] p-8 rounded-2xl text-center text-gray-400 text-xs shadow-sm">
+                    <Building2 className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                     <p>{t.noProperties}</p>
                   </div>
                 ) : (
                   hostProperties.map((p) => (
                     <div
                       key={p._id || p.id || Math.random()}
-                      className="bg-white/80 border border-[#d7dfda] rounded-2xl overflow-hidden shadow-sm flex flex-col"
+                      className="bg-white border border-[#d7dfda] rounded-2xl overflow-hidden shadow-sm flex flex-col"
                     >
                       <div
                         className="h-40 bg-gray-200 bg-cover bg-center"
@@ -1293,16 +1296,16 @@ export default function DashboardPage() {
                       />
                       <div className="p-4 flex-1 flex flex-col justify-between">
                         <div>
-                          <h3 className="font-bold text-[#1f3431] text-base">
+                          <h3 className="font-bold text-gray-900 text-base">
                             {p.title || p.propertyName || 'Property'}
                           </h3>
-                          <p className="text-[#7d8c88] text-xs flex items-center gap-1 mt-1">
-                            <MapPin className="w-3 h-3 text-[#2d756b]" />{' '}
+                          <p className="text-gray-400 text-xs flex items-center gap-1 mt-1">
+                            <MapPin className="w-3 h-3 text-[#28655c]" />{' '}
                             {p.locality || p.location || p.city || p.address || 'Guwahati'}
                           </p>
                         </div>
-                        <div className="mt-4 pt-3 border-t border-[#e8ece9]">
-                          <div className="flex items-center justify-between text-xs text-[#6b7c78]">
+                        <div className="mt-4 pt-3 border-t border-gray-50">
+                          <div className="flex items-center justify-between text-xs text-gray-500">
                             <span>
                               Price: <strong>₹{p.pricePerNight ?? p.price ?? 0} / night</strong>
                             </span>
@@ -1325,7 +1328,7 @@ export default function DashboardPage() {
                                   `/property-details?id=${encodeURIComponent(String(p._id || p.id || ''))}`
                                 )
                               }
-                              className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:border-teal-300 hover:text-[#24655d]"
+                              className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:border-teal-300 hover:text-[#28655c]"
                             >
                               View
                             </button>
@@ -1355,17 +1358,17 @@ export default function DashboardPage() {
         {/* Message Modal */}
         {isMessageModalOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4 flex flex-col h-[480px] sm:h-[500px]">
-              <div className="flex justify-between items-center border-b pb-3 border-gray-100">
+            <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-[#d7dfda] shadow-xl space-y-4 flex flex-col h-[480px] sm:h-[500px]">
+              <div className="flex justify-between items-center border-b pb-3 border-[#d7dfda]">
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-[#1f3431]">
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900">
                     Chat with {activeChat.guestName}
                   </h3>
-                  <p className="text-[10px] text-[#2d756b] font-semibold">{activeChat.propTitle}</p>
+                  <p className="text-[10px] text-[#28655c] font-semibold">{activeChat.propTitle}</p>
                 </div>
                 <button
                   onClick={() => setIsMessageModalOpen(false)}
-                  className="text-[#7d8c88] hover:text-[#526662] p-1"
+                  className="text-gray-400 hover:text-gray-600 p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1373,10 +1376,10 @@ export default function DashboardPage() {
 
               <div
                 ref={chatHistoryRef}
-                className="flex-1 overflow-y-auto space-y-3 p-2 bg-gray-50 rounded-xl text-xs border border-gray-100"
+                className="flex-1 overflow-y-auto space-y-3 p-2 bg-gray-50 rounded-xl text-xs border border-[#d7dfda]"
               >
                 {chatMessages.length === 0 ? (
-                  <p className="text-[#7d8c88] text-center py-4">
+                  <p className="text-gray-400 text-center py-4">
                     Conversation started with {activeChat.guestName}.
                   </p>
                 ) : (
@@ -1394,8 +1397,8 @@ export default function DashboardPage() {
                             <p className="text-xs font-medium break-words">{msg.message}</p>
                           </div>
                         ) : (
-                          <div className="bg-white text-gray-800 border border-[#cfd9d4] px-3 py-2 rounded-2xl rounded-tl-none max-w-[80%] shadow-xs">
-                            <p className="text-[10px] font-bold text-[#24655d] mb-0.5">
+                          <div className="bg-white text-gray-800 border border-[#cbd7d1] px-3 py-2 rounded-2xl rounded-tl-none max-w-[80%] shadow-xs">
+                            <p className="text-[10px] font-bold text-[#28655c] mb-0.5">
                               {msg.senderName || activeChat.guestName}
                             </p>
                             <p className="text-xs font-medium break-words">{msg.message}</p>
@@ -1413,7 +1416,7 @@ export default function DashboardPage() {
                   value={chatInputText}
                   onChange={(e) => setChatInputText(e.target.value)}
                   placeholder="Type a message..."
-                  className="flex-1 border border-[#cfd9d4] rounded-xl px-3 py-2 text-xs focus:outline-[#2d756b] font-medium"
+                  className="flex-1 border border-[#cbd7d1] rounded-xl px-3 py-2 text-xs focus:outline-teal-500 font-medium"
                   required
                 />
                 <button
@@ -1430,24 +1433,24 @@ export default function DashboardPage() {
         {/* Receipt Modal */}
         {isReceiptModalOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-gray-100 shadow-xl space-y-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 border border-[#d7dfda] shadow-xl space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-sm sm:text-base font-bold text-[#1f3431]">Booking Receipt</h3>
+                <h3 className="text-sm sm:text-base font-bold text-gray-900">Booking Receipt</h3>
                 <button
                   onClick={() => setIsReceiptModalOpen(false)}
-                  className="text-[#7d8c88] hover:text-[#526662]"
+                  className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="text-xs space-y-2 text-[#526662]">
+              <div className="text-xs space-y-2 text-gray-600">
                 <p>
                   <strong>Status:</strong> Confirmed & Paid
                 </p>
                 <p>
                   <strong>Platform:</strong> StayGuwahati Unified Core
                 </p>
-                <p className="text-[#24655d] font-bold">Thank you for booking with StayGuwahati!</p>
+                <p className="text-[#28655c] font-bold">Thank you for booking with StayGuwahati!</p>
               </div>
               <button
                 onClick={() => setIsReceiptModalOpen(false)}
@@ -1461,7 +1464,7 @@ export default function DashboardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-4 px-3 text-xs text-[#7d8c88] border-t border-gray-100 bg-white mt-12">
+      <footer className="text-center py-4 px-3 text-xs text-gray-400 border-t border-[#d7dfda] bg-white mt-12">
         &copy; 2026 StayGuwahati Platform Unified Core Engine. All rights reserved.
       </footer>
     </div>
