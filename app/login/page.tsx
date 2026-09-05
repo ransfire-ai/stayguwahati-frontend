@@ -67,53 +67,61 @@ export default function SignInPage() {
       console.log("StayGuwahati login response:", data);
 
       const token =
-        data?.token ||
-        data?.accessToken ||
-        data?.jwt ||
-        data?.data?.token ||
-        data?.data?.accessToken ||
-        data?.user?.token;
+  data?.token ||
+  data?.accessToken ||
+  data?.jwt ||
+  data?.data?.token ||
+  data?.data?.accessToken;
 
-      const user =
-        data?.user ||
-        data?.data?.user ||
-        data?.data ||
-        {
-          email: cleanEmail,
-        };
+const user =
+  data?.user ||
+  data?.data?.user ||
+  {
+    name:
+      data?.name ||
+      data?.data?.name ||
+      cleanEmail.split("@")[0],
+    email: cleanEmail,
+  };
 
-      /*
-       * Some existing backends may use cookies instead of tokens.
-       * Therefore we do not fail simply because token is absent.
-       */
+if (!token) {
+  throw new Error(
+    "Login succeeded but no authentication token was received."
+  );
+}
 
-      if (typeof window !== "undefined") {
-        if (token && typeof token === "string") {
-          localStorage.setItem("token", token);
-          localStorage.setItem("stayguwahati_token", token);
-          localStorage.setItem("authToken", token);
-        }
+if (typeof window !== "undefined") {
+  // IMPORTANT: Original dashboard requires sessionStorage
+  sessionStorage.setItem("token", token);
 
-        if (user) {
-          localStorage.setItem(
-            "user",
-            JSON.stringify(user)
-          );
+  sessionStorage.setItem(
+    "userProfile",
+    JSON.stringify({
+      name:
+        user?.name ||
+        user?.fullName ||
+        user?.username ||
+        cleanEmail.split("@")[0],
+      email: user?.email || cleanEmail,
+    })
+  );
 
-          localStorage.setItem(
-            "stayguwahati_user",
-            JSON.stringify(user)
-          );
-        }
+  // Default dashboard mode
+  sessionStorage.setItem(
+    "activeDashboardRole",
+    user?.role === "host" ? "host" : "traveler"
+  );
 
-        localStorage.setItem(
-          "stayguwahati_logged_in",
-          "true"
-        );
-      }
+  // Keep compatibility with other existing pages
+  localStorage.setItem("token", token);
+  localStorage.setItem(
+    "userProfile",
+    JSON.stringify(user)
+  );
+}
 
-      // Force navigation after successful login
-      window.location.href = "/dashboard";
+// Redirect to the ORIGINAL dashboard
+window.location.href = "/dashboard";
 
     } catch (err) {
       console.error("Login error:", err);
