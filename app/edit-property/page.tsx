@@ -103,6 +103,8 @@ function EditPropertyContent() {
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
 
+  const [features, setFeatures] = useState<string[]>([]);
+
   useEffect(() => {
     if (!propertyId) {
       setError('No property ID was provided.');
