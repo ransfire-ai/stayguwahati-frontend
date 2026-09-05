@@ -1325,8 +1325,8 @@ export default function DashboardPage() {
                               type="button"
                               onClick={() =>
                                 router.push(
-                                  `/property-details?id=${encodeURIComponent(String(p._id || p.id || ''))}`
-                                )
+  `/properties/${encodeURIComponent(String(p._id || p.id || ''))}`
+)
                               }
                               className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:border-teal-300 hover:text-[#28655c]"
                             >
