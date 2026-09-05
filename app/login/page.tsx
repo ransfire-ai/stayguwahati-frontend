@@ -14,17 +14,20 @@ export default function SignInPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSignIn(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
+    if (loading) return;
+
     setError("");
 
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter your email and password.");
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
+      setError("Please enter your email address and password.");
       return;
     }
 
@@ -37,35 +40,58 @@ export default function SignInPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: email.trim(),
+          email: cleanEmail,
           password,
         }),
       });
 
-      const data = await response.json().catch(() => ({}));
+      let data: any = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "The server returned an invalid response. Please try again."
+        );
+      }
 
       if (!response.ok) {
         throw new Error(
           data?.message ||
             data?.error ||
-            "Unable to sign in. Please check your details."
+            data?.msg ||
+            "Invalid email or password."
         );
       }
+
+      console.log("StayGuwahati login response:", data);
 
       const token =
         data?.token ||
         data?.accessToken ||
-        data?.data?.token;
+        data?.jwt ||
+        data?.data?.token ||
+        data?.data?.accessToken ||
+        data?.user?.token;
 
       const user =
         data?.user ||
         data?.data?.user ||
-        null;
+        data?.data ||
+        {
+          email: cleanEmail,
+        };
+
+      /*
+       * Some existing backends may use cookies instead of tokens.
+       * Therefore we do not fail simply because token is absent.
+       */
 
       if (typeof window !== "undefined") {
-        if (token) {
+        if (token && typeof token === "string") {
           localStorage.setItem("token", token);
           localStorage.setItem("stayguwahati_token", token);
+          localStorage.setItem("authToken", token);
         }
 
         if (user) {
@@ -73,16 +99,29 @@ export default function SignInPage() {
             "user",
             JSON.stringify(user)
           );
+
+          localStorage.setItem(
+            "stayguwahati_user",
+            JSON.stringify(user)
+          );
         }
+
+        localStorage.setItem(
+          "stayguwahati_logged_in",
+          "true"
+        );
       }
 
-      router.push("/profile");
-      router.refresh();
+      // Force navigation after successful login
+      window.location.href = "/dashboard";
+
     } catch (err) {
+      console.error("Login error:", err);
+
       setError(
         err instanceof Error
           ? err.message
-          : "Something went wrong. Please try again."
+          : "Unable to sign in. Please try again."
       );
     } finally {
       setLoading(false);
@@ -92,8 +131,11 @@ export default function SignInPage() {
   return (
     <PageShell>
       <div className="sg-container sg-page">
+
         <section className="sg-hero">
-          <span className="sg-kicker">WELCOME BACK</span>
+          <span className="sg-kicker">
+            WELCOME BACK
+          </span>
 
           <h1 className="sg-title">
             Sign in to
@@ -113,6 +155,7 @@ export default function SignInPage() {
             margin: "0 auto",
           }}
         >
+
           <div style={{ marginBottom: "28px" }}>
             <h2
               className="sg-title-sm"
@@ -130,6 +173,7 @@ export default function SignInPage() {
           </div>
 
           <form onSubmit={handleSignIn}>
+
             <div style={{ marginBottom: "18px" }}>
               <label
                 htmlFor="email"
@@ -146,9 +190,12 @@ export default function SignInPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
                 placeholder="Enter your email"
                 autoComplete="email"
+                disabled={loading}
                 required
                 style={{
                   width: "100%",
@@ -180,9 +227,12 @@ export default function SignInPage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
                 placeholder="Enter your password"
                 autoComplete="current-password"
+                disabled={loading}
                 required
                 style={{
                   width: "100%",
@@ -241,14 +291,19 @@ export default function SignInPage() {
               style={{
                 width: "100%",
                 border: "none",
-                cursor: loading ? "not-allowed" : "pointer",
+                cursor: loading
+                  ? "not-allowed"
+                  : "pointer",
                 opacity: loading ? 0.7 : 1,
                 padding: "16px",
                 fontSize: "16px",
               }}
             >
-              {loading ? "Signing in..." : "Sign in →"}
+              {loading
+                ? "Signing in..."
+                : "Sign in →"}
             </button>
+
           </form>
 
           <div
@@ -281,7 +336,9 @@ export default function SignInPage() {
               Create account
             </Link>
           </div>
+
         </section>
+
       </div>
     </PageShell>
   );
