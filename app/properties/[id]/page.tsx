@@ -234,6 +234,22 @@ function PropertyDetailsContent() {
   return (
     <main className="bg-[#f5f1e9] text-[#173f3a]">
       <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8">
+        <nav className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d8e0db] bg-white px-3 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-1">
+            <button onClick={() => router.push('/')} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-[#173f3a] hover:bg-[#edf4f1]">
+              <Home className="h-4 w-4" /> Home
+            </button>
+            <button onClick={() => router.push('/explore')} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-[#173f3a] hover:bg-[#edf4f1]">
+              <MapPin className="h-4 w-4" /> Explore
+            </button>
+            <button onClick={() => router.push('/dashboard')} className="hidden sm:inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-[#173f3a] hover:bg-[#edf4f1]">
+              Dashboard
+            </button>
+          </div>
+          <button onClick={book} className="inline-flex items-center gap-2 rounded-xl bg-[#173f3a] px-4 py-2.5 text-sm font-black text-white transition hover:brightness-110">
+            Book this stay <ArrowRight className="h-4 w-4" />
+          </button>
+        </nav>
         <div className="mb-5 flex items-center justify-between gap-4">
           <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-sm font-bold text-[#46625c] hover:text-[#173f3a]"><ArrowLeft className="h-4 w-4"/> Back to explore</button>
           <div className="flex gap-2">
