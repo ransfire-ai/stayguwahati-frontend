@@ -31,6 +31,14 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   'https://stayguwahati-backend.onrender.com';
 
+/*
+ * Normalize the backend URL. This prevents /api/api/... when an
+ * environment variable already ends with /api.
+ */
+const API_BASE_URL = BACKEND_URL
+  .replace(/\/+$/, '')
+  .replace(/\/api$/, '');
+
 interface Homestay {
   _id: string;
   title: string;
@@ -105,7 +113,7 @@ function imageUrl(value?: string) {
     normalized = `/${normalized}`;
   }
 
-  return `${BACKEND_URL.replace(/\/+$/, '')}${normalized}`;
+  return `${API_BASE_URL}${normalized}`;
 }
 
 function policyText(policy?: string) {
@@ -259,10 +267,7 @@ function BookingContent() {
 
       try {
         const response = await fetch(
-          `${BACKEND_URL.replace(
-            /\/+$/,
-            ''
-          )}/api/homestays/${encodeURIComponent(propertyId)}`,
+          `${API_BASE_URL}/api/homestays/${encodeURIComponent(propertyId)}`,
           {
             cache: 'no-store',
             signal: controller.signal,
@@ -455,8 +460,7 @@ function BookingContent() {
         setAvailabilityMessage('');
 
         try {
-          const cleanBackendUrl =
-            BACKEND_URL.replace(/\/+$/, '');
+          const cleanBackendUrl = API_BASE_URL;
 
           const availabilityUrl =
             `${cleanBackendUrl}/api/bookings/availability` +
@@ -527,9 +531,7 @@ function BookingContent() {
           setDateAvailability('error');
 
           setAvailabilityMessage(
-            err instanceof Error
-              ? err.message
-              : 'We could not verify these dates right now. Please try again.'
+            'Date availability is temporarily unavailable. You can still submit your request; the server will verify availability before creating the booking.'
           );
         } finally {
           if (!controller.signal.aborted) {
@@ -656,15 +658,6 @@ function BookingContent() {
     }
 
     if (
-      dateAvailability === 'error'
-    ) {
-      setError(
-        'We could not verify these dates. Please try again.'
-      );
-      return;
-    }
-
-    if (
       !fullName.trim() ||
       !email.trim() ||
       !phone.trim()
@@ -694,39 +687,65 @@ function BookingContent() {
         `&checkIn=${encodeURIComponent(checkIn)}` +
         `&checkOut=${encodeURIComponent(checkOut)}`;
 
-      const availabilityResponse =
-        await fetch(finalAvailabilityUrl, {
-          cache: 'no-store',
-          headers: {
-            Accept: 'application/json',
-            'Cache-Control': 'no-cache',
-          },
-        });
+      /*
+       * A final live check is useful for fast feedback, but it is not the
+       * authority. If this request has a temporary network/CORS/server
+       * problem, continue to POST the booking request. The backend POST
+       * endpoint must perform the overlap check before saving anything.
+       */
+      try {
+        const availabilityResponse =
+          await fetch(finalAvailabilityUrl, {
+            cache: 'no-store',
+            headers: {
+              Accept: 'application/json',
+              'Cache-Control': 'no-cache',
+            },
+          });
 
-      const availabilityData =
-        await availabilityResponse
-          .json()
-          .catch(() => null);
+        const availabilityData =
+          await availabilityResponse
+            .json()
+            .catch(() => null);
 
-      if (
-        !availabilityResponse.ok ||
-        availabilityData?.success === false
-      ) {
-        throw new Error(
-          availabilityData?.message ||
-            'Could not verify availability before booking.'
-        );
-      }
+        if (
+          availabilityResponse.ok &&
+          availabilityData?.success !== false &&
+          availabilityData?.available === false
+        ) {
+          setDateAvailability('unavailable');
 
-      if (availabilityData?.available !== true) {
-        setDateAvailability('unavailable');
+          setAvailabilityMessage(
+            'These dates have just become unavailable. Please choose different dates.'
+          );
+
+          throw new Error(
+            'These dates are no longer available.'
+          );
+        }
+
+        if (
+          !availabilityResponse.ok ||
+          availabilityData?.success === false
+        ) {
+          setDateAvailability('error');
+
+          setAvailabilityMessage(
+            'We could not complete a live date check. Your request will be verified securely by the server.'
+          );
+        }
+      } catch (availabilityError: unknown) {
+        if (
+          availabilityError instanceof Error &&
+          availabilityError.message === 'These dates are no longer available.'
+        ) {
+          throw availabilityError;
+        }
+
+        setDateAvailability('error');
 
         setAvailabilityMessage(
-          'These dates have just become unavailable. Please choose different dates.'
-        );
-
-        throw new Error(
-          'These dates are no longer available.'
+          'Live date checking is temporarily unavailable. Your request will be verified by the server before any booking is created.'
         );
       }
 
@@ -912,8 +931,7 @@ function BookingContent() {
     !property.isAvailable ||
     checkingAvailability ||
     dateAvailability === 'checking' ||
-    dateAvailability === 'unavailable' ||
-    dateAvailability === 'error';
+    dateAvailability === 'unavailable';
 
   return (
     <main className="min-h-screen bg-[#f6f7f5] pb-12 text-[#173c3a]">
@@ -1298,7 +1316,8 @@ function BookingContent() {
               ) : dateAvailability ===
                 'error' ? (
                 <>
-                  Availability unavailable
+                  Submit request — server will verify
+                  <Send className="h-4 w-4" />
                 </>
               ) : (
                 <>
