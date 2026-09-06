@@ -49,13 +49,11 @@ export default function PageShell({
 
 
   const handleListAStay = () => {
-    const token =
-      localStorage.getItem("token") ||
-      localStorage.getItem("authToken") ||
-      localStorage.getItem("stayguwahati_token") ||
-      localStorage.getItem("userToken");
-
-    router.push(token ? "/list-property" : "/login?redirect=/list-property");
+    router.push(
+      signedIn
+        ? "/list-property"
+        : "/login?redirect=/list-property"
+    );
   };
 
   return (
