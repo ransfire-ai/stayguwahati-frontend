@@ -1,7 +1,7 @@
 // app/reset-password/page.tsx
 'use client';
 
-import React, { FormEvent, useMemo, useState } from 'react';
+import React, { FormEvent, Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -21,17 +21,22 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   'https://stayguwahati-backend.onrender.com';
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const token = useMemo(() => searchParams.get('token') || '', [searchParams]);
+  const token = useMemo(
+    () => searchParams.get('token') || '',
+    [searchParams]
+  );
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle');
   const [message, setMessage] = useState('');
 
   const passwordChecks = {
@@ -51,7 +56,9 @@ export default function ResetPasswordPage() {
 
     if (!token) {
       setStatus('error');
-      setMessage('This reset link is invalid or incomplete. Please request a new password reset link.');
+      setMessage(
+        'This reset link is invalid or incomplete. Please request a new password reset link.'
+      );
       return;
     }
 
@@ -86,12 +93,16 @@ export default function ResetPasswordPage() {
 
       if (!response.ok || !data?.success) {
         throw new Error(
-          data?.message || 'We could not update your password. Please try again.'
+          data?.message ||
+            'We could not update your password. Please try again.'
         );
       }
 
       setStatus('success');
-      setMessage(data?.message || 'Password updated successfully. You can now sign in.');
+      setMessage(
+        data?.message ||
+          'Password updated successfully. You can now sign in.'
+      );
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
@@ -144,15 +155,27 @@ export default function ResetPasswordPage() {
               </h1>
 
               <p className="mt-6 max-w-lg text-lg leading-8 text-slate-600">
-                Choose a new password to regain access to your bookings, saved stays
-                and StayGuwahati account.
+                Choose a new password to regain access to your bookings, saved
+                stays and StayGuwahati account.
               </p>
 
               <div className="mt-10 grid gap-4">
                 {[
-                  ['1', 'Choose a new password', 'Use at least 6 characters for your new password.'],
-                  ['2', 'Confirm it carefully', 'Both password fields must match before continuing.'],
-                  ['3', 'Sign in again', 'Once updated, return to your account securely.'],
+                  [
+                    '1',
+                    'Choose a new password',
+                    'Use at least 6 characters for your new password.',
+                  ],
+                  [
+                    '2',
+                    'Confirm it carefully',
+                    'Both password fields must match before continuing.',
+                  ],
+                  [
+                    '3',
+                    'Sign in again',
+                    'Once updated, return to your account securely.',
+                  ],
                 ].map(([number, title, text]) => (
                   <div
                     key={number}
@@ -161,9 +184,12 @@ export default function ResetPasswordPage() {
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#173f3c] text-sm font-black text-white">
                       {number}
                     </span>
+
                     <div>
                       <h2 className="font-bold text-[#203f3d]">{title}</h2>
-                      <p className="mt-1 text-sm leading-6 text-slate-500">{text}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                        {text}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -178,6 +204,7 @@ export default function ResetPasswordPage() {
                   <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10 text-[#f3c85c] ring-1 ring-white/15">
                     <LockKeyhole size={22} />
                   </span>
+
                   <span className="rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/75">
                     Secure reset
                   </span>
@@ -186,8 +213,10 @@ export default function ResetPasswordPage() {
                 <h1 className="mt-7 text-3xl font-black tracking-tight text-white sm:text-4xl">
                   Set a new password
                 </h1>
+
                 <p className="mt-2 text-sm leading-6 text-white/70">
-                  Make it something memorable to you and difficult for others to guess.
+                  Make it something memorable to you and difficult for others
+                  to guess.
                 </p>
               </div>
 
@@ -197,12 +226,15 @@ export default function ResetPasswordPage() {
                     <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-50 text-emerald-600">
                       <CheckCircle2 size={34} />
                     </div>
+
                     <h2 className="mt-6 text-2xl font-black text-[#193f3d]">
                       Password updated
                     </h2>
+
                     <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-500">
                       {message}
                     </p>
+
                     <button
                       type="button"
                       onClick={() => router.push('/login')}
@@ -212,15 +244,27 @@ export default function ResetPasswordPage() {
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                  <form
+                    onSubmit={handleSubmit}
+                    className="space-y-5"
+                    noValidate
+                  >
                     {!token && (
                       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                         <div className="flex gap-3">
-                          <TriangleAlert className="mt-0.5 shrink-0 text-amber-600" size={19} />
+                          <TriangleAlert
+                            className="mt-0.5 shrink-0 text-amber-600"
+                            size={19}
+                          />
+
                           <div>
-                            <p className="text-sm font-bold text-amber-900">Reset link missing</p>
+                            <p className="text-sm font-bold text-amber-900">
+                              Reset link missing
+                            </p>
+
                             <p className="mt-1 text-xs leading-5 text-amber-800">
-                              This page needs a valid reset link from your email.
+                              This page needs a valid reset link from your
+                              email.
                             </p>
                           </div>
                         </div>
@@ -240,11 +284,13 @@ export default function ResetPasswordPage() {
                       >
                         New password
                       </label>
+
                       <div className="relative">
                         <LockKeyhole
                           size={18}
                           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                         />
+
                         <input
                           id="new-password"
                           type={showNewPassword ? 'text' : 'password'}
@@ -257,13 +303,22 @@ export default function ResetPasswordPage() {
                           placeholder="Enter your new password"
                           className="min-h-[58px] w-full rounded-2xl border border-[#d4ddd7] bg-[#fbfcfa] py-3 pl-12 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#2d6a63] focus:ring-4 focus:ring-[#2d6a63]/10"
                         />
+
                         <button
                           type="button"
-                          onClick={() => setShowNewPassword((value) => !value)}
+                          onClick={() =>
+                            setShowNewPassword((value) => !value)
+                          }
                           className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#244743]"
-                          aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                          aria-label={
+                            showNewPassword ? 'Hide password' : 'Show password'
+                          }
                         >
-                          {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showNewPassword ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -275,11 +330,13 @@ export default function ResetPasswordPage() {
                       >
                         Confirm password
                       </label>
+
                       <div className="relative">
                         <LockKeyhole
                           size={18}
                           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                         />
+
                         <input
                           id="confirm-password"
                           type={showConfirmPassword ? 'text' : 'password'}
@@ -292,25 +349,52 @@ export default function ResetPasswordPage() {
                           placeholder="Repeat your new password"
                           className="min-h-[58px] w-full rounded-2xl border border-[#d4ddd7] bg-[#fbfcfa] py-3 pl-12 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#2d6a63] focus:ring-4 focus:ring-[#2d6a63]/10"
                         />
+
                         <button
                           type="button"
-                          onClick={() => setShowConfirmPassword((value) => !value)}
+                          onClick={() =>
+                            setShowConfirmPassword((value) => !value)
+                          }
                           className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#244743]"
-                          aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                          aria-label={
+                            showConfirmPassword
+                              ? 'Hide password'
+                              : 'Show password'
+                          }
                         >
-                          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          {showConfirmPassword ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
                         </button>
                       </div>
                     </div>
 
                     <div className="rounded-2xl border border-[#e1e7e3] bg-[#f8faf8] p-4">
-                      <p className="text-xs font-bold text-[#264744]">Password checklist</p>
+                      <p className="text-xs font-bold text-[#264744]">
+                        Password checklist
+                      </p>
+
                       <div className="mt-3 grid gap-2 text-xs">
-                        <div className={`flex items-center gap-2 ${passwordChecks.length ? 'text-emerald-700' : 'text-slate-500'}`}>
+                        <div
+                          className={`flex items-center gap-2 ${
+                            passwordChecks.length
+                              ? 'text-emerald-700'
+                              : 'text-slate-500'
+                          }`}
+                        >
                           <CheckCircle2 size={15} />
                           At least 6 characters
                         </div>
-                        <div className={`flex items-center gap-2 ${passwordChecks.match ? 'text-emerald-700' : 'text-slate-500'}`}>
+
+                        <div
+                          className={`flex items-center gap-2 ${
+                            passwordChecks.match
+                              ? 'text-emerald-700'
+                              : 'text-slate-500'
+                          }`}
+                        >
                           <CheckCircle2 size={15} />
                           Passwords match
                         </div>
@@ -360,5 +444,22 @@ export default function ResetPasswordPage() {
         © 2026 StayGuwahati Platform Unified Core.
       </footer>
     </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="grid min-h-screen place-items-center bg-[#f6f4ef]">
+          <div className="flex items-center gap-3 text-sm font-semibold text-[#193f3d]">
+            <Loader2 size={20} className="animate-spin" />
+            Loading...
+          </div>
+        </main>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
