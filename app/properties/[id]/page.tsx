@@ -234,34 +234,19 @@ function PropertyDetailsContent() {
   return (
     <main className="bg-[#f5f1e9] text-[#173f3a]">
       <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8">
-        <nav className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d8e0db] bg-white px-3 py-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-1">
-            <button onClick={() => router.push('/')} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-[#173f3a] hover:bg-[#edf4f1]">
-              <Home className="h-4 w-4" /> Home
-            </button>
-            <button
-  onClick={() => {
-    if (window.history.length > 1) {
-      router.back();
-    } else {
-      router.push('/explore');
-    }
-  }}
-  className="inline-flex items-center gap-2 text-sm font-semibold text-[#45615b] transition hover:text-[#173f3a]"
->
-  <ArrowLeft className="h-4 w-4" />
-  Back
-</button>
-            <button onClick={() => router.push('/dashboard')} className="hidden sm:inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-[#173f3a] hover:bg-[#edf4f1]">
-              Dashboard
-            </button>
-          </div>
-          <button onClick={book} className="inline-flex items-center gap-2 rounded-xl bg-[#173f3a] px-4 py-2.5 text-sm font-black text-white transition hover:brightness-110">
-            Book this stay <ArrowRight className="h-4 w-4" />
-          </button>
-        </nav>
         <div className="mb-5 flex items-center justify-between gap-4">
-          <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-sm font-bold text-[#46625c] hover:text-[#173f3a]"><ArrowLeft className="h-4 w-4"/> Back to explore</button>
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/explore');
+              }
+            }}
+            className="inline-flex items-center gap-2 text-sm font-bold text-[#46625c] hover:text-[#173f3a]"
+          >
+            <ArrowLeft className="h-4 w-4"/> Back
+          </button>
           <div className="flex gap-2">
             <button onClick={share} className="rounded-full border border-[#d5ddd8] bg-white p-2.5 text-[#173f3a] hover:border-[#28655c]" aria-label="Share"><Share2 className="h-4 w-4"/></button>
             <button onClick={toggleSave} className={`rounded-full border p-2.5 ${saved ? 'border-[#cba848] bg-[#fff4c7] text-[#8a6510]' : 'border-[#d5ddd8] bg-white'}`} aria-label="Save"><Heart className={`h-4 w-4 ${saved ? 'fill-current' : ''}`}/></button>
