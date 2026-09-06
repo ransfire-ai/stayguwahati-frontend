@@ -130,14 +130,19 @@ function PropertyDetailsContent() {
         return;
       }
 
-      const imageSource =
-        Array.isArray(prop.images) ? prop.images :
-        Array.isArray((prop as Property & { photos?: string[] }).photos)
-          ? (prop as Property & { photos?: string[] }).photos
-          : [];
+      const propertyWithPhotos = prop as Property & { photos?: string[] };
+
+      const imageSource: unknown[] =
+        Array.isArray(prop.images)
+          ? prop.images
+          : Array.isArray(propertyWithPhotos.photos)
+            ? propertyWithPhotos.photos
+            : [];
+
       const rawImages = imageSource
         .filter((image): image is string => typeof image === 'string' && image.trim().length > 0)
         .map(cleanImage);
+
       prop.images = rawImages.length ? rawImages : FALLBACK_IMAGES;
       if (alive) { setProperty(prop); setSelected(0); setLoading(false); }
     }
