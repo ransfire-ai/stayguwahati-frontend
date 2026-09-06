@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 export default function PageShell({
@@ -9,7 +8,6 @@ export default function PageShell({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const [signedIn, setSignedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -47,15 +45,6 @@ export default function PageShell({
 
   const closeMenu = () => setMenuOpen(false);
 
-
-  const handleListAStay = () => {
-    router.push(
-      signedIn
-        ? "/list-property"
-        : "/login?redirect=/list-property"
-    );
-  };
-
   return (
     <div className="sg-shell">
       <header className="sg-header">
@@ -90,13 +79,9 @@ export default function PageShell({
                 Explore
               </Link>
 
-              <button
-                type="button"
-                onClick={handleListAStay}
-                className="bg-transparent border-0 p-0 cursor-pointer"
-              >
+              <Link href="/login?redirect=%2Flist-property">
                 List a stay
-              </button>
+              </Link>
 
               <Link href="/support">
                 Support
@@ -157,7 +142,7 @@ export default function PageShell({
               </Link>
 
               <Link
-                href="/list-property"
+                href="/login?redirect=%2Flist-property"
                 onClick={closeMenu}
               >
                 List a stay
@@ -249,7 +234,7 @@ export default function PageShell({
             <h4>Hosts &amp; help</h4>
 
             <p>
-              <Link href="/list-property">
+              <Link href="/login?redirect=%2Flist-property">
                 List your property
               </Link>
 
