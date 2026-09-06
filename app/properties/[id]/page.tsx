@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, ArrowRight, Bath, BedDouble, CalendarDays, Check, ChevronLeft,
   ChevronRight, Copy, Heart, Home, ImageIcon, MapPin, MessageCircle,
@@ -58,8 +58,12 @@ function cancellation(policy?: string) {
 
 function PropertyDetailsContent() {
   const router = useRouter();
-  const params = useSearchParams();
-  const propertyId = params.get('id');
+  const routeParams = useParams<{ id?: string | string[] }>();
+  const propertyId = typeof routeParams?.id === 'string'
+    ? routeParams.id
+    : Array.isArray(routeParams?.id)
+      ? routeParams.id[0]
+      : '';
 
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,10 +82,29 @@ function PropertyDetailsContent() {
       let prop: Property | null = null;
       try {
         if (propertyId && propertyId !== 'default') {
-          const res = await fetch(`${API}/api/homestays/${encodeURIComponent(propertyId)}`, { cache: 'no-store' });
-          if (res.ok) {
-            const raw = await res.json();
-            prop = raw?.data || raw;
+          const encodedId = encodeURIComponent(propertyId);
+          const endpoints = [
+            `${API}/api/homestays/${encodedId}`,
+            `${API}/api/properties/${encodedId}`
+          ];
+
+          for (const endpoint of endpoints) {
+            try {
+              const res = await fetch(endpoint, { cache: 'no-store' });
+              if (!res.ok) continue;
+
+              const raw = await res.json();
+              const candidate =
+                raw?.data?.property || raw?.data?.homestay ||
+                raw?.property || raw?.homestay || raw?.data || raw;
+
+              if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+                prop = candidate as Property;
+                break;
+              }
+            } catch (endpointError) {
+              console.warn('Property endpoint failed', endpoint, endpointError);
+            }
           }
         }
       } catch (e) {
@@ -102,29 +125,25 @@ function PropertyDetailsContent() {
         } catch {}
       }
 
-      if (!prop && params.get('title')) {
-        prop = {
-          id: propertyId || 'default',
-          title: params.get('title') || 'StayGuwahati Home',
-          locality: params.get('locality') || 'Guwahati',
-          pricePerNight: params.get('price') || 1500,
-          description: 'A comfortable local stay in Guwahati.',
-          images: params.get('image') ? [params.get('image') as string] : []
-        };
-      }
-
       if (!prop) {
-        if (alive) { setLoadError('We could not load this property. Please check your connection and try again.'); setLoading(false); }
+        if (alive) { setLoadError('We could not load this property. Please check the backend connection or try again.'); setLoading(false); }
         return;
       }
 
-      const rawImages = Array.isArray(prop.images) ? prop.images.filter(Boolean).map(cleanImage) : [];
+      const imageSource =
+        Array.isArray(prop.images) ? prop.images :
+        Array.isArray((prop as Property & { photos?: string[] }).photos)
+          ? (prop as Property & { photos?: string[] }).photos
+          : [];
+      const rawImages = imageSource
+        .filter((image): image is string => typeof image === 'string' && image.trim().length > 0)
+        .map(cleanImage);
       prop.images = rawImages.length ? rawImages : FALLBACK_IMAGES;
       if (alive) { setProperty(prop); setSelected(0); setLoading(false); }
     }
     load();
     return () => { alive = false; };
-  }, [propertyId, params]);
+  }, [propertyId]);
 
   useEffect(() => {
     let alive = true;
