@@ -531,7 +531,7 @@ function BookingContent() {
           setDateAvailability('error');
 
           setAvailabilityMessage(
-            'Date availability is temporarily unavailable. You can still submit your request; the server will verify availability before creating the booking.'
+            'Live availability is temporarily unavailable. Your dates will be securely verified by the server before the booking is created.'
           );
         } finally {
           if (!controller.signal.aborted) {
@@ -678,8 +678,7 @@ function BookingContent() {
     setSubmitting(true);
 
     try {
-      const cleanBackendUrl =
-        BACKEND_URL.replace(/\/+$/, '');
+      const cleanBackendUrl = API_BASE_URL;
 
       const finalAvailabilityUrl =
         `${cleanBackendUrl}/api/bookings/availability` +
