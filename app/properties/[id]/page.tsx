@@ -239,9 +239,19 @@ function PropertyDetailsContent() {
             <button onClick={() => router.push('/')} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-[#173f3a] hover:bg-[#edf4f1]">
               <Home className="h-4 w-4" /> Home
             </button>
-            <button onClick={() => router.push('/explore')} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-[#173f3a] hover:bg-[#edf4f1]">
-              <MapPin className="h-4 w-4" /> Explore
-            </button>
+            <button
+  onClick={() => {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/explore');
+    }
+  }}
+  className="inline-flex items-center gap-2 text-sm font-semibold text-[#45615b] transition hover:text-[#173f3a]"
+>
+  <ArrowLeft className="h-4 w-4" />
+  Back
+</button>
             <button onClick={() => router.push('/dashboard')} className="hidden sm:inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-[#173f3a] hover:bg-[#edf4f1]">
               Dashboard
             </button>
