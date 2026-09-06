@@ -333,7 +333,12 @@ function BookingContent() {
       setDateAvailability('checking');
       setAvailabilityMessage('');
       try {
-        const url = `${BACKEND_URL.replace(/\/+$/, '')}/api/bookings?propertyId=${encodeURIComponent(propertyId)}`;
+        const baseUrl = BACKEND_URL.replace(/\/+$/, '');
+        const url =
+          `${baseUrl}/api/bookings/availability` +
+          `?propertyId=${encodeURIComponent(propertyId)}` +
+          `&checkIn=${encodeURIComponent(checkIn)}` +
+          `&checkOut=${encodeURIComponent(checkOut)}`;
 
         const response = await fetch(url, {
           cache: 'no-store',
@@ -346,36 +351,14 @@ function BookingContent() {
 
         const payload = await response.json().catch(() => null);
 
-        if (!response.ok) {
+        if (!response.ok || payload?.success === false) {
           throw new Error(
             payload?.message || `Availability check failed (${response.status}).`
           );
         }
 
-        if (payload?.success === false) {
-          throw new Error(
-            payload?.message || 'Could not check availability right now.'
-          );
-        }
-
-        const bookings = Array.isArray(payload?.data)
-          ? payload.data
-          : Array.isArray(payload?.bookings)
-            ? payload.bookings
-            : Array.isArray(payload)
-              ? payload
-              : [];
-
-        const conflict = bookings.some((booking: any) => {
-          const bookingPropertyId = String(booking?.homestayId?._id || booking?.homestayId || booking?.propertyId?._id || booking?.propertyId || '');
-          if (bookingPropertyId !== String(propertyId)) return false;
-          const status = String(booking?.status || '').toLowerCase();
-          if (status !== 'requested' && status !== 'confirmed') return false;
-          const existingCheckIn = normalizeBookingDate(booking?.checkInDate || booking?.checkIn);
-          const existingCheckOut = normalizeBookingDate(booking?.checkOutDate || booking?.checkOut);
-          if (!existingCheckIn || !existingCheckOut) return false;
-          return checkIn < existingCheckOut && checkOut > existingCheckIn;
-        });
+        // Dedicated backend availability endpoint returns the final answer.
+        const conflict = payload?.available === false;
         if (conflict) {
           setDateAvailability('unavailable');
           setAvailabilityMessage('These dates are unavailable because this stay is already requested or booked.');
@@ -391,7 +374,7 @@ function BookingContent() {
         // the authoritative overlap check immediately before creating a booking.
         setDateAvailability('error');
         setAvailabilityMessage(
-          'We could not pre-check these dates right now. You can still submit your request — final availability will be verified before booking.'
+          'Date availability is temporarily unavailable. You may still submit your request; the server will verify availability before creating the booking.'
         );
       } finally {
         if (!controller.signal.aborted) setCheckingAvailability(false);
