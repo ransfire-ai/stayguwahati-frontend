@@ -333,13 +333,39 @@ function BookingContent() {
       setDateAvailability('checking');
       setAvailabilityMessage('');
       try {
-        const response = await fetch(`${BACKEND_URL}/api/bookings`, {
-          cache: 'no-store', signal: controller.signal,
-          headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
+        const url = `${BACKEND_URL.replace(/\\/+$/, '')}/api/bookings?propertyId=${encodeURIComponent(propertyId)}`;
+
+        const response = await fetch(url, {
+          cache: 'no-store',
+          signal: controller.signal,
+          headers: {
+            Accept: 'application/json',
+            'Cache-Control': 'no-cache',
+          },
         });
-        if (!response.ok) throw new Error('Could not check availability right now.');
-        const payload = await response.json();
-        const bookings = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(
+            payload?.message || `Availability check failed (${response.status}).`
+          );
+        }
+
+        if (payload?.success === false) {
+          throw new Error(
+            payload?.message || 'Could not check availability right now.'
+          );
+        }
+
+        const bookings = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.bookings)
+            ? payload.bookings
+            : Array.isArray(payload)
+              ? payload
+              : [];
+
         const conflict = bookings.some((booking: any) => {
           const bookingPropertyId = String(booking?.homestayId?._id || booking?.homestayId || booking?.propertyId?._id || booking?.propertyId || '');
           if (bookingPropertyId !== String(propertyId)) return false;
@@ -359,8 +385,14 @@ function BookingContent() {
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') return;
+
+        // Do not block the customer forever if the public availability request
+        // is temporarily unavailable. The POST /api/bookings route still performs
+        // the authoritative overlap check immediately before creating a booking.
         setDateAvailability('error');
-        setAvailabilityMessage('We could not verify these dates right now. Please try again.');
+        setAvailabilityMessage(
+          'We could not pre-check these dates right now. You can still submit your request — final availability will be verified before booking.'
+        );
       } finally {
         if (!controller.signal.aborted) setCheckingAvailability(false);
       }
@@ -430,11 +462,6 @@ function BookingContent() {
       setError('These dates are unavailable. Please choose different dates.');
       return;
     }
-    if (dateAvailability === 'error') {
-      setError('We could not verify these dates. Please try changing the dates and try again.');
-      return;
-    }
-
     if (!fullName.trim() || !email.trim() || !phone.trim()) {
       setError(
         'Please complete your name, email and phone number.'
