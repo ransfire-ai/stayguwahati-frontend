@@ -1,30 +1,56 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
+import React, { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { Home, Key, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  KeyRound,
+  Loader2,
+  Mail,
+  AlertCircle,
+  Home,
+} from 'lucide-react';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://stayguwahati-backend.onrender.com';
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  'https://stayguwahati-backend.onrender.com';
 
-export default function ResetPasswordPage() {
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (loading || submitted) return;
+
     setLoading(true);
     setStatus(null);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/auth/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      const response = await fetch(
+        `${BACKEND_URL.replace(/\/+$/, '')}/api/auth/forgot-password`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        }
+      );
 
-      const data = await response.json();
+      let data: { message?: string } = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        // Keep the fallback message below when the server returns no JSON.
+      }
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to send reset link.');
@@ -32,112 +58,205 @@ export default function ResetPasswordPage() {
 
       setStatus({
         type: 'success',
-        message: 'Check your email! Link sent successfully.',
+        message: data.message || 'Check your email! Link sent successfully.',
       });
       setSubmitted(true);
-    } catch (err: any) {
-      if (err.message === 'Failed to fetch') {
-        setStatus({
-          type: 'error',
-          message: 'Server is starting up... Please wait 30 seconds and try again.',
-        });
-      } else {
-        setStatus({
-          type: 'error',
-          message: err.message || 'An error occurred. Please try again.',
-        });
-      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'An error occurred. Please try again.';
+
+      setStatus({
+        type: 'error',
+        message:
+          message === 'Failed to fetch'
+            ? 'Server is starting up... Please wait 30 seconds and try again.'
+            : message,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen flex flex-col justify-between font-sans">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 cursor-pointer">
-            <Home className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" />
-            <span className="text-lg sm:text-xl font-bold text-teal-800">StayGuwahati</span>
+    <div className="min-h-screen bg-[#f5f3ee] text-[#213c3d]">
+      <header className="border-b border-[#dce2dd] bg-[#f8f7f3]/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
+          <Link
+            href="/"
+            className="group flex items-center gap-2.5 font-bold tracking-tight"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#214846] text-white shadow-sm transition group-hover:-translate-y-0.5">
+              <Home className="h-4.5 w-4.5" />
+            </span>
+            <span className="text-[17px]">StayGuwahati</span>
+          </Link>
+
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 rounded-full border border-[#cfd9d4] bg-white px-4 py-2 text-sm font-semibold text-[#355452] transition hover:border-[#214846] hover:bg-[#edf3f0]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to sign in
           </Link>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-3 sm:p-4">
-        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 max-w-sm w-full mx-auto">
-          <div className="text-center mb-6 sm:mb-8">
-            <div className="bg-teal-50 text-teal-600 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-inner">
-              <Key className="w-6 h-6 sm:w-7 sm:h-7" />
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Reset Password</h1>
-            <p className="text-gray-400 text-xs mt-1">Enter your email to receive a reset link</p>
-          </div>
+      <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-7xl items-center px-5 py-8 sm:px-8 lg:py-12">
+        <div className="grid w-full overflow-hidden rounded-[2rem] border border-[#d9e0db] bg-white shadow-[0_24px_70px_rgba(30,54,51,0.10)] lg:grid-cols-[1.05fr_0.95fr]">
+          {/* Brand panel */}
+          <section className="relative overflow-hidden bg-[#1d4643] px-7 py-10 text-white sm:px-12 sm:py-14 lg:flex lg:min-h-[620px] lg:flex-col lg:justify-between">
+            <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full border border-white/10" />
+            <div className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full border border-white/10" />
 
-          {/* Status Banner */}
-          {status && (
-            <div
-              className={`p-3 rounded-xl mb-4 text-xs font-medium border flex items-center gap-1.5 ${
-                status.type === 'success'
-                  ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
-                  : 'bg-rose-50 border-rose-100 text-rose-600'
-              }`}
-            >
-              {status.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-              ) : (
-                <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="relative">
+              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#e7eeeb]">
+                Account recovery
+              </div>
+
+              <h1 className="max-w-md text-4xl font-semibold leading-[1.05] tracking-[-0.04em] sm:text-5xl">
+                Back to your
+                <span className="block text-[#f4c85d]">Guwahati stay.</span>
+              </h1>
+
+              <p className="mt-6 max-w-md text-sm leading-7 text-[#d5e1dd] sm:text-[15px]">
+                Lost your password? No worries. We&apos;ll send a secure reset
+                link so you can get back to planning, booking, and managing your
+                local stays.
+              </p>
+            </div>
+
+            <div className="relative mt-10 grid gap-3 sm:grid-cols-3 lg:mt-0 lg:grid-cols-1 xl:grid-cols-3">
+              {[
+                ['01', 'Secure link', 'Sent to your email'],
+                ['02', 'Quick reset', 'Choose a new password'],
+                ['03', 'Back in', 'Continue your journey'],
+              ].map(([number, title, text]) => (
+                <div
+                  key={number}
+                  className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm"
+                >
+                  <span className="text-[10px] font-bold tracking-[0.18em] text-[#f4c85d]">
+                    {number}
+                  </span>
+                  <h2 className="mt-3 text-sm font-semibold">{title}</h2>
+                  <p className="mt-1 text-xs leading-5 text-[#c9d7d2]">{text}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Form panel */}
+          <section className="flex items-center justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14">
+            <div className="w-full max-w-md">
+              <div className="mb-8">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#cfe0da] bg-[#edf5f2] text-[#1d7771] shadow-sm">
+                  <KeyRound className="h-6 w-6" />
+                </div>
+
+                <p className="mt-7 text-[10px] font-bold uppercase tracking-[0.2em] text-[#66817c]">
+                  Password recovery
+                </p>
+                <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#213c3d]">
+                  Reset your password
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-[#6d7d79]">
+                  Enter the email address linked to your StayGuwahati account.
+                  We&apos;ll send you a reset link.
+                </p>
+              </div>
+
+              {status && (
+                <div
+                  role="status"
+                  className={`mb-6 flex items-start gap-3 rounded-2xl border px-4 py-3.5 text-sm leading-5 ${
+                    status.type === 'success'
+                      ? 'border-[#bfe0d1] bg-[#eff9f4] text-[#27654d]'
+                      : 'border-[#efc9bd] bg-[#fff5f1] text-[#a34a36]'
+                  }`}
+                >
+                  {status.type === 'success' ? (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                  ) : (
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                  )}
+                  <span>{status.message}</span>
+                </div>
               )}
-              <span>{status.message}</span>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#59706c]"
+                  >
+                    Email address
+                  </label>
+
+                  <div className="group relative">
+                    <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#78908a] transition group-focus-within:text-[#1d7771]" />
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      disabled={submitted}
+                      placeholder="name@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-2xl border border-[#cfd9d4] bg-[#fbfcfa] py-3.5 pl-11 pr-4 text-sm text-[#213c3d] outline-none transition placeholder:text-[#9aa9a5] focus:border-[#1d7771] focus:bg-white focus:ring-4 focus:ring-[#1d7771]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || submitted}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1d4643] px-5 py-4 text-sm font-bold text-white shadow-[0_12px_24px_rgba(29,70,67,0.18)] transition hover:-translate-y-0.5 hover:bg-[#27605c] disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-[#91a39e] disabled:shadow-none"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending reset link...
+                    </>
+                  ) : submitted ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Reset link sent
+                    </>
+                  ) : (
+                    <>
+                      Send reset link
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="my-8 h-px bg-[#e0e5e1]" />
+
+              <p className="text-center text-sm text-[#71817d]">
+                Remembered your password?{' '}
+                <Link
+                  href="/login"
+                  className="font-bold text-[#1d7771] transition hover:text-[#155f5a] hover:underline"
+                >
+                  Sign in instead
+                </Link>
+              </p>
+
+              <Link
+                href="/"
+                className="mt-6 flex items-center justify-center gap-2 text-xs font-semibold text-[#70817d] transition hover:text-[#214846]"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Return to StayGuwahati
+              </Link>
             </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-                Email Address
-              </label>
-              <input
-                type="email"
-                required
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-base sm:text-sm focus:outline-none focus:border-teal-500 transition focus:ring-1 focus:ring-teal-500"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || submitted}
-              className="w-full bg-slate-900 hover:bg-teal-600 disabled:bg-gray-400 text-white font-bold py-3 rounded-xl text-sm transition mt-2 flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Sending...</span>
-                </>
-              ) : submitted ? (
-                <span>Link Sent</span>
-              ) : (
-                <span>Send Reset Link</span>
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 sm:mt-8 text-center text-xs text-gray-500">
-            <Link href="/login" className="text-teal-600 font-bold hover:underline">
-              Back to Login
-            </Link>
-          </div>
+          </section>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="text-center py-6 px-3 text-[10px] text-gray-400 border-t border-gray-100 bg-white">
-        <p>&copy; 2026 StayGuwahati Platform Unified Core.</p>
-      </footer>
     </div>
   );
 }
