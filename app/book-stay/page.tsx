@@ -333,7 +333,7 @@ function BookingContent() {
       setDateAvailability('checking');
       setAvailabilityMessage('');
       try {
-        const url = `${BACKEND_URL.replace(/\\/+$/, '')}/api/bookings?propertyId=${encodeURIComponent(propertyId)}`;
+        const url = `${BACKEND_URL.replace(/\/+$/, '')}/api/bookings?propertyId=${encodeURIComponent(propertyId)}`;
 
         const response = await fetch(url, {
           cache: 'no-store',
