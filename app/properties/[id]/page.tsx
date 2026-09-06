@@ -265,58 +265,93 @@ function PropertyDetailsContent() {
           <div className="flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2"><BedDouble className="mr-1 inline h-3.5 w-3.5"/> {derived.b || '—'} bedrooms</span><span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2"><Bath className="mr-1 inline h-3.5 w-3.5"/> {derived.bath || '—'} bathrooms</span><span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2"><Users className="mr-1 inline h-3.5 w-3.5"/> Up to {derived.guests} guests</span></div>
         </header>
 
-        <section className="relative overflow-hidden rounded-[32px] bg-[#dfe5e1] p-2">
-          <div className="grid h-[360px] gap-2 sm:h-[460px] lg:h-[560px] md:grid-cols-[1.15fr_0.85fr]">
+        <section className="relative overflow-hidden rounded-[30px] bg-[#e5e9e6] p-2 shadow-sm">
+          {/* Desktop/tablet gallery: fixed, balanced compositions with no empty cells */}
+          <div className="hidden h-[520px] gap-2 md:grid md:grid-cols-[1.18fr_0.82fr]">
             <button
               onClick={() => { setSelected(0); setGalleryOpen(true); }}
-              className="relative min-h-0 overflow-hidden rounded-[24px]"
+              className="group relative min-h-0 overflow-hidden rounded-[24px]"
             >
               <img
                 src={images[0]}
                 alt={property.title || 'Property'}
-                className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+                className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]"
               />
-              <span className="absolute bottom-4 left-4 rounded-full bg-[#173f3a]/90 px-3 py-2 text-xs font-black text-white">
-                Featured view
+              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent px-5 pb-5 pt-16 text-left">
+                <span className="rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-black text-[#173f3a] shadow-sm">
+                  Featured view
+                </span>
               </span>
             </button>
 
-            <div className="grid grid-cols-2 gap-2">
-              {images.slice(1, 5).map((img, i) => (
-                <button
-                  key={img + i}
-                  onClick={() => { setSelected(i + 1); setGalleryOpen(true); }}
-                  className="relative min-h-0 overflow-hidden rounded-[20px]"
-                >
-                  <img
-                    src={img}
-                    alt={`Property view ${i + 2}`}
-                    className="h-full w-full object-cover transition duration-500 hover:scale-[1.04]"
-                  />
-                </button>
-              ))}
+            <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-2">
+              {images.slice(1, 5).map((img, i, photos) => {
+                const total = photos.length;
+                const spanClass =
+                  total === 1
+                    ? 'col-span-2 row-span-2'
+                    : total === 2
+                      ? 'row-span-2'
+                      : total === 3 && i === 2
+                        ? 'col-span-2'
+                        : '';
+
+                return (
+                  <button
+                    key={img + i}
+                    onClick={() => { setSelected(i + 1); setGalleryOpen(true); }}
+                    className={`group relative min-h-0 overflow-hidden rounded-[20px] ${spanClass}`}
+                  >
+                    <img
+                      src={img}
+                      alt={`Property view ${i + 2}`}
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]"
+                    />
+                  </button>
+                );
+              })}
             </div>
+          </div>
+
+          {/* Mobile gallery: intentional horizontal cards instead of squeezed mosaic */}
+          <div className="md:hidden">
+            <button
+              onClick={() => { setSelected(0); setGalleryOpen(true); }}
+              className="relative h-[330px] w-full overflow-hidden rounded-[24px]"
+            >
+              <img
+                src={images[0]}
+                alt={property.title || 'Property'}
+                className="h-full w-full object-cover"
+              />
+            </button>
+
+            {images.length > 1 && (
+              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                {images.slice(1).map((img, i) => (
+                  <button
+                    key={img + i}
+                    onClick={() => { setSelected(i + 1); setGalleryOpen(true); }}
+                    className="h-24 w-32 shrink-0 overflow-hidden rounded-2xl"
+                  >
+                    <img
+                      src={img}
+                      alt={`Property view ${i + 2}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <button
             onClick={() => setGalleryOpen(true)}
-            className="absolute bottom-5 right-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-black text-[#173f3a] shadow-lg transition hover:scale-[1.02]"
+            className="absolute bottom-5 right-5 z-10 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-black text-[#173f3a] shadow-lg ring-1 ring-black/5 transition hover:scale-[1.02]"
           >
             <ImageIcon className="h-4 w-4" />
             View all {images.length} photos
           </button>
-
-          <div className="mt-2 flex gap-2 overflow-x-auto p-1 md:hidden">
-            {images.map((img, i) => (
-              <button
-                key={img + i}
-                onClick={() => { setSelected(i); setGalleryOpen(true); }}
-                className="h-16 w-20 shrink-0 overflow-hidden rounded-xl"
-              >
-                <img src={img} alt={`Thumbnail ${i + 1}`} className="h-full w-full object-cover" />
-              </button>
-            ))}
-          </div>
         </section>
 
         <div className="mt-8 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_410px]">
