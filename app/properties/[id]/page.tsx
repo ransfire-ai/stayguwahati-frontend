@@ -254,12 +254,58 @@ function PropertyDetailsContent() {
           <div className="flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2"><BedDouble className="mr-1 inline h-3.5 w-3.5"/> {derived.b || '—'} bedrooms</span><span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2"><Bath className="mr-1 inline h-3.5 w-3.5"/> {derived.bath || '—'} bathrooms</span><span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2"><Users className="mr-1 inline h-3.5 w-3.5"/> Up to {derived.guests} guests</span></div>
         </header>
 
-        <section className="grid h-[440px] gap-2 overflow-hidden rounded-[32px] bg-[#dfe5e1] p-2 sm:h-[560px] md:grid-cols-4 md:grid-rows-2">
-          <button onClick={() => {setSelected(0);setGalleryOpen(true)}} className="relative min-h-[230px] overflow-hidden rounded-[24px] md:col-span-2 md:row-span-2"><img src={images[0]} alt={property.title || 'Property'} className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"/><span className="absolute bottom-4 left-4 rounded-full bg-[#173f3a]/90 px-3 py-2 text-xs font-black text-white">Featured view</span></button>
-          {images.slice(1,4).map((img, i) => <button key={img+i} onClick={() => {setSelected(i+1);setGalleryOpen(true)}} className={`relative hidden overflow-hidden rounded-[22px] md:block ${i === 2 ? 'row-span-2' : ''}`}><img src={img} alt={`Property view ${i+2}`} className="h-full w-full object-cover transition duration-500 hover:scale-[1.04]"/></button>)}
-          <button onClick={() => setGalleryOpen(true)} className="absolute hidden" />
-          <div className="flex gap-2 overflow-x-auto p-1 md:hidden">{images.map((img,i)=><button key={img+i} onClick={()=>{setSelected(i);setGalleryOpen(true)}} className="h-16 w-20 shrink-0 overflow-hidden rounded-xl"><img src={img} alt="" className="h-full w-full object-cover"/></button>)}</div>
-          <button onClick={() => setGalleryOpen(true)} className="absolute right-7 top-[455px] hidden rounded-full bg-white px-4 py-2 text-xs font-black shadow-lg md:inline-flex items-center gap-2"><ImageIcon className="h-4 w-4"/> View all {images.length} photos</button>
+        <section className="relative overflow-hidden rounded-[32px] bg-[#dfe5e1] p-2">
+          <div className="grid h-[360px] gap-2 sm:h-[460px] lg:h-[560px] md:grid-cols-[1.15fr_0.85fr]">
+            <button
+              onClick={() => { setSelected(0); setGalleryOpen(true); }}
+              className="relative min-h-0 overflow-hidden rounded-[24px]"
+            >
+              <img
+                src={images[0]}
+                alt={property.title || 'Property'}
+                className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+              />
+              <span className="absolute bottom-4 left-4 rounded-full bg-[#173f3a]/90 px-3 py-2 text-xs font-black text-white">
+                Featured view
+              </span>
+            </button>
+
+            <div className="grid grid-cols-2 gap-2">
+              {images.slice(1, 5).map((img, i) => (
+                <button
+                  key={img + i}
+                  onClick={() => { setSelected(i + 1); setGalleryOpen(true); }}
+                  className="relative min-h-0 overflow-hidden rounded-[20px]"
+                >
+                  <img
+                    src={img}
+                    alt={`Property view ${i + 2}`}
+                    className="h-full w-full object-cover transition duration-500 hover:scale-[1.04]"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setGalleryOpen(true)}
+            className="absolute bottom-5 right-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-black text-[#173f3a] shadow-lg transition hover:scale-[1.02]"
+          >
+            <ImageIcon className="h-4 w-4" />
+            View all {images.length} photos
+          </button>
+
+          <div className="mt-2 flex gap-2 overflow-x-auto p-1 md:hidden">
+            {images.map((img, i) => (
+              <button
+                key={img + i}
+                onClick={() => { setSelected(i); setGalleryOpen(true); }}
+                className="h-16 w-20 shrink-0 overflow-hidden rounded-xl"
+              >
+                <img src={img} alt={`Thumbnail ${i + 1}`} className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
         </section>
 
         <div className="mt-8 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_410px]">
@@ -295,7 +341,10 @@ function PropertyDetailsContent() {
             <div className="overflow-hidden rounded-[32px] border border-[#c9d9d0] bg-white shadow-[0_25px_70px_rgba(23,63,58,.14)]">
               <div className="bg-[#173f3a] p-6 text-white"><p className="text-xs font-black uppercase tracking-[.16em] text-[#b7d4c8]">Reserve this stay</p><div className="mt-3 flex items-end justify-between"><div><span className="text-4xl font-black">₹{derived.price.toLocaleString('en-IN')}</span><span className="ml-1 text-sm text-[#b7d4c8]">/ night</span></div><span className="rounded-full bg-[#e9bf52] px-3 py-1.5 text-[10px] font-black text-[#173f3a]">Verified local stay</span></div></div>
               <div className="p-5 sm:p-6">
-                <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-[#d8e0db]"><div className="border-r border-[#d8e0db] p-4"><p className="text-[10px] font-black uppercase text-[#75857f]">Check-in</p><p className="mt-1 text-sm font-bold">Choose dates</p></div><div className="p-4"><p className="text-[10px] font-black uppercase text-[#75857f]">Check-out</p><p className="mt-1 text-sm font-bold">Choose dates</p></div></div>
+                <div className="rounded-2xl bg-[#f4f7f4] p-4">
+                  <p className="text-sm font-bold text-[#173f3a]">Ready to reserve?</p>
+                  <p className="mt-1 text-xs leading-5 text-[#71827d]">Continue to the booking page to provide your stay details and complete your reservation.</p>
+                </div>
                 <button onClick={book} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#e9bf52] px-5 py-4 text-sm font-black text-[#173f3a] transition hover:brightness-105">Proceed to reservation <ArrowRight className="h-4 w-4"/></button>
                 <p className="mt-3 text-center text-xs text-[#71827d]">You will review your booking details before confirming.</p>
                 <div className="mt-5 space-y-3 border-t border-[#e1e7e3] pt-5 text-sm"><div className="flex justify-between gap-3"><span className="text-[#71827d]">Cancellation</span><strong className="text-[#28655c]">{derived.policy.name}</strong></div><div className="flex justify-between gap-3"><span className="text-[#71827d]">Hosted by</span><strong>{derived.hostName}</strong></div><div className="flex items-center gap-2 text-xs text-[#71827d]"><ShieldCheck className="h-4 w-4 text-[#28655c]"/> Booking details are reviewed before confirmation.</div></div>
