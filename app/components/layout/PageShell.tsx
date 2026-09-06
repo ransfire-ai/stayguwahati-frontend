@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 export default function PageShell({
@@ -8,6 +9,7 @@ export default function PageShell({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const [signedIn, setSignedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -45,6 +47,17 @@ export default function PageShell({
 
   const closeMenu = () => setMenuOpen(false);
 
+
+  const handleListAStay = () => {
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("stayguwahati_token") ||
+      localStorage.getItem("userToken");
+
+    router.push(token ? "/list-property" : "/login?redirect=/list-property");
+  };
+
   return (
     <div className="sg-shell">
       <header className="sg-header">
@@ -79,9 +92,13 @@ export default function PageShell({
                 Explore
               </Link>
 
-              <Link href="/list-property">
+              <button
+                type="button"
+                onClick={handleListAStay}
+                className="bg-transparent border-0 p-0 cursor-pointer"
+              >
                 List a stay
-              </Link>
+              </button>
 
               <Link href="/support">
                 Support
