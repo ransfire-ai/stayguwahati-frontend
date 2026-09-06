@@ -145,6 +145,9 @@ function BookingContent() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [dateAvailability, setDateAvailability] = useState<'idle' | 'checking' | 'available' | 'unavailable' | 'error'>('idle');
+  const [availabilityMessage, setAvailabilityMessage] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -302,6 +305,71 @@ function BookingContent() {
     return () => controller.abort();
   }, [propertyId, storedBooking]);
 
+  const normalizeBookingDate = (value: unknown) => {
+    if (!value) return '';
+    if (typeof value === 'string') {
+      const direct = value.slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
+    }
+    const parsed = new Date(String(value));
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toISOString().slice(0, 10);
+  };
+
+  // Check existing Requested/Confirmed bookings immediately when dates change.
+  // The POST endpoint still performs the final overlap check, preventing races.
+  useEffect(() => {
+    if (!propertyId || !checkIn || !checkOut || checkOut <= checkIn) {
+      setDateAvailability('idle');
+      setAvailabilityMessage('');
+      setCheckingAvailability(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function checkAvailability() {
+      setCheckingAvailability(true);
+      setDateAvailability('checking');
+      setAvailabilityMessage('');
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/bookings`, {
+          cache: 'no-store', signal: controller.signal,
+          headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
+        });
+        if (!response.ok) throw new Error('Could not check availability right now.');
+        const payload = await response.json();
+        const bookings = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+        const conflict = bookings.some((booking: any) => {
+          const bookingPropertyId = String(booking?.homestayId?._id || booking?.homestayId || booking?.propertyId?._id || booking?.propertyId || '');
+          if (bookingPropertyId !== String(propertyId)) return false;
+          const status = String(booking?.status || '').toLowerCase();
+          if (status !== 'requested' && status !== 'confirmed') return false;
+          const existingCheckIn = normalizeBookingDate(booking?.checkInDate || booking?.checkIn);
+          const existingCheckOut = normalizeBookingDate(booking?.checkOutDate || booking?.checkOut);
+          if (!existingCheckIn || !existingCheckOut) return false;
+          return checkIn < existingCheckOut && checkOut > existingCheckIn;
+        });
+        if (conflict) {
+          setDateAvailability('unavailable');
+          setAvailabilityMessage('These dates are unavailable because this stay is already requested or booked.');
+        } else {
+          setDateAvailability('available');
+          setAvailabilityMessage('Great news — these dates are currently available.');
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setDateAvailability('error');
+        setAvailabilityMessage('We could not verify these dates right now. Please try again.');
+      } finally {
+        if (!controller.signal.aborted) setCheckingAvailability(false);
+      }
+    }
+
+    const timeout = window.setTimeout(checkAvailability, 250);
+    return () => { window.clearTimeout(timeout); controller.abort(); };
+  }, [propertyId, checkIn, checkOut]);
+
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
 
@@ -320,6 +388,8 @@ function BookingContent() {
 
   const updateCheckIn = (value: string) => {
     setCheckIn(value);
+    setDateAvailability('checking');
+    setAvailabilityMessage('Checking the new dates…');
 
     if (!checkOut || value >= checkOut) {
       const next = new Date(`${value}T00:00:00`);
@@ -349,6 +419,19 @@ function BookingContent() {
 
     if (checkIn < today()) {
       setError('Check-in date cannot be in the past.');
+      return;
+    }
+
+    if (checkingAvailability || dateAvailability === 'checking') {
+      setError('Please wait while we check whether these dates are available.');
+      return;
+    }
+    if (dateAvailability === 'unavailable') {
+      setError('These dates are unavailable. Please choose different dates.');
+      return;
+    }
+    if (dateAvailability === 'error') {
+      setError('We could not verify these dates. Please try changing the dates and try again.');
       return;
     }
 
@@ -602,11 +685,18 @@ function BookingContent() {
                     type="date"
                     min={checkIn || today()}
                     value={checkOut}
-                    onChange={(e) => setCheckOut(e.target.value)}
+                    onChange={(e) => { setCheckOut(e.target.value); setDateAvailability('checking'); setAvailabilityMessage('Checking the new dates…'); }}
                     className="mt-2 w-full bg-transparent text-sm font-black text-[#173c3a] outline-none"
                   />
                 </label>
               </div>
+
+              {availabilityMessage && (
+                <div aria-live="polite" className={`mt-3 flex items-center gap-2 rounded-xl border px-3.5 py-3 text-sm font-semibold ${dateAvailability === 'unavailable' || dateAvailability === 'error' ? 'border-[#f1d2c9] bg-[#fff7f4] text-[#a74a36]' : dateAvailability === 'available' ? 'border-[#bfe3d8] bg-[#f1faf6] text-[#17654f]' : 'border-[#d6e4e2] bg-[#f7faf9] text-[#58706e]'}`}>
+                  {checkingAvailability || dateAvailability === 'checking' ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : dateAvailability === 'available' ? <Check className="h-4 w-4 shrink-0 stroke-[3]" /> : <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-current text-[10px]">!</span>}
+                  <span>{availabilityMessage}</span>
+                </div>
+              )}
 
               <label className="mt-4 block rounded-2xl border border-[#d6e4e2] bg-[#fbfcfb] p-4 focus-within:border-[#1b7772]">
                 <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-[#71817f]">
@@ -744,19 +834,17 @@ function BookingContent() {
 
             <button
               type="submit"
-              disabled={submitting || !property.isAvailable}
+              disabled={submitting || !property.isAvailable || checkingAvailability || dateAvailability === 'unavailable'}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#123f3d] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[#123f3d]/15 transition hover:-translate-y-0.5 hover:bg-[#0d3432] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Sending booking request…
-                </>
+                <><Loader2 className="h-4 w-4 animate-spin" />Sending booking request…</>
+              ) : checkingAvailability || dateAvailability === 'checking' ? (
+                <><Loader2 className="h-4 w-4 animate-spin" />Checking availability…</>
+              ) : dateAvailability === 'unavailable' ? (
+                <>Choose different dates</>
               ) : (
-                <>
-                  Complete booking request
-                  <Send className="h-4 w-4" />
-                </>
+                <>Complete booking request<Send className="h-4 w-4" /></>
               )}
             </button>
 
