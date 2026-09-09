@@ -215,15 +215,13 @@ export default function LiveMapPage() {
     }).setView([26.1445, 91.7362], 13);
 
     /*
-     * CARTO Voyager is used here because it does not require a
-     * Google Maps API key. Keep this tile source unless you
-     * intentionally switch map providers.
+     * OpenStreetMap tiles are used here so the public map does
+     * not depend on a Google/CARTO API key.
      */
     L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
+        attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
       }
     ).addTo(map);
@@ -480,8 +478,8 @@ export default function LiveMapPage() {
         }
       `}</style>
 
-      <div className="flex h-screen flex-col overflow-hidden bg-[#f7f9f7] font-sans text-slate-900 antialiased">
-        {/* ================= HEADER ================= */}
+      <div className="flex h-screen w-full min-w-0 flex-col overflow-hidden bg-[#f7f9f7] font-sans text-slate-900 antialiased">
+        {/* ================= PREMIUM HEADER ================= */}
         <header className="z-50 shrink-0 border-b border-[#dfe7e3] bg-white/95 backdrop-blur-xl">
           <div className="mx-auto flex h-[78px] w-full max-w-[1680px] items-center justify-between px-5 sm:px-7 lg:px-9">
             <Link
@@ -756,7 +754,7 @@ export default function LiveMapPage() {
         <main className="relative flex min-h-0 flex-1 overflow-hidden">
           {/* ================= LEFT LIST ================= */}
           <aside
-            className={`flex w-full shrink-0 flex-col border-r border-[#dfe7e3] bg-white lg:w-[480px] xl:w-[530px] 2xl:w-[560px] ${
+            className={`min-w-0 w-full shrink-0 flex-col overflow-x-hidden border-r border-[#dfe7e3] bg-white lg:w-[500px] lg:basis-[500px] xl:w-[540px] xl:basis-[540px] 2xl:w-[570px] 2xl:basis-[570px] ${
               mobileView === 'list'
                 ? 'flex'
                 : 'hidden lg:flex'
@@ -787,7 +785,7 @@ export default function LiveMapPage() {
               </span>
             </div>
 
-            <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-5 sm:px-5">
+            <div className="custom-scrollbar min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-5 sm:px-6">
               {filteredProperties.length === 0 ? (
                 <div className="flex min-h-[480px] flex-col items-center justify-center px-7 text-center">
                   <div className="grid h-16 w-16 place-items-center rounded-3xl bg-[#edf4f1] text-[#47716a]">
@@ -846,6 +844,7 @@ export default function LiveMapPage() {
                     return (
                       <article
                         key={propId}
+                        style={{ width: '100%', maxWidth: '100%' }}
                         onMouseEnter={() =>
                           highlightMarker(propId, true)
                         }
@@ -984,7 +983,7 @@ export default function LiveMapPage() {
 
           {/* ================= RIGHT MAP ================= */}
           <section
-            className={`relative min-w-0 flex-1 bg-[#e8efeb] ${
+            className={`relative min-w-0 flex-1 overflow-hidden bg-[#e8efeb] ${
               mobileView === 'map'
                 ? 'block'
                 : 'hidden lg:block'
