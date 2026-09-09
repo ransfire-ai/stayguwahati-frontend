@@ -536,7 +536,7 @@ export default function LiveMapPage() {
 
               <Link
                 href="/dashboard"
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#173f3c] px-4 text-xs font-extrabold text-white shadow-[0_7px_20px_rgba(23,63,60,0.16)] transition hover:-translate-y-0.5 hover:bg-[#0f312e] sm:px-5"
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#173f3c] px-4 text-xs font-extrabold !text-white shadow-[0_7px_20px_rgba(23,63,60,0.16)] transition hover:-translate-y-0.5 hover:bg-[#0f312e] sm:px-5" style={{ color: '#ffffff' }}
               >
                 <span className="text-lg leading-none">+</span>
                 <span className="hidden sm:inline">
