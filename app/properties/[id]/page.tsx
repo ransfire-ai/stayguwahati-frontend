@@ -231,6 +231,16 @@ function PropertyDetailsContent() {
   const mapHref = property.mapUrl || property.googleMapsLink || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
   const rating = Number(property.rating || (reviews.length ? reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / reviews.length : 0));
 
+  // Build a real host-profile URL from the host email, falling back to name.
+  const hostProfileHref = (() => {
+    const host = typeof property.host === 'object' && property.host !== null
+      ? property.host
+      : { name: typeof property.host === 'string' ? property.host : '' };
+    const email = String(host.email || '').trim();
+    const name = String(host.name || 'Host').trim();
+    return `/host-profile?${email ? `email=${encodeURIComponent(email)}` : `name=${encodeURIComponent(name)}`}`;
+  })();
+
   return (
     <main className="bg-[#f5f1e9] text-[#173f3a]">
       <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8">
@@ -369,7 +379,13 @@ function PropertyDetailsContent() {
 
             <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
               <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">Hosted locally</p><h2 className="mt-2 text-2xl font-black">Meet your host</h2>
-              <div className="mt-6 flex flex-col gap-5 rounded-3xl bg-[#f4f7f4] p-5 sm:flex-row sm:items-center"><img src={derived.avatar} alt={derived.hostName} className="h-16 w-16 rounded-2xl object-cover"/><div className="flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{derived.hostName}</h3>{derived.host.isVerified && <span className="rounded-full bg-[#dcece4] px-2.5 py-1 text-[10px] font-black text-[#28655c]">Verified host</span>}</div><p className="mt-1 text-sm text-[#70817b]">Local host on StayGuwahati</p></div><span className="inline-flex items-center gap-2 text-xs font-bold text-[#28655c]"><UserRound className="h-4 w-4"/> Host profile</span></div>
+              <div className="mt-6 flex flex-col gap-5 rounded-3xl bg-[#f4f7f4] p-5 sm:flex-row sm:items-center"><img src={derived.avatar} alt={derived.hostName} className="h-16 w-16 rounded-2xl object-cover"/><div className="flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{derived.hostName}</h3>{derived.host.isVerified && <span className="rounded-full bg-[#dcece4] px-2.5 py-1 text-[10px] font-black text-[#28655c]">Verified host</span>}</div><p className="mt-1 text-sm text-[#70817b]">Local host on StayGuwahati</p></div><Link
+                  href={hostProfileHref}
+                  className="inline-flex items-center gap-2 text-xs font-bold text-[#28655c] transition hover:text-[#173f3a] hover:underline"
+                  aria-label={`View ${derived.hostName}'s host profile`}
+                >
+                  <UserRound className="h-4 w-4"/> Host profile
+                </Link></div>
             </section>
 
             <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
