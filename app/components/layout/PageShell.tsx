@@ -87,6 +87,10 @@ export default function PageShell({
                 Support
               </Link>
 
+              <Link href="/refer-a-host">
+                Refer a host
+              </Link>
+
               <Link
                 href={accountHref}
                 className="sg-account-link"
@@ -153,6 +157,13 @@ export default function PageShell({
                 onClick={closeMenu}
               >
                 Support
+              </Link>
+
+              <Link
+                href="/refer-a-host"
+                onClick={closeMenu}
+              >
+                Refer a host
               </Link>
 
               <Link
@@ -242,6 +253,12 @@ export default function PageShell({
 
               <Link href="/dashboard">
                 Host dashboard
+              </Link>
+
+              <br />
+
+              <Link href="/refer-a-host">
+                Refer a host
               </Link>
 
               <br />
