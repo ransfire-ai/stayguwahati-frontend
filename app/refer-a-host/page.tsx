@@ -351,8 +351,8 @@ export default function ReferAHostPage() {
 function MiniBenefit({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <div className="flex items-center gap-2 text-[11px] font-bold text-[#456660]">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#e6f5ef] text-[#16867a]">
-        {React.cloneElement(icon as React.ReactElement, { className: "h-4 w-4" })}
+      <span className="[&>svg]:h-4 [&>svg]:w-4 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#e6f5ef] text-[#16867a]">
+        {icon}
       </span>
       {text}
     </div>
@@ -384,8 +384,8 @@ function Step({
 function Benefit({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <div className="flex items-center gap-3 text-[#315c56]">
-      <span className="text-[#54a778]">
-        {React.cloneElement(icon as React.ReactElement, { className: "h-6 w-6" })}
+      <span className="[&>svg]:h-6 [&>svg]:w-6 text-[#54a778]">
+        {icon}
       </span>
       <span>{text}</span>
     </div>
