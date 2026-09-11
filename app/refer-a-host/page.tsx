@@ -1,51 +1,43 @@
-"use client";
+// app/refer-a-host/page.tsx
+'use client';
 
-import React, { FormEvent, useState } from "react";
-import Link from "next/link";
+import React, { FormEvent, ReactNode, useState } from 'react';
+import Link from 'next/link';
 import {
   ArrowRight,
-  Gift,
-  Users,
-  IndianRupee,
-  ShieldCheck,
-  House,
-  Heart,
-  Leaf,
+  Check,
   ChevronDown,
+  Gift,
+  HeartHandshake,
+  Home,
   Mail,
-  Search,
-  UserRound,
-  Sparkles,
-  CheckCircle2,
-} from "lucide-react";
+  ShieldCheck,
+  Users,
+} from 'lucide-react';
 
-// Keep one normalized backend URL for browser API calls.
-// Vercel can override this with NEXT_PUBLIC_API_URL or NEXT_PUBLIC_BACKEND_URL.
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://stayguwahati-backend.onrender.com";
+  'https://stayguwahati-backend.onrender.com';
 
-const API_BASE_URL = BACKEND_URL
-  .replace(/\/+$/, "")
-  .replace(/\/api$/, "");
+const API_BASE_URL = BACKEND_URL.replace(/\/+$/, '').replace(/\/api$/, '');
 
 const faqs = [
   {
-    q: "Who can I refer?",
-    a: "You can refer a friend, family member, neighbour, or property owner in Guwahati who may be interested in hosting guests.",
+    q: 'Who can I refer?',
+    a: 'You can refer a friend, family member, neighbour, or property owner in Guwahati who may be interested in hosting guests.',
   },
   {
-    q: "When will I get the reward?",
-    a: "The referral reward is credited after the referred host completes their first eligible verified booking.",
+    q: 'When is the ₹1,000 reward earned?',
+    a: 'The referral becomes reward-eligible after the referred host completes their first qualifying verified booking.',
   },
   {
-    q: "How will the bonus be credited?",
-    a: "Our team verifies the referral and eligible booking, then credits the applicable platform bonus to both accounts.",
+    q: 'Do I need to be a host to refer someone?',
+    a: 'No. Travelers and members of the local StayGuwahati community can refer suitable hosts.',
   },
   {
-    q: "Is there a limit on referrals?",
-    a: "You can refer multiple hosts. Eligibility and reward limits may apply according to the current StayGuwahati referral programme.",
+    q: 'Can I refer more than one host?',
+    a: 'Yes. You can refer multiple hosts. Each referral is tracked separately and is subject to the current referral programme rules.',
   },
 ];
 
@@ -55,7 +47,7 @@ export default function ReferAHostPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const submitReferral = async (e: FormEvent<HTMLFormElement>) => {
+  async function submitReferral(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     setSubmitting(true);
@@ -63,158 +55,152 @@ export default function ReferAHostPage() {
     try {
       const form = e.currentTarget;
       const values = new FormData(form);
-      const storedProfile =
-        typeof window !== 'undefined'
-          ? localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile')
-          : null;
 
       let profile: { name?: string; email?: string } = {};
-      try {
-        profile = storedProfile ? JSON.parse(storedProfile) : {};
-      } catch {}
+      if (typeof window !== 'undefined') {
+        try {
+          const raw =
+            sessionStorage.getItem('userProfile') ||
+            localStorage.getItem('userProfile');
+          profile = raw ? JSON.parse(raw) : {};
+        } catch {}
+      }
+
+      const token =
+        typeof window !== 'undefined'
+          ? sessionStorage.getItem('token') || localStorage.getItem('token')
+          : null;
+
+      const payload = {
+        referrerName: String(values.get('referrerName') || profile.name || '').trim(),
+        referrerEmail: String(values.get('referrerEmail') || profile.email || '').trim(),
+        hostName: String(values.get('hostName') || '').trim(),
+        hostPhone: String(values.get('hostPhone') || '').trim(),
+        hostEmail: String(values.get('hostEmail') || '').trim(),
+        message: String(values.get('message') || '').trim(),
+      };
 
       const response = await fetch(`${API_BASE_URL}/api/referrals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(typeof window !== 'undefined' && localStorage.getItem('token')
-            ? { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          referrerName: String(values.get('referrerName') || profile.name || '').trim(),
-          referrerEmail: String(values.get('referrerEmail') || profile.email || '').trim(),
-          hostName: String(values.get('hostName') || '').trim(),
-          hostPhone: String(values.get('hostPhone') || '').trim(),
-          hostEmail: String(values.get('hostEmail') || '').trim(),
-          message: String(values.get('message') || '').trim(),
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.success) {
+
+      if (!response.ok || data.success === false) {
         throw new Error(data.message || 'Unable to submit the referral.');
       }
 
       setSubmitted(true);
       form.reset();
-    } catch (err: any) {
-      setError(err?.message || 'Unable to submit the referral. Please try again.');
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to submit the referral. Please try again.'
+      );
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   return (
-    <main className="min-h-screen bg-[#f7faf9] text-[#123f3b]">
-      {/* HEADER */}
-      <header className="sticky top-0 z-40 border-b border-[#dce7e3] bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-[68px] max-w-[1240px] items-center justify-between px-5 lg:px-8">
-          <Link href="/" className="flex items-center gap-2 font-black text-[19px]">
-            <span className="text-[27px]">🏠</span>
-            <span>
+    <div className="min-h-screen bg-[#f6f3ed] text-[#1f3431] font-sans antialiased">
+      {/* Header — aligned with the main StayGuwahati pages */}
+      <header className="sticky top-0 z-50 border-b border-[#d7dfda] bg-[#f6f3ed]/95 backdrop-blur-md">
+        <div className="mx-auto flex min-h-[64px] max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6 lg:px-8">
+          <Link href="/" className="flex shrink-0 items-center gap-2">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-[#173f3a] text-white shadow-sm">
+              <Home className="h-4 w-4" />
+            </span>
+            <span className="text-lg font-bold tracking-tight text-[#214b46]">
               Stay<span className="text-[#16867a]">Guwahati</span>
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-7 text-[13px] font-semibold md:flex">
-            <Link href="/" className="hover:text-[#16867a]">Home</Link>
-            <Link href="/explore" className="hover:text-[#16867a]">Explore</Link>
-            <Link href="/login?redirect=%2Flist-property" className="hover:text-[#16867a]">List a stay</Link>
-            <Link href="/refer-a-host" className="text-[#16867a]">Refer a host</Link>
-            <Link href="/support" className="hover:text-[#16867a]">Support</Link>
+          <nav className="hidden items-center gap-6 text-xs font-semibold text-gray-600 lg:flex">
+            <Link href="/" className="transition hover:text-[#28655c]">Home</Link>
+            <Link href="/explore" className="transition hover:text-[#28655c]">Explore</Link>
+            <Link href="/list-property" className="transition hover:text-[#28655c]">List a stay</Link>
+            <Link href="/refer-a-host" className="font-bold text-[#28655c]">Refer a host</Link>
+            <Link href="/support" className="transition hover:text-[#28655c]">Support</Link>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <button className="hidden rounded-full p-2 hover:bg-[#eef5f2] sm:block" aria-label="Search">
-              <Search className="h-5 w-5" />
-            </button>
-            <Link
-              href="/profile"
-              className="hidden rounded-xl bg-[#123f3b] px-4 py-2.5 text-xs font-bold text-white sm:block"
-            >
-              My account
-            </Link>
-          </div>
+          <Link
+            href="/list-property"
+            className="hidden rounded-xl bg-[#173f3a] px-4 py-2.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#28655c] sm:inline-flex"
+          >
+            + List Your Stay
+          </Link>
         </div>
       </header>
 
-      {/* BREADCRUMB */}
-      <div className="mx-auto max-w-[1240px] px-5 pt-4 text-xs text-[#6c8580] lg:px-8">
-        <Link href="/" className="hover:text-[#16867a]">Home</Link>
-        <span className="mx-2">›</span>
+      {/* Breadcrumb */}
+      <div className="mx-auto max-w-7xl px-4 pt-4 text-[11px] text-[#72827d] sm:px-6 lg:px-8">
+        <Link href="/" className="hover:text-[#28655c]">Home</Link>
+        <span className="mx-2">/</span>
         <span>Refer a host</span>
       </div>
 
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-[1240px] items-center gap-8 px-5 py-10 lg:grid-cols-[1fr_1.05fr] lg:px-8 lg:py-14">
-          <div className="relative z-10">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#e9faf4] px-4 py-2 text-[11px] font-black uppercase tracking-wide text-[#16867a]">
-              <Gift className="h-4 w-4" />
-              Refer & earn rewards
+      {/* Hero */}
+      <section className="mx-auto max-w-7xl px-4 pb-9 pt-7 sm:px-6 sm:pt-10 lg:px-8">
+        <div className="rounded-[28px] border border-[#d7dfda] bg-white px-6 py-8 shadow-[0_4px_18px_rgba(31,52,49,0.05)] sm:px-9 sm:py-10 lg:px-12">
+          <div className="grid items-center gap-8 lg:grid-cols-[1.2fr_.8fr]">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#e5f3ee] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#28655c]">
+                <Gift className="h-3.5 w-3.5" />
+                Refer & earn rewards
+              </div>
+
+              <h1 className="mt-4 max-w-2xl text-[36px] font-black leading-[1.05] tracking-[-1.2px] text-[#173f3a] sm:text-[46px]">
+                Know a great host in Guwahati?
+              </h1>
+
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-[#657873] sm:text-[15px]">
+                Help someone you know join StayGuwahati. When their first
+                qualifying booking is completed, you both can earn a
+                <strong className="text-[#16867a]"> ₹1,000 platform bonus.</strong>
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a
+                  href="#referral-form"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#173f3a] px-5 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-[#28655c]"
+                >
+                  Refer a host <ArrowRight className="h-4 w-4" />
+                </a>
+                <a
+                  href="#how-it-works"
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#cbd7d1] bg-[#f9faf8] px-5 py-3 text-xs font-bold text-[#315c56] transition hover:border-[#8fb7ac] hover:bg-white"
+                >
+                  How it works
+                </a>
+              </div>
             </div>
 
-            <h1 className="max-w-[600px] text-[42px] font-black leading-[1.03] tracking-[-1.5px] text-[#092e39] sm:text-[52px]">
-              Know a great host
-              <br />
-              in Guwahati?
-            </h1>
-
-            <p className="mt-5 max-w-[590px] text-[15px] leading-7 text-[#607873]">
-              Invite friends, family, or neighbors to list their property on
-              StayGuwahati. When they get their first verified booking, you
-              both earn a <strong className="text-[#16867a]">₹1,000 platform bonus.</strong>
-            </p>
-
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href="#referral-form"
-                className="inline-flex items-center gap-2 rounded-xl bg-[#087c72] px-6 py-3.5 text-sm font-black text-white shadow-[0_8px_20px_rgba(8,124,114,.18)] transition hover:bg-[#066d64]"
-              >
-                Refer a host now <ArrowRight className="h-4 w-4" />
-              </a>
-              <a
-                href="#how-it-works"
-                className="inline-flex items-center gap-2 rounded-xl border border-[#16867a] bg-white px-6 py-3.5 text-sm font-bold text-[#155a55] hover:bg-[#eff9f6]"
-              >
-                <span className="text-[11px]">▶</span> How it works
-              </a>
-            </div>
-
-            <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <MiniBenefit icon={<Users />} text="Support local community" />
-              <MiniBenefit icon={<IndianRupee />} text="Earn rewards together" />
-              <MiniBenefit icon={<ShieldCheck />} text="Trusted & verified listings" />
-            </div>
-          </div>
-
-          <div className="relative hidden min-h-[350px] overflow-hidden rounded-[34px] bg-gradient-to-br from-[#dff4ee] via-[#eef8f5] to-[#d5eadf] lg:block">
-            <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/60 blur-2xl" />
-            <div className="absolute bottom-0 left-8 h-56 w-56 rounded-full bg-[#b9dfd0]/50 blur-3xl" />
-
-            <div className="absolute right-8 top-7 rotate-[-4deg] rounded-2xl border border-[#b8d7cc] bg-white/90 px-5 py-4 shadow-lg">
-              <div className="text-sm font-black">Good people</div>
-              <div className="text-sm font-black">great stays</div>
-              <div className="text-sm font-black">Stronger Guwahati</div>
-              <span className="absolute -right-1 -top-4 text-3xl">❤️</span>
-            </div>
-
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[170px] leading-none">
-              🏡
-            </div>
-            <div className="absolute bottom-8 left-10 text-[90px]">🌴</div>
-            <div className="absolute bottom-6 right-10 text-[82px]">🌴</div>
-
-            <div className="absolute bottom-7 right-7 rounded-2xl border border-[#d7cf84] bg-[#fff7c9] px-5 py-4 shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="grid h-12 w-12 place-items-center rounded-full bg-white text-[#087c72]">
-                  <Gift />
+            <div className="hidden lg:block">
+              <div className="rounded-[24px] border border-[#d7e3de] bg-[#eef5f1] p-6">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#173f3a] text-white">
+                    <HeartHandshake className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#6e827c]">
+                      Local community
+                    </p>
+                    <p className="mt-1 text-lg font-black text-[#214b46]">
+                      Good hosts. Great stays.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-[12px] font-semibold">You both earn</div>
-                  <div className="text-2xl font-black">₹1,000</div>
-                  <div className="text-[10px] font-bold text-[#6f7651]">platform bonus</div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <Stat icon={<Users />} title="Local network" text="Grow together" />
+                  <Stat icon={<Gift />} title="Reward" text="₹1,000 each" />
                 </div>
               </div>
             </div>
@@ -222,112 +208,118 @@ export default function ReferAHostPage() {
         </div>
       </section>
 
-      {/* MAIN CONTENT */}
-      <section className="mx-auto max-w-[1240px] px-5 pb-12 lg:px-8">
-        <div className="grid gap-5 lg:grid-cols-[1fr_1.08fr]">
-          {/* LEFT */}
-          <div>
-            <div id="how-it-works" className="rounded-2xl border border-[#dfe9e5] bg-white p-6 shadow-[0_2px_8px_rgba(20,60,55,.06)] sm:p-7">
-              <h2 className="text-[21px] font-black text-[#092e39]">How it works</h2>
+      {/* Main */}
+      <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[.88fr_1.12fr]">
+          <div className="space-y-6">
+            <section
+              id="how-it-works"
+              className="rounded-2xl border border-[#d7dfda] bg-white p-6 shadow-[0_3px_14px_rgba(31,52,49,0.04)] sm:p-7"
+            >
+              <Eyebrow>Simple process</Eyebrow>
+              <h2 className="mt-1 text-2xl font-black text-[#173f3a]">How it works</h2>
 
-              <div className="mt-6 space-y-6">
-                <Step n="1" title="Submit their details">
-                  Fill out the form with your friend's contact information.
-                  We&apos;ll send them an invite.
+              <div className="mt-7 space-y-7">
+                <Step number="01" title="Submit the host details">
+                  Tell us who you think would make a great StayGuwahati host.
                 </Step>
-                <Step n="2" title="They list their property">
-                  Our team will guide them through the listing process and
-                  ensure a safe, verified setup.
+                <Step number="02" title="They join and list">
+                  We invite the host and guide them through creating and verifying their property.
                 </Step>
-                <Step n="3" title="You both get rewarded">
-                  Once they complete their first qualified stay, ₹1,000 is
-                  credited to both of your accounts.
+                <Step number="03" title="Both earn the reward">
+                  After their first eligible verified booking, the referral reward is unlocked.
                 </Step>
               </div>
-            </div>
+            </section>
 
-            <div className="mt-5 rounded-2xl bg-[#e8f8f5] p-6 sm:p-7">
+            <section className="rounded-2xl border border-[#d7dfda] bg-[#edf6f2] p-6 sm:p-7">
               <div className="flex gap-4">
-                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#d0eee6] text-[#087c72]">
-                  <House className="h-7 w-7" />
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-[#28655c] shadow-sm">
+                  <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-[#123f3b]">Be part of a trusted local network</h3>
-                  <p className="mt-2 text-sm leading-6 text-[#55736e]">
-                    Help local families and property owners earn through
-                    homestays. Together we can showcase the warmth of
-                    Guwahati to the world.
+                  <h3 className="text-sm font-black text-[#214b46]">Built around trusted local stays</h3>
+                  <p className="mt-1.5 text-xs leading-5 text-[#60746f]">
+                    Referrals help us discover more genuine local hosts while keeping
+                    the StayGuwahati community personal and reliable.
                   </p>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <div className="mt-6 grid grid-cols-1 gap-4 text-sm font-bold sm:grid-cols-3">
-              <Benefit icon={<Heart />} text="Supports local livelihoods" />
-              <Benefit icon={<Leaf />} text="More authentic travel experiences" />
-              <Benefit icon={<Users />} text="Builds a stronger Guwahati" />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <SmallFeature icon={<Users />} text="Grow the local network" />
+              <SmallFeature icon={<Home />} text="Support local hosts" />
+              <SmallFeature icon={<Gift />} text="Earn together" />
             </div>
           </div>
 
-          {/* FORM */}
-          <div id="referral-form" className="rounded-2xl border border-[#dfe9e5] bg-white p-6 shadow-[0_2px_8px_rgba(20,60,55,.07)] sm:p-7">
-            <div className="flex items-start gap-3 border-b border-[#e5ece9] pb-5">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#e8f8f5] text-[#087c72]">
-                <UserRound className="h-5 w-5" />
-              </div>
+          {/* Form */}
+          <section
+            id="referral-form"
+            className="rounded-2xl border border-[#d7dfda] bg-white p-6 shadow-[0_3px_14px_rgba(31,52,49,0.05)] sm:p-7"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-[#e3e9e5] pb-5">
               <div>
-                <h2 className="text-[21px] font-black">Referral Form</h2>
-                <p className="text-xs text-[#718681]">Tell us about your friend and their property</p>
+                <Eyebrow>Get started</Eyebrow>
+                <h2 className="mt-1 text-2xl font-black text-[#173f3a]">Refer a host</h2>
+                <p className="mt-1 text-xs text-[#71817c]">
+                  Send an invitation to someone who may have a great stay to share.
+                </p>
+              </div>
+              <div className="hidden h-10 w-10 place-items-center rounded-xl bg-[#edf6f2] text-[#28655c] sm:grid">
+                <Mail className="h-5 w-5" />
               </div>
             </div>
 
             {submitted ? (
-              <div className="py-14 text-center">
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#e5f8ef] text-[#087c72]">
-                  <CheckCircle2 className="h-8 w-8" />
+              <div className="py-12 text-center">
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#e5f4ed] text-[#28655c]">
+                  <Check className="h-8 w-8" />
                 </div>
-                <h3 className="mt-5 text-2xl font-black">Referral received!</h3>
-                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#687f7a]">
-                  Thanks for helping grow the StayGuwahati host community.
-                  Our team can follow up with the host details you provided.
+                <h3 className="mt-5 text-xl font-black text-[#173f3a]">Referral submitted</h3>
+                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#6b7c77]">
+                  The host invitation has been sent. We&apos;ll track the referral
+                  as they register and progress toward their first eligible booking.
                 </p>
                 <button
+                  type="button"
                   onClick={() => setSubmitted(false)}
-                  className="mt-6 rounded-xl border border-[#16867a] px-5 py-3 text-sm font-bold text-[#16867a]"
+                  className="mt-6 rounded-xl border border-[#b8ccc5] px-5 py-2.5 text-xs font-bold text-[#28655c] hover:bg-[#f2f7f5]"
                 >
-                  Submit another referral
+                  Refer another host
                 </button>
               </div>
             ) : (
-              <form onSubmit={submitReferral} className="mt-5 space-y-6">
-                <FormSection title="1. YOUR DETAILS">
+              <form onSubmit={submitReferral} className="mt-6 space-y-6">
+                <FormGroup title="Your details">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Input label="Your name" name="referrerName" placeholder="John Doe" required />
-                    <Input label="Your email" name="referrerEmail" type="email" placeholder="john@example.com" required />
+                    <Input name="referrerName" label="Your name" placeholder="Your full name" required />
+                    <Input name="referrerEmail" label="Your email" type="email" placeholder="you@example.com" required />
                   </div>
-                </FormSection>
+                </FormGroup>
 
-                <FormSection title="2. HOST DETAILS">
-                  <Input label="Host's full name" name="hostName" placeholder="Jane Smith" required />
+                <FormGroup title="Host details">
+                  <Input name="hostName" label="Host's full name" placeholder="Host's full name" required />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Input label="Host's phone" name="hostPhone" type="tel" placeholder="+91 98765 43210" required />
-                    <Input label="Host's email" name="hostEmail" type="email" placeholder="jane@example.com" required />
+                    <Input name="hostPhone" label="Host's phone" type="tel" placeholder="+91 98765 43210" required />
+                    <Input name="hostEmail" label="Host's email" type="email" placeholder="host@example.com" required />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#55736e]">
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-[#617670]">
                       Message <span className="font-normal normal-case">(optional)</span>
                     </label>
                     <textarea
                       name="message"
                       rows={3}
-                      placeholder="Add a personal message (e.g. Hi! I thought you might be interested in listing your property...)"
-                      className="w-full resize-none rounded-xl border border-[#d7e2de] px-4 py-3 text-sm outline-none transition placeholder:text-[#a0afab] focus:border-[#16867a] focus:ring-4 focus:ring-[#16867a]/10"
+                      placeholder="Add a short personal message..."
+                      className="w-full resize-none rounded-xl border border-[#cfdad5] bg-[#fcfdfc] px-4 py-3 text-sm text-[#1f3431] outline-none transition placeholder:text-[#9aa9a4] focus:border-[#28655c] focus:ring-4 focus:ring-[#28655c]/10"
                     />
                   </div>
-                </FormSection>
+                </FormGroup>
 
                 {error && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700">
                     {error}
                   </div>
                 )}
@@ -335,139 +327,131 @@ export default function ReferAHostPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#087c72] py-3.5 text-sm font-black text-white transition hover:bg-[#066d64] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#173f3a] py-3.5 text-xs font-black text-white shadow-sm transition hover:bg-[#28655c] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {submitting ? 'Sending referral…' : 'Send referral invite'}
+                  {submitting ? 'Sending invitation...' : 'Send host invitation'}
                   {!submitting && <ArrowRight className="h-4 w-4" />}
                 </button>
+
+                <p className="text-center text-[10px] leading-5 text-[#85938f]">
+                  By submitting, you confirm that you have permission to share the host&apos;s contact details.
+                </p>
               </form>
             )}
-          </div>
+          </section>
         </div>
 
-        {/* TESTIMONIAL + FAQ */}
-        <div className="mt-5 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
-          <div className="rounded-2xl border border-[#dfe9e5] bg-white p-6">
-            <h2 className="text-[17px] font-black">What our community says</h2>
-            <div className="mt-5 flex items-center gap-5">
-              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#d8eee7] text-2xl">
-                👩🏻
-              </div>
-              <div>
-                <p className="text-sm italic leading-6 text-[#526d68]">
-                  “I referred my cousin to list her homestay and the process
-                  was so smooth. We both received the bonus after her first
-                  booking!”
-                </p>
-                <p className="mt-2 text-xs font-bold">— Priyanka Das, Guwahati</p>
-              </div>
-            </div>
-          </div>
+        {/* FAQ */}
+        <section className="mt-6 rounded-2xl border border-[#d7dfda] bg-white p-6 sm:p-7">
+          <Eyebrow>Need to know</Eyebrow>
+          <h2 className="mt-1 text-2xl font-black text-[#173f3a]">Frequently asked questions</h2>
 
-          <div className="rounded-2xl border border-[#dfe9e5] bg-white p-6">
-            <h2 className="text-[17px] font-black">Frequently asked questions</h2>
-            <div className="mt-4 space-y-2">
-              {faqs.map((faq, i) => (
-                <button
-                  key={faq.q}
-                  type="button"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full rounded-xl border border-[#e4ebe8] px-4 py-3 text-left"
-                >
-                  <div className="flex items-center justify-between gap-4 text-sm font-semibold">
-                    {faq.q}
-                    <ChevronDown className={`h-4 w-4 shrink-0 transition ${openFaq === i ? "rotate-180" : ""}`} />
-                  </div>
-                  {openFaq === i && (
-                    <p className="pt-3 text-xs leading-5 text-[#70827e]">{faq.a}</p>
+          <div className="mt-5 divide-y divide-[#e4eae6]">
+            {faqs.map((faq, index) => {
+              const open = openFaq === index;
+              return (
+                <div key={faq.q}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(open ? null : index)}
+                    className="flex w-full items-center justify-between gap-5 py-4 text-left"
+                  >
+                    <span className="text-sm font-bold text-[#294b46]">{faq.q}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-[#71847e] transition-transform ${
+                        open ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+                  {open && (
+                    <p className="max-w-3xl pb-4 text-xs leading-5 text-[#70817c]">
+                      {faq.a}
+                    </p>
                   )}
-                </button>
-              ))}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        </section>
       </section>
 
-      {/* SUPPORT */}
-      <section className="border-t border-[#dce9e4] bg-[#edf8f4]">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <div className="flex items-center gap-4">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-[#d7eee5] text-[#087c72]">
-              <Mail />
-            </div>
-            <div>
-              <h3 className="text-sm font-black">Need help?</h3>
-              <p className="text-xs text-[#607873]">
-                Contact our support team at support@stayguwahati.in
-              </p>
-            </div>
+      {/* Footer */}
+      <footer className="border-t border-[#d7dfda] bg-[#f6f3ed]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-[11px] text-[#71817c] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <span>© 2026 StayGuwahati · Local stays, trusted hosts.</span>
+          <div className="flex gap-5">
+            <Link href="/support" className="hover:text-[#28655c]">Support</Link>
+            <Link href="/privacy-policy" className="hover:text-[#28655c]">Privacy Policy</Link>
           </div>
-          <Link
-            href="/support"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#16867a] bg-white px-5 py-3 text-xs font-black text-[#155a55]"
-          >
-            Contact support <ArrowRight className="h-4 w-4" />
-          </Link>
         </div>
-      </section>
-    </main>
+      </footer>
+    </div>
   );
 }
 
-function MiniBenefit({ icon, text }: { icon: React.ReactNode; text: string }) {
+function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2 text-[11px] font-bold text-[#456660]">
-      <span className="[&>svg]:h-4 [&>svg]:w-4 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#e6f5ef] text-[#16867a]">
-        {icon}
-      </span>
-      {text}
-    </div>
+    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d756b]">
+      {children}
+    </p>
   );
 }
 
 function Step({
-  n,
+  number,
   title,
   children,
 }: {
-  n: string;
+  number: string;
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="flex gap-4">
-      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#e2f6ed] text-[#16867a] font-black">
-        {n}
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#e8f3ef] text-[10px] font-black text-[#28655c]">
+        {number}
       </div>
       <div>
-        <h3 className="text-sm font-black">{title}</h3>
-        <p className="mt-1 max-w-md text-xs leading-5 text-[#667d78]">{children}</p>
+        <h3 className="text-sm font-black text-[#294b46]">{title}</h3>
+        <p className="mt-1.5 text-xs leading-5 text-[#71827d]">{children}</p>
       </div>
     </div>
   );
 }
 
-function Benefit({ icon, text }: { icon: React.ReactNode; text: string }) {
+function Stat({
+  icon,
+  title,
+  text,
+}: {
+  icon: ReactNode;
+  title: string;
+  text: string;
+}) {
   return (
-    <div className="flex items-center gap-3 text-[#315c56]">
-      <span className="[&>svg]:h-6 [&>svg]:w-6 text-[#54a778]">
-        {icon}
-      </span>
-      <span>{text}</span>
+    <div className="rounded-xl border border-[#d8e3de] bg-white p-4">
+      <div className="[&>svg]:h-4 [&>svg]:w-4 text-[#28655c]">{icon}</div>
+      <p className="mt-2 text-[11px] font-black text-[#294b46]">{title}</p>
+      <p className="mt-0.5 text-[10px] text-[#7b8b86]">{text}</p>
     </div>
   );
 }
 
-function FormSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function SmallFeature({ icon, text }: { icon: ReactNode; text: string }) {
+  return (
+    <div className="rounded-xl border border-[#d7dfda] bg-white p-4">
+      <div className="[&>svg]:h-4 [&>svg]:w-4 text-[#54a778]">{icon}</div>
+      <p className="mt-2 text-[11px] font-bold leading-4 text-[#315c56]">{text}</p>
+    </div>
+  );
+}
+
+function FormGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h3 className="mb-4 text-[11px] font-black tracking-wide text-[#087c72]">{title}</h3>
+      <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.14em] text-[#2d756b]">
+        {title}
+      </h3>
       <div className="space-y-4">{children}</div>
     </section>
   );
@@ -483,13 +467,13 @@ function Input({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-[#55736e]">
-        {label} {required && <span className="text-[#087c72]">*</span>}
+      <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-[#617670]">
+        {label} {required && <span className="text-[#2d756b]">*</span>}
       </label>
       <input
         {...props}
         required={required}
-        className="w-full rounded-xl border border-[#d7e2de] px-4 py-3 text-sm outline-none transition placeholder:text-[#a0afab] focus:border-[#16867a] focus:ring-4 focus:ring-[#16867a]/10"
+        className="w-full rounded-xl border border-[#cfdad5] bg-[#fcfdfc] px-4 py-3 text-sm text-[#1f3431] outline-none transition placeholder:text-[#9aa9a4] focus:border-[#28655c] focus:ring-4 focus:ring-[#28655c]/10"
       />
     </div>
   );
