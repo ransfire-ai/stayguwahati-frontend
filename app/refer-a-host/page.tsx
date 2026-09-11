@@ -19,6 +19,17 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+// Keep one normalized backend URL for browser API calls.
+// Vercel can override this with NEXT_PUBLIC_API_URL or NEXT_PUBLIC_BACKEND_URL.
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://stayguwahati-backend.onrender.com";
+
+const API_BASE_URL = BACKEND_URL
+  .replace(/\/+$/, "")
+  .replace(/\/api$/, "");
+
 const faqs = [
   {
     q: "Who can I refer?",
