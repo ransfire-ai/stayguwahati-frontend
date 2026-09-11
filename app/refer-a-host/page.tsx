@@ -168,7 +168,7 @@ export default function ReferAHostPage() {
                 </a>
                 <a
                   href="#how-it-works"
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white px-5 py-3 text-xs font-bold text-[#0c3431] transition hover:border-[#8fb7ac] hover:bg-white"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white px-5 py-3 text-xs font-bold !text-[#0c3431] transition hover:border-[#8fb7ac] hover:bg-[#f7f4ed]"
                 >
                   How it works
                 </a>
