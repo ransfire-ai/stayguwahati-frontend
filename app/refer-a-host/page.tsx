@@ -109,73 +109,66 @@ export default function ReferAHostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f3ed] text-[#1f3431] font-sans antialiased">
+    <div className="min-h-screen bg-[#f7f4ed] text-[#1f3431] font-sans antialiased">
       {/* Header — aligned with the main StayGuwahati pages */}
-      <header className="sticky top-0 z-50 border-b border-[#d7dfda] bg-[#f6f3ed]/95 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-[#d9ddd6] bg-[#f7f4ed]/95 backdrop-blur-md">
         <div className="mx-auto flex min-h-[64px] max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6 lg:px-8">
           <Link href="/" className="flex shrink-0 items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-[#173f3a] text-white shadow-sm">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-white text-[#0c3431] shadow-sm">
               <Home className="h-4 w-4" />
             </span>
-            <span className="text-lg font-bold tracking-tight text-[#214b46]">
-              Stay<span className="text-[#16867a]">Guwahati</span>
+            <span className="text-lg font-bold tracking-tight text-[#0c3431]">
+              Stay<span className="text-[#f2bf45]">Guwahati</span>
             </span>
           </Link>
 
           <nav className="hidden items-center gap-6 text-xs font-semibold text-gray-600 lg:flex">
-            <Link href="/" className="transition hover:text-[#28655c]">Home</Link>
-            <Link href="/explore" className="transition hover:text-[#28655c]">Explore</Link>
-            <Link href="/list-property" className="transition hover:text-[#28655c]">List a stay</Link>
-            <Link href="/refer-a-host" className="font-bold text-[#28655c]">Refer a host</Link>
-            <Link href="/support" className="transition hover:text-[#28655c]">Support</Link>
+            <Link href="/" className="transition hover:text-[#0f625a]">Home</Link>
+            <Link href="/explore" className="transition hover:text-[#0f625a]">Explore</Link>
+            <Link href="/refer-a-host" className="font-bold text-[#0f625a]">Refer a host</Link>
+            <Link href="/support" className="transition hover:text-[#0f625a]">Support</Link>
           </nav>
 
-          <Link
-            href="/list-property"
-            className="hidden rounded-xl bg-[#173f3a] px-4 py-2.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#28655c] sm:inline-flex"
-          >
-            + List Your Stay
-          </Link>
         </div>
       </header>
 
       {/* Breadcrumb */}
-      <div className="mx-auto max-w-7xl px-4 pt-4 text-[11px] text-[#72827d] sm:px-6 lg:px-8">
-        <Link href="/" className="hover:text-[#28655c]">Home</Link>
+      <div className="mx-auto max-w-7xl px-4 pt-4 text-[11px] text-[#66766f] sm:px-6 lg:px-8">
+        <Link href="/" className="hover:text-[#0f625a]">Home</Link>
         <span className="mx-2">/</span>
         <span>Refer a host</span>
       </div>
 
       {/* Hero */}
       <section className="mx-auto max-w-7xl px-4 pb-9 pt-7 sm:px-6 sm:pt-10 lg:px-8">
-        <div className="rounded-[28px] border border-[#d7dfda] bg-white px-6 py-8 shadow-[0_4px_18px_rgba(31,52,49,0.05)] sm:px-9 sm:py-10 lg:px-12">
+        <div className="rounded-[28px] border border-[#0c3431] bg-[#0c3431] px-6 py-8 text-white shadow-[0_8px_24px_rgba(12,52,49,0.12)] sm:px-9 sm:py-10 lg:px-12">
           <div className="grid items-center gap-8 lg:grid-cols-[1.2fr_.8fr]">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#e5f3ee] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#28655c]">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#0f625a]">
                 <Gift className="h-3.5 w-3.5" />
                 Refer & earn rewards
               </div>
 
-              <h1 className="mt-4 max-w-2xl text-[36px] font-black leading-[1.05] tracking-[-1.2px] text-[#173f3a] sm:text-[46px]">
+              <h1 className="mt-4 max-w-2xl text-[36px] font-black leading-[1.05] tracking-[-1.2px] text-white sm:text-[46px]">
                 Know a great host in Guwahati?
               </h1>
 
               <p className="mt-4 max-w-2xl text-sm leading-6 text-[#657873] sm:text-[15px]">
                 Help someone you know join StayGuwahati. When their first
                 qualifying booking is completed, you both can earn a
-                <strong className="text-[#16867a]"> ₹1,000 platform bonus.</strong>
+                <strong className="text-[#1b756c]"> ₹1,000 platform bonus.</strong>
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <a
                   href="#referral-form"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#173f3a] px-5 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-[#28655c]"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#f2bf45] px-5 py-3 text-xs font-bold text-[#0c3431] shadow-sm transition hover:bg-[#e6b33d]"
                 >
                   Refer a host <ArrowRight className="h-4 w-4" />
                 </a>
                 <a
                   href="#how-it-works"
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#cbd7d1] bg-[#f9faf8] px-5 py-3 text-xs font-bold text-[#315c56] transition hover:border-[#8fb7ac] hover:bg-white"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white px-5 py-3 text-xs font-bold text-[#0c3431] transition hover:border-[#8fb7ac] hover:bg-white"
                 >
                   How it works
                 </a>
@@ -183,16 +176,16 @@ export default function ReferAHostPage() {
             </div>
 
             <div className="hidden lg:block">
-              <div className="rounded-[24px] border border-[#d7e3de] bg-[#eef5f1] p-6">
+              <div className="rounded-[24px] border border-white/15 bg-white/10 p-6 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#173f3a] text-white">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#0c3431] text-white">
                     <HeartHandshake className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#6e827c]">
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/60">
                       Local community
                     </p>
-                    <p className="mt-1 text-lg font-black text-[#214b46]">
+                    <p className="mt-1 text-lg font-black text-white">
                       Good hosts. Great stays.
                     </p>
                   </div>
@@ -214,10 +207,10 @@ export default function ReferAHostPage() {
           <div className="space-y-6">
             <section
               id="how-it-works"
-              className="rounded-2xl border border-[#d7dfda] bg-white p-6 shadow-[0_3px_14px_rgba(31,52,49,0.04)] sm:p-7"
+              className="rounded-2xl border border-[#d9ddd6] bg-white p-6 shadow-[0_3px_14px_rgba(31,52,49,0.04)] sm:p-7"
             >
               <Eyebrow>Simple process</Eyebrow>
-              <h2 className="mt-1 text-2xl font-black text-[#173f3a]">How it works</h2>
+              <h2 className="mt-1 text-2xl font-black text-[#0c3431]">How it works</h2>
 
               <div className="mt-7 space-y-7">
                 <Step number="01" title="Submit the host details">
@@ -232,14 +225,14 @@ export default function ReferAHostPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-[#d7dfda] bg-[#edf6f2] p-6 sm:p-7">
+            <section className="rounded-2xl border border-[#d9ddd6] bg-[#eaf3ee] p-6 sm:p-7">
               <div className="flex gap-4">
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-[#28655c] shadow-sm">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-[#0f625a] shadow-sm">
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-[#214b46]">Built around trusted local stays</h3>
-                  <p className="mt-1.5 text-xs leading-5 text-[#60746f]">
+                  <h3 className="text-sm font-black text-[#0c3431]">Built around trusted local stays</h3>
+                  <p className="mt-1.5 text-xs leading-5 text-[#5f716b]">
                     Referrals help us discover more genuine local hosts while keeping
                     the StayGuwahati community personal and reliable.
                   </p>
@@ -257,35 +250,35 @@ export default function ReferAHostPage() {
           {/* Form */}
           <section
             id="referral-form"
-            className="rounded-2xl border border-[#d7dfda] bg-white p-6 shadow-[0_3px_14px_rgba(31,52,49,0.05)] sm:p-7"
+            className="rounded-2xl border border-[#d9ddd6] bg-white p-6 shadow-[0_3px_14px_rgba(31,52,49,0.05)] sm:p-7"
           >
-            <div className="flex items-start justify-between gap-4 border-b border-[#e3e9e5] pb-5">
+            <div className="flex items-start justify-between gap-4 border-b border-[#e0e6e1] pb-5">
               <div>
                 <Eyebrow>Get started</Eyebrow>
-                <h2 className="mt-1 text-2xl font-black text-[#173f3a]">Refer a host</h2>
-                <p className="mt-1 text-xs text-[#71817c]">
+                <h2 className="mt-1 text-2xl font-black text-[#0c3431]">Refer a host</h2>
+                <p className="mt-1 text-xs text-[#65756f]">
                   Send an invitation to someone who may have a great stay to share.
                 </p>
               </div>
-              <div className="hidden h-10 w-10 place-items-center rounded-xl bg-[#edf6f2] text-[#28655c] sm:grid">
+              <div className="hidden h-10 w-10 place-items-center rounded-xl bg-[#eaf3ee] text-[#0f625a] sm:grid">
                 <Mail className="h-5 w-5" />
               </div>
             </div>
 
             {submitted ? (
               <div className="py-12 text-center">
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#e5f4ed] text-[#28655c]">
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#e5f4ed] text-[#0f625a]">
                   <Check className="h-8 w-8" />
                 </div>
-                <h3 className="mt-5 text-xl font-black text-[#173f3a]">Referral submitted</h3>
-                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#6b7c77]">
+                <h3 className="mt-5 text-xl font-black text-[#0c3431]">Referral submitted</h3>
+                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#66766f]">
                   The host invitation has been sent. We&apos;ll track the referral
                   as they register and progress toward their first eligible booking.
                 </p>
                 <button
                   type="button"
                   onClick={() => setSubmitted(false)}
-                  className="mt-6 rounded-xl border border-[#b8ccc5] px-5 py-2.5 text-xs font-bold text-[#28655c] hover:bg-[#f2f7f5]"
+                  className="mt-6 rounded-xl border border-[#b8ccc5] px-5 py-2.5 text-xs font-bold text-[#0f625a] hover:bg-[#f2f7f5]"
                 >
                   Refer another host
                 </button>
@@ -306,14 +299,14 @@ export default function ReferAHostPage() {
                     <Input name="hostEmail" label="Host's email" type="email" placeholder="host@example.com" required />
                   </div>
                   <div>
-                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-[#617670]">
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-[#526b64]">
                       Message <span className="font-normal normal-case">(optional)</span>
                     </label>
                     <textarea
                       name="message"
                       rows={3}
                       placeholder="Add a short personal message..."
-                      className="w-full resize-none rounded-xl border border-[#cfdad5] bg-[#fcfdfc] px-4 py-3 text-sm text-[#1f3431] outline-none transition placeholder:text-[#9aa9a4] focus:border-[#28655c] focus:ring-4 focus:ring-[#28655c]/10"
+                      className="w-full resize-none rounded-xl border border-[#ccd8d2] bg-[#fffdf9] px-4 py-3 text-sm text-[#1f3431] outline-none transition placeholder:text-[#9aa9a4] focus:border-[#0f625a] focus:ring-4 focus:ring-[#0f625a]/10"
                     />
                   </div>
                 </FormGroup>
@@ -327,13 +320,13 @@ export default function ReferAHostPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#173f3a] py-3.5 text-xs font-black text-white shadow-sm transition hover:bg-[#28655c] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0c3431] py-3.5 text-xs font-black text-white shadow-sm transition hover:bg-[#0f625a] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? 'Sending invitation...' : 'Send host invitation'}
                   {!submitting && <ArrowRight className="h-4 w-4" />}
                 </button>
 
-                <p className="text-center text-[10px] leading-5 text-[#85938f]">
+                <p className="text-center text-[10px] leading-5 text-[#7a8883]">
                   By submitting, you confirm that you have permission to share the host&apos;s contact details.
                 </p>
               </form>
@@ -342,11 +335,11 @@ export default function ReferAHostPage() {
         </div>
 
         {/* FAQ */}
-        <section className="mt-6 rounded-2xl border border-[#d7dfda] bg-white p-6 sm:p-7">
+        <section className="mt-6 rounded-2xl border border-[#d9ddd6] bg-white p-6 sm:p-7">
           <Eyebrow>Need to know</Eyebrow>
-          <h2 className="mt-1 text-2xl font-black text-[#173f3a]">Frequently asked questions</h2>
+          <h2 className="mt-1 text-2xl font-black text-[#0c3431]">Frequently asked questions</h2>
 
-          <div className="mt-5 divide-y divide-[#e4eae6]">
+          <div className="mt-5 divide-y divide-[#e0e6e1]">
             {faqs.map((faq, index) => {
               const open = openFaq === index;
               return (
@@ -376,12 +369,12 @@ export default function ReferAHostPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[#d7dfda] bg-[#f6f3ed]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-[11px] text-[#71817c] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <footer className="border-t border-[#d9ddd6] bg-[#f7f4ed]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-[11px] text-[#65756f] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <span>© 2026 StayGuwahati · Local stays, trusted hosts.</span>
           <div className="flex gap-5">
-            <Link href="/support" className="hover:text-[#28655c]">Support</Link>
-            <Link href="/privacy-policy" className="hover:text-[#28655c]">Privacy Policy</Link>
+            <Link href="/support" className="hover:text-[#0f625a]">Support</Link>
+            <Link href="/privacy-policy" className="hover:text-[#0f625a]">Privacy Policy</Link>
           </div>
         </div>
       </footer>
@@ -391,7 +384,7 @@ export default function ReferAHostPage() {
 
 function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d756b]">
+    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0f6b62]">
       {children}
     </p>
   );
@@ -408,12 +401,12 @@ function Step({
 }) {
   return (
     <div className="flex gap-4">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#e8f3ef] text-[10px] font-black text-[#28655c]">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#e8f3ef] text-[10px] font-black text-[#0f625a]">
         {number}
       </div>
       <div>
         <h3 className="text-sm font-black text-[#294b46]">{title}</h3>
-        <p className="mt-1.5 text-xs leading-5 text-[#71827d]">{children}</p>
+        <p className="mt-1.5 text-xs leading-5 text-[#697a74]">{children}</p>
       </div>
     </div>
   );
@@ -429,19 +422,19 @@ function Stat({
   text: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#d8e3de] bg-white p-4">
-      <div className="[&>svg]:h-4 [&>svg]:w-4 text-[#28655c]">{icon}</div>
+    <div className="rounded-xl border border-white/20 bg-white p-4">
+      <div className="[&>svg]:h-4 [&>svg]:w-4 text-[#0f625a]">{icon}</div>
       <p className="mt-2 text-[11px] font-black text-[#294b46]">{title}</p>
-      <p className="mt-0.5 text-[10px] text-[#7b8b86]">{text}</p>
+      <p className="mt-0.5 text-[10px] text-[#73827d]">{text}</p>
     </div>
   );
 }
 
 function SmallFeature({ icon, text }: { icon: ReactNode; text: string }) {
   return (
-    <div className="rounded-xl border border-[#d7dfda] bg-white p-4">
-      <div className="[&>svg]:h-4 [&>svg]:w-4 text-[#54a778]">{icon}</div>
-      <p className="mt-2 text-[11px] font-bold leading-4 text-[#315c56]">{text}</p>
+    <div className="rounded-xl border border-[#d9ddd6] bg-white p-4">
+      <div className="[&>svg]:h-4 [&>svg]:w-4 text-[#6a9a79]">{icon}</div>
+      <p className="mt-2 text-[11px] font-bold leading-4 text-[#315a55]">{text}</p>
     </div>
   );
 }
@@ -449,7 +442,7 @@ function SmallFeature({ icon, text }: { icon: ReactNode; text: string }) {
 function FormGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.14em] text-[#2d756b]">
+      <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.14em] text-[#0f6b62]">
         {title}
       </h3>
       <div className="space-y-4">{children}</div>
@@ -467,13 +460,13 @@ function Input({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-[#617670]">
-        {label} {required && <span className="text-[#2d756b]">*</span>}
+      <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-[#526b64]">
+        {label} {required && <span className="text-[#0f6b62]">*</span>}
       </label>
       <input
         {...props}
         required={required}
-        className="w-full rounded-xl border border-[#cfdad5] bg-[#fcfdfc] px-4 py-3 text-sm text-[#1f3431] outline-none transition placeholder:text-[#9aa9a4] focus:border-[#28655c] focus:ring-4 focus:ring-[#28655c]/10"
+        className="w-full rounded-xl border border-[#ccd8d2] bg-[#fffdf9] px-4 py-3 text-sm text-[#1f3431] outline-none transition placeholder:text-[#9aa9a4] focus:border-[#0f625a] focus:ring-4 focus:ring-[#0f625a]/10"
       />
     </div>
   );
