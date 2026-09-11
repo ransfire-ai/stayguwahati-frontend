@@ -374,7 +374,7 @@ export default function ReferAHostPage() {
           <span>© 2026 StayGuwahati · Local stays, trusted hosts.</span>
           <div className="flex gap-5">
             <Link href="/support" className="hover:text-[#0f625a]">Support</Link>
-            <Link href="/privacy-policy" className="hover:text-[#0f625a]">Privacy Policy</Link>
+            <Link href="/privacy" className="hover:text-[#0f625a]">Privacy Policy</Link>
           </div>
         </div>
       </footer>
