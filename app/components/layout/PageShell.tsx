@@ -84,35 +84,6 @@ export default function PageShell({
             </button>
           </div>
 
-          {/* MOBILE QUICK ACTIONS */}
-          <nav
-            className="sg-mobile-nav"
-            aria-label="Quick navigation"
-          >
-            <Link href="/explore">
-              <span className="sg-mobile-nav-icon">⌕</span>
-              Explore
-            </Link>
-
-            <Link href="/wishlist">
-              <span className="sg-mobile-nav-icon">♡</span>
-              Saved
-            </Link>
-
-            <Link href="/book-stay">
-              <span className="sg-mobile-nav-icon">⌂</span>
-              Book stay
-            </Link>
-
-            <Link
-              href={accountHref}
-              className="sg-mobile-nav-account"
-            >
-              <span className="sg-mobile-nav-icon">○</span>
-              {signedIn ? "Account" : "Sign in"}
-            </Link>
-          </nav>
-
           {/* MOBILE MENU */}
           {menuOpen && (
             <div className="sg-mobile-menu" role="dialog" aria-label="Mobile menu">
@@ -138,33 +109,6 @@ export default function PageShell({
                   <span>
                     <strong>Home</strong>
                     <small>Return to StayGuwahati home</small>
-                  </span>
-                  <span className="sg-mobile-menu-arrow">→</span>
-                </Link>
-
-                <Link href="/explore" onClick={closeMenu}>
-                  <span className="sg-mobile-menu-symbol">⌕</span>
-                  <span>
-                    <strong>Explore stays</strong>
-                    <small>Find local stays in Guwahati</small>
-                  </span>
-                  <span className="sg-mobile-menu-arrow">→</span>
-                </Link>
-
-                <Link href="/wishlist" onClick={closeMenu}>
-                  <span className="sg-mobile-menu-symbol">♡</span>
-                  <span>
-                    <strong>Saved stays</strong>
-                    <small>View the places you saved</small>
-                  </span>
-                  <span className="sg-mobile-menu-arrow">→</span>
-                </Link>
-
-                <Link href="/book-stay" onClick={closeMenu}>
-                  <span className="sg-mobile-menu-symbol">✓</span>
-                  <span>
-                    <strong>Book a stay</strong>
-                    <small>Continue with your booking</small>
                   </span>
                   <span className="sg-mobile-menu-arrow">→</span>
                 </Link>
@@ -323,61 +267,14 @@ export default function PageShell({
             This keeps the useful shortcuts, but makes them compact,
             calmer and closer to the desktop visual language.
           */
-          .sg-mobile-nav {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 7px;
-            padding: 8px 0 11px;
-            border-top: 1px solid #e3e9e6;
-          }
-
-          .sg-mobile-nav a {
-            min-width: 0;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            border: 1px solid #dce6e2;
-            border-radius: 12px;
-            background: #ffffff;
-            color: #234a45;
-            font-size: 10px;
-            font-weight: 700;
-            line-height: 1;
-            text-decoration: none;
-            white-space: nowrap;
-            box-shadow: 0 1px 3px rgba(12, 52, 49, 0.04);
-          }
-
-          .sg-mobile-nav a:active {
-            transform: scale(0.98);
-          }
-
-          .sg-mobile-nav-icon {
-            font-size: 14px;
-            line-height: 1;
-            color: #176d63;
-          }
-
-          .sg-mobile-nav-account {
-            background: #0c3431 !important;
-            border-color: #0c3431 !important;
-            color: #ffffff !important;
-          }
-
-          .sg-mobile-nav-account .sg-mobile-nav-icon {
-            color: #f2bf45;
-          }
-
           .sg-mobile-menu {
             display: block;
             position: absolute;
             z-index: 100;
             left: 10px;
             right: 10px;
-            top: 65px;
-            padding: 13px;
+            top: 74px;
+            padding: 14px;
             border: 1px solid #d4dfda;
             border-radius: 20px;
             background: #ffffff;
