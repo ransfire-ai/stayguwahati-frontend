@@ -41,10 +41,57 @@ const faqs = [
 export default function ReferAHostPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const submitReferral = (e: FormEvent<HTMLFormElement>) => {
+  const submitReferral = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError('');
+    setSubmitting(true);
+
+    try {
+      const form = e.currentTarget;
+      const values = new FormData(form);
+      const storedProfile =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile')
+          : null;
+
+      let profile: { name?: string; email?: string } = {};
+      try {
+        profile = storedProfile ? JSON.parse(storedProfile) : {};
+      } catch {}
+
+      const response = await fetch(`${API_BASE_URL}/api/referrals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(typeof window !== 'undefined' && localStorage.getItem('token')
+            ? { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          referrerName: String(values.get('referrerName') || profile.name || '').trim(),
+          referrerEmail: String(values.get('referrerEmail') || profile.email || '').trim(),
+          hostName: String(values.get('hostName') || '').trim(),
+          hostPhone: String(values.get('hostPhone') || '').trim(),
+          hostEmail: String(values.get('hostEmail') || '').trim(),
+          message: String(values.get('message') || '').trim(),
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Unable to submit the referral.');
+      }
+
+      setSubmitted(true);
+      form.reset();
+    } catch (err: any) {
+      setError(err?.message || 'Unable to submit the referral. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -268,11 +315,19 @@ export default function ReferAHostPage() {
                   </div>
                 </FormSection>
 
+                {error && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                    {error}
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#087c72] py-3.5 text-sm font-black text-white transition hover:bg-[#066d64]"
+                  disabled={submitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#087c72] py-3.5 text-sm font-black text-white transition hover:bg-[#066d64] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Send referral invite <ArrowRight className="h-4 w-4" />
+                  {submitting ? 'Sending referral…' : 'Send referral invite'}
+                  {!submitting && <ArrowRight className="h-4 w-4" />}
                 </button>
               </form>
             )}

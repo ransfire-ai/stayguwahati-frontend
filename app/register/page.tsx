@@ -21,8 +21,14 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) setReferralCode(ref.trim());
+  }, []);
 
   useEffect(() => {
     if (message?.type !== "success") return;
@@ -72,6 +78,7 @@ export default function RegisterPage() {
           name: cleanName,
           email: cleanEmail,
           password,
+          ...(referralCode ? { referralCode } : {}),
         }),
       });
 
