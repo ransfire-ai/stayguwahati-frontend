@@ -120,8 +120,18 @@ if (typeof window !== "undefined") {
   );
 }
 
-// Redirect to the ORIGINAL dashboard
-window.location.href = "/dashboard";
+// Return the user to the page that originally required authentication.
+// Only allow same-origin relative paths so a query parameter cannot create
+// an external/open redirect.
+const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+const safeRedirect =
+  redirectParam &&
+  redirectParam.startsWith("/") &&
+  !redirectParam.startsWith("//")
+    ? redirectParam
+    : "/dashboard";
+
+window.location.href = safeRedirect;
 
     } catch (err) {
       console.error("Login error:", err);

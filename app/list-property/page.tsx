@@ -81,6 +81,30 @@ const standardAmenities = [
 
 export default function ListPropertyPage() {
   const router = useRouter();
+
+  // This page can be opened directly from Google or a saved URL.
+  // It is a protected host route: unauthenticated visitors are sent to
+  // Sign in, and the login page receives the exact page to return to.
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const LISTING_ROUTE = '/list-your-stay';
+  const LOGIN_ROUTE = `/login?redirect=${encodeURIComponent(LISTING_ROUTE)}`;
+
+  useEffect(() => {
+    // The rest of the StayGuwahati app uses sessionStorage as the authoritative
+    // authentication store. Do not treat an old localStorage token as a valid
+    // login here. This prevents a stale/legacy token from bypassing the guard.
+    const token = sessionStorage.getItem('token');
+
+    if (!token) {
+      setAuthChecked(false);
+      router.replace(LOGIN_ROUTE);
+      return;
+    }
+
+    setAuthChecked(true);
+  }, [router, LOGIN_ROUTE]);
+
   const [currentLang, setCurrentLang] = useState<'en' | 'as' | 'hi'>('en');
   const [step, setStep] = useState(1);
   const steps = [
@@ -635,7 +659,7 @@ export default function ListPropertyPage() {
       }
 
       // 5. Post Listing JSON to backend API
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('token');
 
       const response = await fetch(`${API_BASE_URL}/api/homestays`, {
         method: 'POST',
@@ -668,6 +692,18 @@ export default function ListPropertyPage() {
       setSubmitting(false);
     }
   };
+
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-[#f6f3ed] flex items-center justify-center px-6">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-teal-900">Checking your account…</div>
+          <p className="mt-2 text-sm text-gray-500">Redirecting to sign in if needed.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#f6f3ed] min-h-screen font-sans flex flex-col justify-between">
