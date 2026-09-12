@@ -1,210 +1,170 @@
-import type { MetadataRoute } from 'next';
+import type { MetadataRoute } from "next";
 
-const SITE_URL = 'https://stayguwahati.in';
+const SITE_URL = "https://stayguwahati.in";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "https://stayguwahati-backend.onrender.com";
 
-const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL ||
-  'https://stayguwahati-backend.onrender.com'
-).replace(/\/$/, '');
-
-type Homestay = {
+type Property = {
   _id?: string;
   id?: string;
+  slug?: string;
+
+  name?: string;
   title?: string;
-  status?: string;
-  isAvailable?: boolean;
-  createdAt?: string;
+
   updatedAt?: string;
+  createdAt?: string;
+
+  isActive?: boolean;
+  active?: boolean;
+  status?: string;
 };
 
-type ApiResponse =
-  | Homestay[]
-  | {
-      data?: Homestay[];
-      homestays?: Homestay[];
-      properties?: Homestay[];
-      results?: Homestay[];
-    };
+function getPropertyId(property: Property): string | null {
+  const id = property._id || property.id;
 
-export const revalidate = 3600;
+  if (!id) return null;
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  /*
-   * ---------------------------------------------------------
-   * STATIC PAGES
-   * ---------------------------------------------------------
-   */
+  return String(id);
+}
 
-  const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: `${SITE_URL}/`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
-    },
+function getPropertyUrl(property: Property): string | null {
+  // Prefer slug when available because it creates a cleaner SEO URL.
+  if (property.slug && property.slug.trim()) {
+    return `${SITE_URL}/property/${encodeURIComponent(
+      property.slug.trim()
+    )}`;
+  }
 
-    {
-      url: `${SITE_URL}/explore`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.9,
-    },
+  const id = getPropertyId(property);
 
-    {
-      url: `${SITE_URL}/refer-a-host`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-  ];
+  if (!id) return null;
 
-  /*
-   * ---------------------------------------------------------
-   * FETCH PROPERTIES FROM BACKEND
-   * ---------------------------------------------------------
-   */
+  return `${SITE_URL}/property/${encodeURIComponent(id)}`;
+}
 
-  let properties: Homestay[] = [];
+function getLastModified(property: Property): Date {
+  const dateValue = property.updatedAt || property.createdAt;
 
+  if (dateValue) {
+    const date = new Date(dateValue);
+
+    if (!Number.isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  return new Date();
+}
+
+async function getActiveProperties(): Promise<Property[]> {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/homestays`,
-      {
-        next: {
-          revalidate: 3600,
-        },
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/api/homestays`, {
+      next: {
+        revalidate: 3600,
+      },
+    });
 
     if (!response.ok) {
       console.error(
-        `Sitemap: backend returned ${response.status}`
+        `Sitemap: backend returned ${response.status} for /api/homestays`
       );
 
-      return staticPages;
+      return [];
     }
 
-    const payload: ApiResponse = await response.json();
+    const data = await response.json();
 
-    /*
-     * Support the response formats your API may return:
-     *
-     * [
-     *   {...},
-     *   {...}
-     * ]
-     *
-     * or
-     *
-     * {
-     *   data: [...]
-     * }
-     *
-     * or
-     *
-     * {
-     *   homestays: [...]
-     * }
-     */
-
-    if (Array.isArray(payload)) {
-      properties = payload;
-    } else if (Array.isArray(payload.data)) {
-      properties = payload.data;
-    } else if (Array.isArray(payload.homestays)) {
-      properties = payload.homestays;
-    } else if (Array.isArray(payload.properties)) {
-      properties = payload.properties;
-    } else if (Array.isArray(payload.results)) {
-      properties = payload.results;
+    // Support common backend response formats.
+    if (Array.isArray(data)) {
+      return data;
     }
+
+    if (Array.isArray(data.homestays)) {
+      return data.homestays;
+    }
+
+    if (Array.isArray(data.properties)) {
+      return data.properties;
+    }
+
+    if (Array.isArray(data.data)) {
+      return data.data;
+    }
+
+    return [];
   } catch (error) {
-    console.error(
-      'Sitemap: unable to fetch properties from backend:',
-      error
-    );
-
-    /*
-     * Do not break the entire Next.js build if the backend
-     * is temporarily unavailable.
-     */
-    return staticPages;
+    console.error("Sitemap: failed to fetch properties", error);
+    return [];
   }
+}
 
-  /*
-   * ---------------------------------------------------------
-   * ONLY INCLUDE ACTIVE / PUBLIC PROPERTIES
-   * ---------------------------------------------------------
-   *
-   * Your Homestay schema uses:
-   *
-   * status:
-   *   pending | approved | rejected
-   *
-   * and:
-   *
-   * isAvailable: boolean
-   *
-   * Therefore Google should only receive approved and
-   * available property URLs.
-   */
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const properties = await getActiveProperties();
 
-  const activeProperties = properties.filter((property) => {
-    const approved =
-      String(property.status || '').toLowerCase() === 'approved';
+  const staticPages: MetadataRoute.Sitemap = [
+    {
+      url: SITE_URL,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 1,
+    },
+    {
+      url: `${SITE_URL}/explore`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/refer-a-host`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      url: `${SITE_URL}/list-your-stay`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+  ];
 
-    const available =
-      property.isAvailable !== false;
+  const propertyPages: MetadataRoute.Sitemap = properties
+    // Only include genuinely active properties.
+    .filter((property) => {
+      if (property.isActive === false) return false;
+      if (property.active === false) return false;
 
-    return approved && available;
-  });
+      if (
+        property.status &&
+        ["inactive", "disabled", "deleted", "draft"].includes(
+          property.status.toLowerCase()
+        )
+      ) {
+        return false;
+      }
 
-  /*
-   * ---------------------------------------------------------
-   * PROPERTY URLS
-   * ---------------------------------------------------------
-   */
-
-  const propertyPages: MetadataRoute.Sitemap = activeProperties
+      return true;
+    })
     .map((property) => {
-      const propertyId = property._id || property.id;
+      const url = getPropertyUrl(property);
 
-      if (!propertyId) {
+      if (!url) {
         return null;
       }
 
-      const lastModified =
-        property.updatedAt ||
-        property.createdAt ||
-        new Date().toISOString();
-
       return {
-        url: `${SITE_URL}/property/${encodeURIComponent(
-          String(propertyId)
-        )}`,
-
-        lastModified: new Date(lastModified),
-
-        changeFrequency: 'weekly' as const,
-
+        url,
+        lastModified: getLastModified(property),
+        changeFrequency: "weekly" as const,
         priority: 0.8,
       };
     })
+    // Remove properties that don't have a usable ID/slug.
     .filter(
-      (
-        item
-      ): item is MetadataRoute.Sitemap[number] =>
-        item !== null
+      (item): item is MetadataRoute.Sitemap[number] => item !== null
     );
 
-  /*
-   * ---------------------------------------------------------
-   * FINAL SITEMAP
-   * ---------------------------------------------------------
-   */
-
-  return [
-    ...staticPages,
-    ...propertyPages,
-  ];
+  return [...staticPages, ...propertyPages];
 }
