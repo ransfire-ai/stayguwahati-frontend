@@ -1,30 +1,36 @@
 import type { MetadataRoute } from "next";
 
 const SITE_URL = "https://stayguwahati.in";
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "https://stayguwahati-backend.onrender.com";
+
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "https://stayguwahati-backend.onrender.com"
+).replace(/\/$/, "");
 
 type Property = {
   _id?: string;
   id?: string;
   slug?: string;
-  name?: string;
   title?: string;
-  updatedAt?: string;
-  createdAt?: string;
+  name?: string;
+  status?: string;
+  isAvailable?: boolean;
   isActive?: boolean;
   active?: boolean;
-  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
-type ApiResponse = {
-  properties?: Property[];
-  homestays?: Property[];
-  data?: Property[] | { properties?: Property[]; homestays?: Property[] };
-};
+type ApiResponse =
+  | Property[]
+  | {
+      data?: Property[] | { properties?: Property[]; homestays?: Property[] };
+      homestays?: Property[];
+      properties?: Property[];
+    };
 
-async function getActiveProperties(): Promise<Property[]> {
+async function getProperties(): Promise<Property[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/homestays`, {
       next: {
@@ -34,47 +40,51 @@ async function getActiveProperties(): Promise<Property[]> {
 
     if (!response.ok) {
       console.error(
-        `Sitemap: backend returned ${response.status} from /api/homestays`
+        `Sitemap: backend returned ${response.status}`
       );
       return [];
     }
 
-    const json: ApiResponse | Property[] = await response.json();
+    const result: ApiResponse = await response.json();
 
-    // Handle APIs that directly return an array
-    if (Array.isArray(json)) {
-      return json;
+    // API returns an array directly
+    if (Array.isArray(result)) {
+      return result;
     }
 
-    // Handle { properties: [...] }
-    if (Array.isArray(json.properties)) {
-      return json.properties;
+    // { homestays: [...] }
+    if (Array.isArray(result.homestays)) {
+      return result.homestays;
     }
 
-    // Handle { homestays: [...] }
-    if (Array.isArray(json.homestays)) {
-      return json.homestays;
+    // { properties: [...] }
+    if (Array.isArray(result.properties)) {
+      return result.properties;
     }
 
-    // Handle { data: [...] }
-    if (Array.isArray(json.data)) {
-      return json.data;
+    // { data: [...] }
+    if (Array.isArray(result.data)) {
+      return result.data;
     }
 
-    // Handle { data: { properties: [...] } }
-    if (json.data && !Array.isArray(json.data)) {
-      if (Array.isArray(json.data.properties)) {
-        return json.data.properties;
+    // { data: { properties: [...] } }
+    if (result.data && !Array.isArray(result.data)) {
+      if (Array.isArray(result.data.properties)) {
+        return result.data.properties;
       }
 
-      if (Array.isArray(json.data.homestays)) {
-        return json.data.homestays;
+      if (Array.isArray(result.data.homestays)) {
+        return result.data.homestays;
       }
     }
 
     return [];
   } catch (error) {
-    console.error("Sitemap: failed to fetch properties", error);
+    console.error(
+      "Sitemap: failed to fetch properties",
+      error
+    );
+
     return [];
   }
 }
@@ -89,35 +99,46 @@ function getPropertyId(property: Property): string | null {
   return String(id);
 }
 
-function getPropertyUrl(property: Property): string | null {
-  /*
-   * Prefer the slug when available.
-   *
-   * Example:
-   * /property/orchid-villa
-   *
-   * Otherwise fall back to:
-   * /property/PROPERTY_ID
-   */
-
-  if (property.slug) {
-    return `${SITE_URL}/property/${encodeURIComponent(property.slug)}`;
+function isActiveProperty(property: Property): boolean {
+  // Explicitly inactive properties should not be indexed.
+  if (property.isActive === false) {
+    return false;
   }
 
-  const id = getPropertyId(property);
-
-  if (!id) {
-    return null;
+  if (property.active === false) {
+    return false;
   }
 
-  return `${SITE_URL}/property/${encodeURIComponent(id)}`;
+  if (property.isAvailable === false) {
+    return false;
+  }
+
+  // Exclude properties that are clearly not public.
+  if (property.status) {
+    const status = property.status.toLowerCase();
+
+    if (
+      status === "pending" ||
+      status === "rejected" ||
+      status === "inactive" ||
+      status === "disabled" ||
+      status === "deleted" ||
+      status === "draft"
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function getLastModified(property: Property): Date {
-  const dateValue = property.updatedAt || property.createdAt;
+  const value =
+    property.updatedAt ||
+    property.createdAt;
 
-  if (dateValue) {
-    const date = new Date(dateValue);
+  if (value) {
+    const date = new Date(value);
 
     if (!Number.isNaN(date.getTime())) {
       return date;
@@ -127,65 +148,34 @@ function getLastModified(property: Property): Date {
   return new Date();
 }
 
-function isActiveProperty(property: Property): boolean {
-  // Explicit inactive values
-  if (property.isActive === false) {
-    return false;
-  }
-
-  if (property.active === false) {
-    return false;
-  }
-
-  // If your backend uses status, exclude obvious inactive states
-  if (property.status) {
-    const status = property.status.toLowerCase();
-
-    if (
-      status === "inactive" ||
-      status === "disabled" ||
-      status === "deleted" ||
-      status === "draft" ||
-      status === "rejected"
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const properties = await getActiveProperties();
+  const properties = await getProperties();
 
   /*
    * Static pages
    */
   const staticPages: MetadataRoute.Sitemap = [
     {
-      url: SITE_URL,
+      url: `${SITE_URL}/`,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
     },
+
     {
       url: `${SITE_URL}/explore`,
       lastModified: new Date(),
       changeFrequency: "daily",
-      priority: 0.95,
+      priority: 0.9,
     },
+
     {
       url: `${SITE_URL}/refer-a-host`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.6,
     },
-    {
-      url: `${SITE_URL}/support`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
+
     {
       url: `${SITE_URL}/list-your-stay`,
       lastModified: new Date(),
@@ -198,28 +188,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    * Dynamic property pages
    *
    * IMPORTANT:
-   * We filter BEFORE mapping so the resulting array can NEVER
-   * contain null values.
+   * Your homepage currently uses:
+   *
+   * /properties/[id]
+   *
+   * Therefore the sitemap uses the same route.
    */
-  const activeProperties = properties.filter(isActiveProperty);
-
   const propertyPages: MetadataRoute.Sitemap = [];
 
-  for (const property of activeProperties) {
-    const url = getPropertyUrl(property);
+  for (const property of properties) {
+    if (!isActiveProperty(property)) {
+      continue;
+    }
 
-    // Skip malformed properties without an ID/slug
-    if (!url) {
+    const propertyId = getPropertyId(property);
+
+    if (!propertyId) {
       continue;
     }
 
     propertyPages.push({
-      url,
+      url: `${SITE_URL}/properties/${encodeURIComponent(
+        propertyId
+      )}`,
       lastModified: getLastModified(property),
       changeFrequency: "weekly",
       priority: 0.8,
     });
   }
 
-  return [...staticPages, ...propertyPages];
+  return [
+    ...staticPages,
+    ...propertyPages,
+  ];
 }

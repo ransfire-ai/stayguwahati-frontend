@@ -1,10 +1,284 @@
-'use client';
+"use client";
+
 import Link from "next/link";
-import {useEffect,useState} from "react";
+import { useEffect, useState } from "react";
 import PageShell from "./components/layout/PageShell";
-const API=(process.env.NEXT_PUBLIC_API_URL||process.env.NEXT_PUBLIC_BACKEND_URL||"https://stayguwahati-backend.onrender.com").replace(/\/$/,"");
-const img=(v:any)=>!v?"":/^https?:\/\//.test(v)?v:`${API}${String(v).startsWith("/")?"":"/"}${v}`;
-export default function Home(){const [items,setItems]=useState<any[]>([]);useEffect(()=>{fetch(`${API}/api/homestays`).then(r=>r.json()).then(x=>setItems(Array.isArray(x)?x:(x.data||x.homestays||[]))).catch(()=>{})},[]);
-return <PageShell><div className="sg-container sg-page"><section className="sg-hero"><span className="sg-kicker">Made for Guwahati</span><h1 className="sg-title">Stay local.<br/><span style={{color:"#f2bf45"}}>Feel Guwahati.</span></h1><p className="sg-sub">A calmer way to find a place to stay — handpicked homes, real local hosts and neighbourhoods worth discovering.</p><div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:24}}><Link className="sg-btn sg-primary" href="/explore">Discover stays →</Link><Link className="sg-btn sg-soft" href="/map">Explore by map</Link></div></section>
-<section className="sg-section"><span className="sg-kicker">Local discovery</span><h2 className="sg-title-sm" style={{marginTop:12}}>Choose your side of Guwahati</h2><div className="sg-grid sg-3" style={{marginTop:18}}>{["Uzan Bazar","Paltan Bazar","Ganeshguri"].map((x,i)=><Link key={x} href={`/explore?locality=${encodeURIComponent(x)}`} className="sg-card" style={{padding:24}}><div className="sg-kicker">Neighbourhood 0{i+1}</div><h3 style={{fontSize:25,margin:"14px 0 6px"}}>{x}</h3><p className="sg-muted">Discover stays, food and local character.</p><b>Explore →</b></Link>)}</div></section>
-<section className="sg-section"><div style={{display:"flex",justifyContent:"space-between",gap:20,alignItems:"end",flexWrap:"wrap"}}><div><span className="sg-kicker">Verified stays</span><h2 className="sg-title-sm" style={{marginTop:12}}>Places with a local story</h2></div><Link className="sg-btn sg-dark" href="/explore">See all stays</Link></div><div className="sg-grid sg-3" style={{marginTop:20}}>{items.slice(0,6).map((p:any)=><Link key={p._id||p.id} href={`/properties/${p._id||p.id}`} className="sg-card sg-property"><div className="sg-property-img">{(p.images?.[0]||p.image)&&<img src={img(p.images?.[0]||p.image)} alt={p.title||p.name||"Stay"}/>}</div><div className="sg-property-body"><h3 className="sg-property-title">{p.title||p.name||"Local stay"}</h3><p className="sg-muted">{p.locality||p.location||"Guwahati, Assam"}</p><b>₹{Number(p.pricePerNight||p.price||0).toLocaleString("en-IN")} / night</b></div></Link>)}</div></section></div></PageShell>}
+
+const API = (
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "https://stayguwahati-backend.onrender.com"
+).replace(/\/$/, "");
+
+const img = (v: any) =>
+  !v
+    ? ""
+    : /^https?:\/\//.test(v)
+      ? v
+      : `${API}${String(v).startsWith("/") ? "" : "/"}${v}`;
+
+/* -------------------------------------------------------
+   HOMEPAGE JSON-LD
+------------------------------------------------------- */
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://stayguwahati.in/#website",
+      url: "https://stayguwahati.in/",
+      name: "StayGuwahati",
+      description:
+        "Discover handpicked homestays in Guwahati with trusted local hosts.",
+      publisher: {
+        "@id": "https://stayguwahati.in/#organization",
+      },
+    },
+
+    {
+      "@type": "Organization",
+      "@id": "https://stayguwahati.in/#organization",
+      name: "StayGuwahati",
+      url: "https://stayguwahati.in/",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://stayguwahati.in/favicon-180.png",
+        width: 180,
+        height: 180,
+      },
+    },
+  ],
+};
+
+export default function Home() {
+  const [items, setItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch(`${API}/api/homestays`)
+      .then((r) => r.json())
+      .then((x) =>
+        setItems(
+          Array.isArray(x)
+            ? x
+            : x.data || x.homestays || []
+        )
+      )
+      .catch(() => {});
+  }, []);
+
+  return (
+    <>
+      {/* SEO Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd),
+        }}
+      />
+
+      <PageShell>
+        <div className="sg-container sg-page">
+
+          {/* ------------------------------------------------
+              HERO
+          ------------------------------------------------ */}
+
+          <section className="sg-hero">
+            <span className="sg-kicker">
+              Made for Guwahati
+            </span>
+
+            <h1 className="sg-title">
+              Stay local.
+              <br />
+
+              <span style={{ color: "#f2bf45" }}>
+                Feel Guwahati.
+              </span>
+            </h1>
+
+            <p className="sg-sub">
+              A calmer way to find a place to stay —
+              handpicked homes, real local hosts and
+              neighbourhoods worth discovering.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+                marginTop: 24,
+              }}
+            >
+              <Link
+                className="sg-btn sg-primary"
+                href="/explore"
+              >
+                Discover stays →
+              </Link>
+
+              <Link
+                className="sg-btn sg-soft"
+                href="/map"
+              >
+                Explore by map
+              </Link>
+            </div>
+          </section>
+
+          {/* ------------------------------------------------
+              LOCAL DISCOVERY
+          ------------------------------------------------ */}
+
+          <section className="sg-section">
+            <span className="sg-kicker">
+              Local discovery
+            </span>
+
+            <h2
+              className="sg-title-sm"
+              style={{ marginTop: 12 }}
+            >
+              Choose your side of Guwahati
+            </h2>
+
+            <div
+              className="sg-grid sg-3"
+              style={{ marginTop: 18 }}
+            >
+              {[
+                "Uzan Bazar",
+                "Paltan Bazar",
+                "Ganeshguri",
+              ].map((x, i) => (
+                <Link
+                  key={x}
+                  href={`/explore?locality=${encodeURIComponent(
+                    x
+                  )}`}
+                  className="sg-card"
+                  style={{ padding: 24 }}
+                >
+                  <div className="sg-kicker">
+                    Neighbourhood 0{i + 1}
+                  </div>
+
+                  <h3
+                    style={{
+                      fontSize: 25,
+                      margin: "14px 0 6px",
+                    }}
+                  >
+                    {x}
+                  </h3>
+
+                  <p className="sg-muted">
+                    Discover stays, food and local
+                    character.
+                  </p>
+
+                  <b>Explore →</b>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* ------------------------------------------------
+              VERIFIED STAYS
+          ------------------------------------------------ */}
+
+          <section className="sg-section">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 20,
+                alignItems: "end",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <span className="sg-kicker">
+                  Verified stays
+                </span>
+
+                <h2
+                  className="sg-title-sm"
+                  style={{ marginTop: 12 }}
+                >
+                  Places with a local story
+                </h2>
+              </div>
+
+              <Link
+                className="sg-btn sg-dark"
+                href="/explore"
+              >
+                See all stays
+              </Link>
+            </div>
+
+            <div
+              className="sg-grid sg-3"
+              style={{ marginTop: 20 }}
+            >
+              {items.slice(0, 6).map((p: any) => {
+                const propertyId = p._id || p.id;
+
+                return (
+                  <Link
+                    key={propertyId}
+                    href={`/properties/${propertyId}`}
+                    className="sg-card sg-property"
+                  >
+                    <div className="sg-property-img">
+                      {(p.images?.[0] || p.image) && (
+                        <img
+                          src={img(
+                            p.images?.[0] || p.image
+                          )}
+                          alt={
+                            p.title ||
+                            p.name ||
+                            "Stay"
+                          }
+                        />
+                      )}
+                    </div>
+
+                    <div className="sg-property-body">
+                      <h3 className="sg-property-title">
+                        {p.title ||
+                          p.name ||
+                          "Local stay"}
+                      </h3>
+
+                      <p className="sg-muted">
+                        {p.locality ||
+                          p.location ||
+                          "Guwahati, Assam"}
+                      </p>
+
+                      <b>
+                        ₹
+                        {Number(
+                          p.pricePerNight ||
+                            p.price ||
+                            0
+                        ).toLocaleString("en-IN")}{" "}
+                        / night
+                      </b>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+        </div>
+      </PageShell>
+    </>
+  );
+}
