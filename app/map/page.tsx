@@ -108,7 +108,7 @@ export default function LiveMapPage() {
     fetchData();
 
     try {
-      const saved = JSON.parse(localStorage.getItem('stayguwahatiWishlist') || '[]');
+      const saved = JSON.parse(localStorage.getItem('stayguwahati_wishlist') || '[]');
       if (Array.isArray(saved)) setWishlistIds(saved.map(String));
     } catch {
       setWishlistIds([]);
@@ -231,7 +231,7 @@ export default function LiveMapPage() {
         : [...current, propId];
 
       try {
-        localStorage.setItem('stayguwahatiWishlist', JSON.stringify(next));
+        localStorage.setItem('stayguwahati_wishlist', JSON.stringify(next));
       } catch {}
 
       return next;

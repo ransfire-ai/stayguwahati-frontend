@@ -260,6 +260,8 @@ export default function DashboardPage() {
   const [hostReservations, setHostReservations] = useState<Booking[]>([]);
   const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
   const [hostRating, setHostRating] = useState<number>(0);
+  const [wishlistProperties, setWishlistProperties] = useState<Property[]>([]);
+  const [loadingWishlist, setLoadingWishlist] = useState(true);
 
   // Loading states
   const [loadingTraveler, setLoadingTraveler] = useState(true);
@@ -483,6 +485,116 @@ export default function DashboardPage() {
     localStorage.removeItem('activeDashboardRole');
 
     router.replace('/login');
+  };
+
+  // Fetch the stays saved by the traveler.
+  // The property page stores IDs in the shared `stayguwahati_wishlist` key.
+  // We intentionally use the same key here so Dashboard and Property pages
+  // see the exact same saved stays.
+  const fetchWishlist = async () => {
+    setLoadingWishlist(true);
+
+    try {
+      const raw = localStorage.getItem('stayguwahati_wishlist') || '[]';
+      let savedIds: string[] = [];
+
+      try {
+        const parsed = JSON.parse(raw);
+        savedIds = Array.isArray(parsed)
+          ? parsed.map((id) => String(id || '').trim()).filter(Boolean)
+          : [];
+      } catch {
+        savedIds = [];
+      }
+
+      // Remove duplicate IDs while preserving the user's save order.
+      savedIds = Array.from(new Set(savedIds));
+
+      if (savedIds.length === 0) {
+        setWishlistProperties([]);
+        return;
+      }
+
+      const responses = await Promise.all(
+        savedIds.map(async (id) => {
+          try {
+            const response = await fetch(
+              `${BACKEND_URL}/api/homestays/${encodeURIComponent(id)}`,
+              { cache: 'no-store' }
+            );
+
+            if (!response.ok) return null;
+
+            const payload = await response.json();
+            const property =
+              payload?.success && payload?.data
+                ? payload.data
+                : payload?.data || payload;
+
+            if (!property || typeof property !== 'object') return null;
+
+            return {
+              ...property,
+              _id: String(property._id || property.id || id),
+            } as Property;
+          } catch (error) {
+            console.error(`Failed to load wishlist property ${id}:`, error);
+            return null;
+          }
+        })
+      );
+
+      const loaded = responses.filter(
+        (property): property is Property => Boolean(property)
+      );
+
+      // Keep the same order as localStorage.
+      const order = new Map(savedIds.map((id, index) => [id, index]));
+      loaded.sort(
+        (a, b) =>
+          (order.get(String(a._id || a.id)) ?? 999999) -
+          (order.get(String(b._id || b.id)) ?? 999999)
+      );
+
+      setWishlistProperties(loaded);
+
+      // If a saved property was deleted/unavailable, remove its stale ID so
+      // the Dashboard does not keep showing a broken wishlist forever.
+      const loadedIds = new Set(
+        loaded.map((property) => String(property._id || property.id || ''))
+      );
+      const validSavedIds = savedIds.filter((id) => loadedIds.has(id));
+
+      if (validSavedIds.length !== savedIds.length) {
+        localStorage.setItem(
+          'stayguwahati_wishlist',
+          JSON.stringify(validSavedIds)
+        );
+      }
+    } catch (error) {
+      console.error('Failed to load wishlist:', error);
+      setWishlistProperties([]);
+    } finally {
+      setLoadingWishlist(false);
+    }
+  };
+
+  const removeFromWishlist = (propertyId: string) => {
+    try {
+      const raw = localStorage.getItem('stayguwahati_wishlist') || '[]';
+      const parsed = JSON.parse(raw);
+      const current = Array.isArray(parsed) ? parsed.map(String) : [];
+      const next = current.filter((id) => id !== String(propertyId));
+
+      localStorage.setItem('stayguwahati_wishlist', JSON.stringify(next));
+      setWishlistProperties((currentProperties) =>
+        currentProperties.filter(
+          (property) => String(property._id || property.id || '') !== String(propertyId)
+        )
+      );
+    } catch (error) {
+      console.error('Failed to remove wishlist item:', error);
+    }
   };
 
   // Fetch traveler bookings
@@ -744,6 +856,23 @@ export default function DashboardPage() {
       fetchTravelerBookings();
     }
   }, [currentRole, currentUser.email]);
+
+  // Wishlist is traveler data and must be refreshed whenever Dashboard opens
+  // or the user returns to the traveler view.
+  useEffect(() => {
+    if (currentRole !== 'traveler') return;
+
+    fetchWishlist();
+
+    const handleWishlistChanged = () => fetchWishlist();
+    window.addEventListener('stayguwahati:wishlist-changed', handleWishlistChanged);
+    window.addEventListener('focus', handleWishlistChanged);
+
+    return () => {
+      window.removeEventListener('stayguwahati:wishlist-changed', handleWishlistChanged);
+      window.removeEventListener('focus', handleWishlistChanged);
+    };
+  }, [currentRole]);
 
   // Mode Switch
   const toggleUserRole = () => {
@@ -1065,11 +1194,92 @@ export default function DashboardPage() {
               <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 mb-4">
                 <Heart className="w-4 h-4 text-rose-500" /> {t.wishlistHead}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-white border border-[#d7dfda] p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm col-span-full">
-                  <p>{t.noWishlist}</p>
+
+              {loadingWishlist ? (
+                <div className="bg-white border border-[#d7dfda] p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm">
+                  <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2 text-[#28655c]" />
+                  Loading your saved stays...
                 </div>
-              </div>
+              ) : wishlistProperties.length === 0 ? (
+                <div className="bg-white border border-[#d7dfda] p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm">
+                  <Heart className="w-7 h-7 mx-auto mb-2 text-gray-300" />
+                  <p>{t.noWishlist}</p>
+                  <Link
+                    href="/explore"
+                    className="inline-flex mt-3 items-center gap-1 text-[#28655c] font-bold hover:underline"
+                  >
+                    Explore stays <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {wishlistProperties.map((property) => {
+                    const propertyId = String(property._id || property.id || '');
+                    const title = property.title || property.propertyName || 'Stay';
+                    const location = property.locality || property.location || property.city || 'Guwahati';
+                    const price = Number(property.pricePerNight ?? property.price ?? 0);
+                    const image =
+                      property.image ||
+                      property.imageUrl ||
+                      property.propertyImage ||
+                      (Array.isArray(property.images) ? property.images[0] : '');
+
+                    return (
+                      <div
+                        key={propertyId}
+                        className="bg-white border border-[#d7dfda] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition"
+                      >
+                        <div className="relative h-40 bg-gray-100">
+                          <img
+                            src={resolveImageUrl(image)}
+                            alt={title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeFromWishlist(propertyId)}
+                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 text-rose-500 flex items-center justify-center shadow-sm hover:bg-white"
+                            aria-label={`Remove ${title} from saved stays`}
+                          >
+                            <Heart className="w-4 h-4 fill-current" />
+                          </button>
+                        </div>
+
+                        <div className="p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-gray-900 truncate">{title}</h4>
+                              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-[#28655c]" />
+                                <span className="truncate">{location}</span>
+                              </p>
+                            </div>
+                            {Number(property.rating) > 0 && (
+                              <span className="text-xs font-bold text-amber-500 whitespace-nowrap">
+                                ★ {Number(property.rating).toFixed(1)}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-4 flex items-center justify-between gap-2">
+                            <p className="font-black text-gray-900">
+                              ₹{price.toLocaleString('en-IN')}
+                              <span className="font-normal text-xs text-gray-500"> / night</span>
+                            </p>
+                            <Link
+                              href={`/properties/${propertyId}`}
+                              className="text-xs font-bold text-[#28655c] hover:underline inline-flex items-center gap-1"
+                            >
+                              View details <ArrowRight className="w-3 h-3" />
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Past Trips History */}
