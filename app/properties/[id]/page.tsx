@@ -661,7 +661,7 @@ function PropertyDetailsContent() {
             <span className="sm:hidden">Back</span>
           </button>
 
-          <div className="flex gap-2">
+          <div className="hidden gap-2 sm:flex">
             <button
               onClick={share}
               className="rounded-full border border-[#d5ddd8] bg-white p-2.5"
@@ -688,14 +688,14 @@ function PropertyDetailsContent() {
           </div>
         </div>
 
-        <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <header className="mb-6 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#e4efe9] px-3 py-1 text-[10px] font-black uppercase tracking-[.16em] text-[#28655c]">
               <ShieldCheck className="h-3.5 w-3.5" />
               Local stay · Guwahati
             </div>
 
-            <h1 className="text-3xl font-black tracking-tight sm:text-5xl">
+            <h1 className="text-[46px] leading-[1.02] font-black tracking-tight sm:text-5xl">
               {property.title || property.name || 'StayGuwahati Home'}
             </h1>
 
@@ -713,7 +713,7 @@ function PropertyDetailsContent() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 text-xs font-bold">
+          <div className="grid grid-cols-1 gap-3 text-sm font-bold min-[430px]:grid-cols-2 sm:flex sm:flex-wrap sm:gap-2 sm:text-xs">
             <span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2">
               <BedDouble className="mr-1 inline h-3.5 w-3.5" />
               {derived.bedrooms || '—'} bedrooms
@@ -790,57 +790,55 @@ function PropertyDetailsContent() {
           </div>
 
           <div className="md:hidden">
-            <button
-              onClick={() => {
-                if (images.length) {
-                  setSelected(0);
-                  setGalleryOpen(true);
-                }
-              }}
-              className="relative h-[330px] w-full overflow-hidden rounded-[24px]"
-            >
-              {heroImage ? (
-                <img
-                  src={heroImage}
-                  alt={property.title || 'Property'}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="grid h-full w-full place-items-center bg-[#dfe8e2] text-[#28655c]">
-                  <div className="text-center">
-                    <ImageIcon className="mx-auto h-12 w-12" />
-                    <p className="mt-3 font-bold">Photos coming soon</p>
+            <div className="grid grid-cols-2 grid-rows-2 gap-2">
+              <button
+                onClick={() => {
+                  if (images.length) {
+                    setSelected(0);
+                    setGalleryOpen(true);
+                  }
+                }}
+                className="relative row-span-2 h-[330px] overflow-hidden rounded-[24px]"
+              >
+                {heroImage ? (
+                  <img
+                    src={heroImage}
+                    alt={property.title || 'Property'}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-[#dfe8e2] text-[#28655c]">
+                    <div className="text-center">
+                      <ImageIcon className="mx-auto h-12 w-12" />
+                      <p className="mt-3 font-bold">Photos coming soon</p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </button>
+                )}
+              </button>
 
-            {images.length > 1 && (
-              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                {images.slice(1).map((img, index) => (
-                  <button
-                    key={`${img}-${index}`}
-                    onClick={() => {
-                      setSelected(index + 1);
-                      setGalleryOpen(true);
-                    }}
-                    className="h-24 w-32 shrink-0 overflow-hidden rounded-2xl"
-                  >
-                    <img
-                      src={img}
-                      alt={`Property view ${index + 2}`}
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
+              {images.slice(1, 4).map((img, index) => (
+                <button
+                  key={`${img}-${index}`}
+                  onClick={() => {
+                    setSelected(index + 1);
+                    setGalleryOpen(true);
+                  }}
+                  className="relative h-[161px] overflow-hidden rounded-[20px]"
+                >
+                  <img
+                    src={img}
+                    alt={`Property view ${index + 2}`}
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
           </div>
 
           {images.length > 0 && (
             <button
               onClick={() => setGalleryOpen(true)}
-              className="absolute bottom-5 right-5 z-10 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-black text-[#173f3a] shadow-lg"
+              className="absolute bottom-4 right-4 z-10 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[#173f3a] shadow-lg sm:bottom-5 sm:right-5 sm:px-4 sm:py-2.5 sm:text-xs"
             >
               <ImageIcon className="h-4 w-4" />
               View all {images.length} photos
@@ -848,7 +846,102 @@ function PropertyDetailsContent() {
           )}
         </section>
 
-        <div className="mt-8 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_410px]">
+        <section className="mt-8 space-y-5 md:hidden">
+          <div className="rounded-[28px] border border-[#d9e0db] bg-white p-5">
+            <p className="text-[11px] font-black uppercase tracking-[.18em] text-[#28655c]">
+              About this stay
+            </p>
+            <h2 className="mt-2 text-[27px] leading-tight font-black">
+              {property.title || 'A comfortable stay in Guwahati'}
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-[#60716c]">
+              {property.description ||
+                'Experience premier hospitality in Guwahati. This verified local homestay offers a comfortable base for your visit.'}
+            </p>
+
+            <div className="my-5 border-t border-[#e1e7e3]" />
+
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#28655c]">
+              Amenities & highlights
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {derived.amenities.slice(0, 8).map((amenity, index) => (
+                <span
+                  key={`${amenity}-${index}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#b9cec4] bg-[#f7faf8] px-3 py-1.5 text-[10px] font-bold text-[#28655c]"
+                >
+                  <Check className="h-3 w-3" />
+                  {amenity}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-[#d9e0db] bg-white p-5">
+            <div className="flex items-center gap-2">
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#e4efe9] text-[#28655c]">
+                <BedDouble className="h-4 w-4" />
+              </span>
+              <h2 className="text-lg font-black">Property details</h2>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-xl border border-[#d9e0db] p-3">
+                <p className="text-[9px] font-black uppercase tracking-wider text-[#71827d]">
+                  Bedrooms
+                </p>
+                <p className="mt-1 text-sm font-black">
+                  {derived.bedrooms || '—'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-[#d9e0db] p-3">
+                <p className="text-[9px] font-black uppercase tracking-wider text-[#71827d]">
+                  Bathrooms
+                </p>
+                <p className="mt-1 text-sm font-black">
+                  {derived.bathrooms || '—'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-[#b8d9cf] bg-[#eef8f4] p-3">
+                <p className="text-[9px] font-black uppercase tracking-wider text-[#28655c]">
+                  Guest capacity
+                </p>
+                <p className="mt-1 text-sm font-black text-[#173f3a]">
+                  Up to {derived.guests}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-[#d9e0db] bg-white p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#28655c]">
+                  Guest feedback
+                </p>
+                <h2 className="mt-1 text-lg font-black">Guest reviews</h2>
+              </div>
+              <span className="rounded-full bg-[#fff2bd] px-3 py-1.5 text-xs font-black">
+                ★ {rating > 0 ? rating.toFixed(1) : 'New'}
+              </span>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-[#71827d]">
+              {reviews.length
+                ? `${reviews.length} guest review${reviews.length === 1 ? '' : 's'} available.`
+                : 'No reviews yet for this property.'}
+            </p>
+          </div>
+
+          <button
+            onClick={book}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#e9bf52] px-5 py-4 text-sm font-black text-[#173f3a]"
+          >
+            Reserve this stay
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </section>
+
+        <div className="mt-8 hidden items-start gap-8 md:grid xl:grid-cols-[minmax(0,1fr)_410px]">
           <div className="space-y-8">
             <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
               <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">
