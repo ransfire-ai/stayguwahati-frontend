@@ -1,444 +1,712 @@
- 'use client';
+'use client';
 
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import {
-  ArrowLeft, ArrowRight, Bath, BedDouble, CalendarDays, Check, ChevronLeft,
-  ChevronRight, Copy, Heart, Home, ImageIcon, MapPin, MessageCircle,
-  ShieldCheck, Share2, Star, UserRound, Users, Wifi, X
-} from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-type Host = {
-  _id?: string; id?: string; hostId?: string;
-  name?: string; email?: string; phone?: string; avatar?: string;
-  photo?: string; image?: string; profileImage?: string; profilePicture?: string;
+interface PropertyHost {
+  name: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+  photo?: string;
+  image?: string;
+  profileImage?: string;
+  profilePicture?: string;
   isVerified?: boolean;
-};
-
-type Property = {
-  id?: string; _id?: string; title?: string; name?: string;
-  pricePerNight?: number | string; price?: number | string;
-  locality?: string; city?: string; address?: string; description?: string;
-  images?: string[]; features?: string[]; amenities?: string[];
-  bedrooms?: number | string; guests?: number | string; maxGuests?: number | string;
-  bathrooms?: any; bathroomCount?: number | string; bathroomsCount?: number | string;
-  numberOfBathrooms?: number | string; rating?: number; reviewsCount?: number;
-  host?: Host | string; cancellationPolicy?: string; mapUrl?: string; googleMapsLink?: string;
-};
-
-type Review = {
-  _id?: string; guestName?: string; rating?: number; comment?: string; createdAt?: string;
-};
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://stayguwahati-backend.onrender.com';
-const FALLBACK_IMAGES = [
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
-  'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1000&q=85',
-  'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1000&q=85',
-  'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1000&q=85',
-];
-
-function cleanImage(src: string) {
-  if (!src) return '';
-  if (/^https?:\/\//i.test(src) || src.startsWith('data:')) return src;
-  return `${API}${src.startsWith('/') ? '' : '/'}${src}`;
 }
 
-function countOf(v: unknown) {
-  const n = Number(v);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
+interface PropertyData {
+  id: string;
+  _id?: string;
+  title: string;
+  pricePerNight?: string | number;
+  price?: string | number;
+  locality?: string;
+  description?: string;
+  images: string[];
+  features?: string[];
+  amenities?: string[];
+  bedrooms?: number | string;
+  bathrooms?: {
+    privateAttached?: number | string;
+    dedicated?: number | string;
+    shared?: number | string;
+    total?: number | string;
+  };
+  host?: PropertyHost | string;
+  cancellationPolicy?: 'flexible' | 'moderate' | 'strict' | string;
+  rating?: number;
+
 }
 
-function cancellation(policy?: string) {
-  const p = String(policy || 'flexible').toLowerCase();
-  if (p === 'strict') return { name: 'Strict', text: 'Cancellation is limited. Contact support for help with changes.' };
-  if (p === 'moderate') return { name: 'Moderate', text: 'Free cancellation may be available up to 5 days before check-in.' };
-  return { name: 'Flexible', text: 'Free cancellation may be available up to 24 hours before check-in.' };
+interface Review {
+  _id: string;
+  guestName?: string;
+  rating: number;
+  comment?: string;
+  createdAt?: string;
 }
+
+const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+
+// StayGuwahati support WhatsApp (updated 23 Aug 2026)
+const SUPPORT_EMAIL = 'support@stayguwahati.in';
+const SUPPORT_WHATSAPP = '8486699452';
+
+const getWhatsAppUrl = (phone: string, message: string) => {
+  const digits = phone.replace(/\\D/g, '');
+  if (!digits) return '';
+  const normalized = digits.startsWith('91') ? digits : `91${digits}`;
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+};
+
+const getHostAvatarUrl = (host?: PropertyHost | string) => {
+  if (!host) return null;
+
+  let name = 'Host';
+  let rawPath = '';
+
+  if (typeof host === 'string') {
+    name = host;
+  } else {
+    name = host.name || 'Host';
+    rawPath = (
+      host.avatar ||
+      host.photo ||
+      host.image ||
+      host.profileImage ||
+      host.profilePicture ||
+      ''
+    ).trim();
+  }
+
+  // Check localStorage fallback if backend didn't return an avatar path
+  if (!rawPath) {
+    try {
+      const localAvatar = localStorage.getItem('hostAvatar');
+      if (localAvatar) return localAvatar;
+
+      const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      const profileAvatar = userProfile.avatar || userProfile.photo || userProfile.image;
+      if (profileAvatar) {
+        return profileAvatar.startsWith('http') ? profileAvatar : `${BACKEND_URL}${profileAvatar.startsWith('/') ? '' : '/'}${profileAvatar}`;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+
+    const formattedName = encodeURIComponent(name);
+    return `https://ui-avatars.com/api/?name=${formattedName}&background=0d9488&color=fff&size=128`;
+  }
+
+  if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+    return rawPath;
+  }
+  return `${BACKEND_URL}${rawPath.startsWith('/') ? '' : '/'}${rawPath}`;
+};
 
 function PropertyDetailsContent() {
   const router = useRouter();
-  const routeParams = useParams<{ id?: string | string[] }>();
-  const propertyId = typeof routeParams?.id === 'string'
-    ? routeParams.id
-    : Array.isArray(routeParams?.id)
-      ? routeParams.id[0]
-      : '';
+  const searchParams = useSearchParams();
 
-  const [property, setProperty] = useState<Property | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-  const [selected, setSelected] = useState(0);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [property, setProperty] = useState<PropertyData | null>(null);
+  const [selectedMainImage, setSelectedMainImage] = useState<string>('');
+  const [isSaved, setIsSaved] = useState(false);
+
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    let alive = true;
-    async function load() {
-      setLoading(true); setLoadError('');
-      let prop: Property | null = null;
-      try {
-        if (propertyId && propertyId !== 'default') {
-          const encodedId = encodeURIComponent(propertyId);
-          const endpoints = [
-            `${API}/api/homestays/${encodedId}`,
-            `${API}/api/properties/${encodedId}`
-          ];
+    const propertyId = searchParams.get('id');
+    const titleParam = searchParams.get('title');
 
-          for (const endpoint of endpoints) {
-            try {
-              const res = await fetch(endpoint, { cache: 'no-store' });
-              if (!res.ok) continue;
+    async function loadProperty() {
+      let prop: PropertyData | null = null;
 
-              const raw = await res.json();
-              const candidate =
-                raw?.data?.property || raw?.data?.homestay ||
-                raw?.property || raw?.homestay || raw?.data || raw;
+      // 1. Check Session Storage
+      const cachedProp = sessionStorage.getItem('selectedProperty');
+      if (cachedProp) {
+        try {
+          const parsed = JSON.parse(cachedProp);
+          if (!propertyId || parsed.id === propertyId || parsed._id === propertyId) {
+            prop = parsed;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
 
-              if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
-                prop = candidate as Property;
-                break;
+      // 2. Fetch from Backend API if not found in session
+      if (!prop && propertyId && propertyId !== 'default') {
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/homestays/${propertyId}`);
+          if (response.ok) {
+            const json = await response.json();
+            prop = json.data || json;
+          }
+        } catch (err) {
+          console.warn('Could not fetch property from API, checking local stores...', err);
+        }
+      }
+
+      // 3. Fallback to LocalStorage
+      if (!prop) {
+        const localPropsStr = localStorage.getItem('userProperties');
+        if (localPropsStr) {
+          const localProps: PropertyData[] = JSON.parse(localPropsStr);
+          prop =
+            localProps.find(
+              (p) => p.id === propertyId || p._id === propertyId || p.title === titleParam
+            ) || null;
+        }
+      }
+
+      // 4. Default Fallback Object
+      if (!prop) {
+        prop = {
+          id: propertyId || 'default',
+          title: titleParam || 'Paltan House',
+          pricePerNight: searchParams.get('price') || '1500',
+          locality: searchParams.get('locality') || 'Paltan Bazar',
+          description:
+            'Experience premier hospitality in Guwahati. This verified local homestay features handpicked interior accents, responsive management, and comprehensive amenities.',
+          images: [],
+          features: ['Premium Linens', 'Free Wi-Fi', 'Great Location', 'Air Conditioning'],
+        };
+
+        const singleImg = searchParams.get('image');
+        if (singleImg && singleImg !== 'null' && singleImg !== '' && singleImg.length < 1000) {
+          let cleanImg = decodeURIComponent(singleImg);
+          if (cleanImg.startsWith('/uploads')) cleanImg = `${BACKEND_URL}${cleanImg}`;
+          prop.images.push(cleanImg);
+        }
+      }
+
+      // Automatically attach local host avatar if backend host object is missing avatar
+      if (prop) {
+        if (typeof prop.host === 'string') {
+          prop.host = { name: prop.host };
+        }
+        if (prop.host && typeof prop.host === 'object') {
+          if (!prop.host.avatar) {
+            const localHostAvatar = localStorage.getItem('hostAvatar') || (() => {
+              try {
+                const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                return profile.avatar || profile.photo || profile.image || null;
+              } catch {
+                return null;
               }
-            } catch (endpointError) {
-              console.warn('Property endpoint failed', endpoint, endpointError);
+            })();
+            if (localHostAvatar) {
+              prop.host.avatar = localHostAvatar;
             }
           }
         }
-      } catch (e) {
-        console.warn('Property fetch failed', e);
       }
 
-      if (!prop && typeof window !== 'undefined') {
-        try {
-          const cached = sessionStorage.getItem('selectedProperty');
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (!propertyId || String(parsed?._id || parsed?.id) === propertyId) prop = parsed;
-          }
-          if (!prop) {
-            const list = JSON.parse(localStorage.getItem('userProperties') || '[]');
-            if (Array.isArray(list)) prop = list.find((p: Property) => String(p?._id || p?.id) === propertyId) || null;
-          }
-        } catch {}
+      // Clean image URLs
+      if (prop.images && prop.images.length > 0) {
+        prop.images = prop.images.map((img) =>
+          img.startsWith('/uploads') ? `${BACKEND_URL}${img}` : img
+        );
       }
 
-      if (!prop) {
-        if (alive) { setLoadError('We could not load this property. Please check the backend connection or try again.'); setLoading(false); }
-        return;
+      // Ensure at least fallback images exist
+      if (!prop.images || prop.images.length === 0) {
+        prop.images = [
+          'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
+          'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=600',
+          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=600',
+          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600',
+        ];
       }
 
-      const propertyWithPhotos = prop as Property & { photos?: string[] };
-
-      const imageSource: unknown[] =
-        Array.isArray(prop.images)
-          ? prop.images
-          : Array.isArray(propertyWithPhotos.photos)
-            ? propertyWithPhotos.photos
-            : [];
-
-      const rawImages = imageSource
-        .filter((image): image is string => typeof image === 'string' && image.trim().length > 0)
-        .map(cleanImage);
-
-      prop.images = rawImages.length ? rawImages : FALLBACK_IMAGES;
-      if (alive) { setProperty(prop); setSelected(0); setLoading(false); }
+      setProperty(prop);
+      setSelectedMainImage(prop.images[0]);
     }
-    load();
-    return () => { alive = false; };
-  }, [propertyId]);
 
+    loadProperty();
+  }, [searchParams]);
+
+  // Dynamic reviews fetcher
   useEffect(() => {
-    let alive = true;
-    async function loadReviews() {
-      if (!propertyId) { setReviewsLoading(false); return; }
+    const propertyId = searchParams.get('id');
+
+    if (!propertyId) {
+      setReviewsLoading(false);
+      return;
+    }
+
+    async function fetchReviews() {
       try {
-        const res = await fetch(`${API}/api/reviews?propertyId=${encodeURIComponent(propertyId)}`, { cache: 'no-store' });
-        const raw = await res.json();
-        const list = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
-        if (alive) setReviews(list);
-      } catch {
-        if (alive) setReviews([]);
+        const res = await fetch(`${BACKEND_URL}/api/reviews?propertyId=${propertyId}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setReviews(data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching reviews:', err);
       } finally {
-        if (alive) setReviewsLoading(false);
+        setReviewsLoading(false);
       }
     }
-    loadReviews();
-    return () => { alive = false; };
-  }, [propertyId]);
 
-  useEffect(() => {
-    if (!propertyId) return;
-    try {
-      const list = JSON.parse(localStorage.getItem('stayguwahati_wishlist') || '[]');
-      setSaved(Array.isArray(list) && list.includes(propertyId));
-    } catch {}
-  }, [propertyId]);
+    fetchReviews();
+  }, [searchParams]);
 
-  const derived = useMemo(() => {
-    if (!property) return null;
-    const b = countOf(property.bedrooms);
-    const bathObj = property.bathrooms && typeof property.bathrooms === 'object' ? property.bathrooms : {};
-    const bath = countOf(bathObj.total ?? bathObj.count ?? property.bathroomCount ?? property.bathroomsCount ?? property.numberOfBathrooms) ||
-      countOf(bathObj.privateAttached) + countOf(bathObj.attached) + countOf(bathObj.dedicated) + countOf(bathObj.shared);
-    const guests = countOf(property.maxGuests ?? property.guests) || 2;
-    const price = Number(property.pricePerNight ?? property.price ?? 1500) || 1500;
-    const amenities = Array.from(new Set((property.features || property.amenities || ['Free Wi-Fi', 'Comfortable stay', 'Local host']).filter(Boolean)));
-    const host = typeof property.host === 'string' ? { name: property.host } : (property.host || {});
-    const hostName = host.name || 'StayGuwahati Host';
-    const avatar = cleanImage(host.avatar || host.photo || host.image || host.profileImage || host.profilePicture || '') ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName)}&background=173f3a&color=fff&size=128`;
-    return { b, bath, guests, price, amenities, host, hostName, avatar, policy: cancellation(property.cancellationPolicy) };
-  }, [property]);
+  const handleShareProperty = () => {
+    const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}${window.location.search.split('&image=')[0]}`;
+    const shareData = {
+      title: property ? `StayGuwahati | ${property.title}` : 'StayGuwahati Homestay',
+      text: 'Check out this amazing local stay on StayGuwahati!',
+      url: cleanUrl,
+    };
 
-  function toggleSave() {
-    if (!propertyId) { setSaved(v => !v); return; }
-    try {
-      const old = JSON.parse(localStorage.getItem('stayguwahati_wishlist') || '[]');
-      const list = Array.isArray(old) ? old : [];
-      const next = list.includes(propertyId) ? list.filter((x: string) => x !== propertyId) : [...list, propertyId];
-      localStorage.setItem('stayguwahati_wishlist', JSON.stringify(next));
-      setSaved(next.includes(propertyId));
-    } catch { setSaved(v => !v); }
+    if (navigator.share) {
+      navigator.share(shareData).catch((err) => console.log('Error sharing:', err));
+    } else {
+      navigator.clipboard
+        .writeText(cleanUrl)
+        .then(() => alert('Property link copied to your clipboard!'))
+        .catch(() => alert('Could not copy link automatically. Please manually copy the URL.'));
+    }
+  };
+
+  const handleToggleWishlist = () => {
+    setIsSaved(!isSaved);
+  };
+
+  const handleReserveSpace = () => {
+    if (!property) return;
+    const mainImage = property.images && property.images.length > 0 ? property.images[0] : '';
+    const bookingData = {
+      id: property.id || property._id || '',
+      title: property.title || '',
+      price: property.pricePerNight || property.price || 1500,
+      locality: property.locality || 'Guwahati',
+      image: mainImage,
+    };
+    sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+    router.push('/book-stay');
+  };
+
+  if (!property) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="text-slate-500 font-medium animate-pulse">Loading property details...</div>
+      </div>
+    );
   }
 
-  async function share() {
-    const url = window.location.href;
-    const data = { title: property?.title || 'StayGuwahati', text: 'Check out this stay on StayGuwahati', url };
-    try {
-      if (navigator.share) await navigator.share(data);
-      else { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1800); }
-    } catch {}
-  }
+  const featuresList =
+    property.features || property.amenities || ['Premium Linens', 'Free Wi-Fi', 'Great Location'];
+  const priceFormatted = parseInt(
+    String(property.pricePerNight || property.price || 1500)
+  ).toLocaleString('en-IN');
 
-  function book() {
-    if (!property || !derived) return;
-    const id = String(property._id || property.id || propertyId || '');
-    if (!id) { alert('This property is missing its booking ID. Please return to Explore and open it again.'); return; }
-    const data = { id, title: property.title || property.name || 'Stay', price: derived.price, locality: property.locality || property.city || 'Guwahati', image: property.images?.[selected] || property.images?.[0] || '' };
-    sessionStorage.setItem('pendingBooking', JSON.stringify(data));
-    router.push(`/book-stay?id=${encodeURIComponent(id)}`);
-  }
+  // Bedroom & bathroom summary shown to guests.
+  const bedroomCount = Number(property.bedrooms ?? 0);
+  const privateAttachedBathrooms = Number(property.bathrooms?.privateAttached ?? 0);
+  const dedicatedBathrooms = Number(property.bathrooms?.dedicated ?? 0);
+  const sharedBathrooms = Number(property.bathrooms?.shared ?? 0);
+  const bathroomTotalFromTypes =
+    privateAttachedBathrooms + dedicatedBathrooms + sharedBathrooms;
+  const bathroomCount = Number(
+    property.bathrooms?.total ?? bathroomTotalFromTypes
+  );
 
-  if (loading) return <main className="min-h-[70vh] grid place-items-center bg-[#f5f1e9]"><div className="text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#d6e0da] border-t-[#28655c]" /><p className="mt-4 text-sm font-semibold text-[#62736e]">Loading your stay…</p></div></main>;
+  const bathroomCountLabel = Number.isInteger(bathroomCount)
+    ? String(bathroomCount)
+    : bathroomCount.toFixed(1).replace(/\\.0$/, '');
 
-  if (!property || !derived) return <main className="min-h-[70vh] grid place-items-center bg-[#f5f1e9] px-5"><div className="max-w-md rounded-3xl border border-[#d7ded8] bg-white p-8 text-center shadow-sm"><MapPin className="mx-auto h-10 w-10 text-[#28655c]"/><h1 className="mt-4 text-2xl font-black">Stay not found</h1><p className="mt-2 text-sm text-[#71827d]">{loadError || 'This property is currently unavailable.'}</p><Link href="/explore" className="mt-6 inline-flex rounded-xl bg-[#173f3a] px-5 py-3 text-sm font-bold text-white">Explore stays</Link></div></main>;
+  const bathroomTypeItems = [
+    privateAttachedBathrooms > 0
+      ? `${privateAttachedBathrooms} private & attached`
+      : null,
+    dedicatedBathrooms > 0 ? `${dedicatedBathrooms} dedicated` : null,
+    sharedBathrooms > 0 ? `${sharedBathrooms} shared` : null,
+  ].filter(Boolean) as string[];
 
-  const images = property.images || FALLBACK_IMAGES;
-  const mapQuery = encodeURIComponent(`${property.title || property.name || 'Homestay'} ${property.address || property.locality || property.city || 'Guwahati'}, Assam`);
-  const mapHref = property.mapUrl || property.googleMapsLink || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
-  const rating = Number(property.rating || (reviews.length ? reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / reviews.length : 0));
+  const totalImages = property.images.length;
+  const img2 = property.images[1] || selectedMainImage;
+  const img3 = property.images[2] || selectedMainImage;
+  const img4 = property.images[3] || selectedMainImage;
+  
+  const hostAvatarUrl = getHostAvatarUrl(property.host);
+  const hostName =
+    typeof property.host === 'object' && property.host !== null
+      ? property.host.name
+      : (typeof property.host === 'string' ? property.host : 'Host');
 
-  // Public host profile URLs use the host's User/ObjectId, never email.
-  const hostProfileHref = (() => {
-    const host = typeof property.host === 'object' && property.host !== null
-      ? property.host
-      : {};
-    const extendedProperty = property as Property & { hostId?: string; ownerId?: string; userId?: string };
-    const hostId = String(
-      host.hostId || host._id || host.id ||
-      extendedProperty.hostId || extendedProperty.ownerId || extendedProperty.userId || ''
-    ).trim();
-    return hostId ? `/host-profile?id=${encodeURIComponent(hostId)}` : '';
-  })();
+  const hostPhone =
+    typeof property.host === 'object' && property.host !== null
+      ? (property.host.phone || 'Verified Host')
+      : 'Verified Host';
+
+  const hostEmail =
+    typeof property.host === 'object' && property.host !== null
+      ? (property.host.email || '')
+      : '';
+
+  const hostIsVerified =
+    typeof property.host === 'object' &&
+    property.host !== null &&
+    property.host.isVerified === true;
+
+  const hostProfileHref = `/host-profile?${hostEmail
+    ? `email=${encodeURIComponent(hostEmail)}`
+    : `name=${encodeURIComponent(hostName || 'Host')}`}`;
 
   return (
-    <main className="bg-[#f5f1e9] text-[#173f3a]">
-      <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8">
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <button
-            onClick={() => {
-              if (typeof window !== 'undefined' && window.history.length > 1) {
-                router.back();
-              } else {
-                router.push('/explore');
-              }
-            }}
-            className="inline-flex items-center gap-2 text-sm font-bold text-[#46625c] hover:text-[#173f3a]"
-          >
-            <ArrowLeft className="h-4 w-4"/> Back
-          </button>
-          <div className="flex gap-2">
-            <button onClick={share} className="rounded-full border border-[#d5ddd8] bg-white p-2.5 text-[#173f3a] hover:border-[#28655c]" aria-label="Share"><Share2 className="h-4 w-4"/></button>
-            <button onClick={toggleSave} className={`rounded-full border p-2.5 ${saved ? 'border-[#cba848] bg-[#fff4c7] text-[#8a6510]' : 'border-[#d5ddd8] bg-white'}`} aria-label="Save"><Heart className={`h-4 w-4 ${saved ? 'fill-current' : ''}`}/></button>
-          </div>
-        </div>
+    <main className="flex-1 bg-[#f6f4ef] pb-24 lg:pb-0">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Back */}
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) router.back();
+            else router.push('/');
+          }}
+          className="mb-3 sm:mb-7 inline-flex items-center gap-2 text-sm font-extrabold text-[#0f766e] hover:text-[#064e4a] transition"
+        >
+          <span className="text-lg">←</span> Back to stays
+        </button>
 
-        <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#e4efe9] px-3 py-1 text-[10px] font-black uppercase tracking-[.16em] text-[#28655c]"><ShieldCheck className="h-3.5 w-3.5"/> Local stay · Guwahati</div>
-            <h1 className="text-3xl font-black tracking-tight sm:text-5xl">{property.title || property.name || 'StayGuwahati Home'}</h1>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#637670]">
-              <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#28655c]"/>{property.locality || property.city || 'Guwahati'}, Assam</span>
-              <span className="inline-flex items-center gap-1"><Star className="h-4 w-4 fill-[#e0ad36] text-[#e0ad36]"/>{rating > 0 ? rating.toFixed(1) : 'New'} {reviews.length ? `· ${reviews.length} reviews` : ''}</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2"><BedDouble className="mr-1 inline h-3.5 w-3.5"/> {derived.b || '—'} bedrooms</span><span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2"><Bath className="mr-1 inline h-3.5 w-3.5"/> {derived.bath || '—'} bathrooms</span><span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2"><Users className="mr-1 inline h-3.5 w-3.5"/> Up to {derived.guests} guests</span></div>
-        </header>
-
-        <section className="relative overflow-hidden rounded-[30px] bg-[#e5e9e6] p-2 shadow-sm">
-          {/* Desktop/tablet gallery: fixed, balanced compositions with no empty cells */}
-          <div className="hidden h-[520px] gap-2 md:grid md:grid-cols-[1.18fr_0.82fr]">
-            <button
-              onClick={() => { setSelected(0); setGalleryOpen(true); }}
-              className="group relative min-h-0 overflow-hidden rounded-[24px]"
-            >
-              <img
-                src={images[0]}
-                alt={property.title || 'Property'}
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]"
-              />
-              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent px-5 pb-5 pt-16 text-left">
-                <span className="rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-black text-[#173f3a] shadow-sm">
-                  Featured view
-                </span>
+        {/* Homepage-matched property hero */}
+        <section className="relative overflow-hidden rounded-[24px] sm:rounded-[36px] bg-[#103d3a] px-4 py-5 sm:px-8 sm:py-9 lg:px-10 lg:py-11 text-white shadow-[0_18px_50px_rgba(15,61,58,0.16)]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(45,143,132,0.30),transparent_38%),linear-gradient(120deg,#0b302e,#164944)]" />
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <span className="inline-flex items-center rounded-full border border-[#7bd1c6]/40 bg-white/10 px-3 py-1.5 text-[9px] font-black tracking-[0.18em] uppercase text-[#a9ebe2]">
+                ✦ VERIFIED LOCAL STAY
               </span>
-            </button>
 
-            <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-2">
-              {images.slice(1, 5).map((img, i, photos) => {
-                const total = photos.length;
-                const spanClass =
-                  total === 1
-                    ? 'col-span-2 row-span-2'
-                    : total === 2
-                      ? 'row-span-2'
-                      : total === 3 && i === 2
-                        ? 'col-span-2'
-                        : '';
+              <h1 className="mt-4 text-[2.15rem] leading-[1.05] font-black tracking-tight sm:text-5xl lg:text-6xl">
+                {property.title}
+              </h1>
 
-                return (
-                  <button
-                    key={img + i}
-                    onClick={() => { setSelected(i + 1); setGalleryOpen(true); }}
-                    className={`group relative min-h-0 overflow-hidden rounded-[20px] ${spanClass}`}
-                  >
-                    <img
-                      src={img}
-                      alt={`Property view ${i + 2}`}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]"
-                    />
-                  </button>
-                );
-              })}
+              <p className="mt-2.5 flex items-center gap-2 text-sm font-semibold text-[#d3e8e4] sm:text-base">
+                <span className="text-[#ffd24a]">●</span>
+                {property.locality || 'Guwahati'}, Assam
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2 sm:mt-6">
+                {bedroomCount > 0 && (
+                  <span className="rounded-full border border-[#7bd1c6]/35 bg-[#164b47] px-3 py-2 text-xs font-extrabold text-white sm:px-4 sm:py-2.5 sm:text-sm">
+                    🛏️ {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
+                  </span>
+                )}
+                {bathroomCount > 0 && (
+                  <span className="rounded-full border border-[#7bd1c6]/35 bg-[#164b47] px-3 py-2 text-xs font-extrabold text-white sm:px-4 sm:py-2.5 sm:text-sm">
+                    🚿 {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
+                  </span>
+                )}
+                <span className="rounded-full bg-[#ffd24a] px-3 py-2 text-xs font-black text-[#123633] sm:px-4 sm:py-2.5 sm:text-sm shadow-sm">
+                  ★ {Number(property.rating || 0).toFixed(1)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto lg:justify-end">
+              <button
+                type="button"
+                onClick={handleShareProperty}
+                className="rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-extrabold sm:px-5 sm:py-3 sm:text-sm text-white transition hover:bg-white/20"
+              >
+                ↗ Share
+              </button>
+              <button
+                type="button"
+                onClick={handleToggleWishlist}
+                className={`rounded-full px-4 py-2.5 text-xs font-extrabold sm:px-5 sm:py-3 sm:text-sm transition ${
+                  isSaved
+                    ? 'bg-[#ffd24a] text-[#123633]'
+                    : 'bg-white text-[#123633] hover:bg-[#fff8dc]'
+                }`}
+              >
+                {isSaved ? '♥ Saved' : '♡ Save'}
+              </button>
             </div>
           </div>
-
-          {/* Mobile gallery: intentional horizontal cards instead of squeezed mosaic */}
-          <div className="md:hidden">
-            <button
-              onClick={() => { setSelected(0); setGalleryOpen(true); }}
-              className="relative h-[330px] w-full overflow-hidden rounded-[24px]"
-            >
-              <img
-                src={images[0]}
-                alt={property.title || 'Property'}
-                className="h-full w-full object-cover"
-              />
-            </button>
-
-            {images.length > 1 && (
-              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                {images.slice(1).map((img, i) => (
-                  <button
-                    key={img + i}
-                    onClick={() => { setSelected(i + 1); setGalleryOpen(true); }}
-                    className="h-24 w-32 shrink-0 overflow-hidden rounded-2xl"
-                  >
-                    <img
-                      src={img}
-                      alt={`Property view ${i + 2}`}
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => setGalleryOpen(true)}
-            className="absolute bottom-5 right-5 z-10 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-black text-[#173f3a] shadow-lg ring-1 ring-black/5 transition hover:scale-[1.02]"
-          >
-            <ImageIcon className="h-4 w-4" />
-            View all {images.length} photos
-          </button>
         </section>
 
-        <div className="mt-8 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_410px]">
-          <div className="space-y-8">
-            <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
-              <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">About this stay</p>
-              <h2 className="mt-2 text-2xl font-black sm:text-3xl">A comfortable base for your Guwahati visit</h2>
-              <p className="mt-5 max-w-3xl text-[15px] leading-8 text-[#60716c]">{property.description || 'Enjoy a comfortable stay hosted locally in Guwahati.'}</p>
+        {/* Gallery */}
+        <section className="mt-4 sm:mt-7 overflow-hidden rounded-[24px] sm:rounded-[28px] border border-[#d7e2dd] bg-white p-2.5 sm:p-3 shadow-[0_12px_35px_rgba(18,54,51,0.07)]">
+          <div className="grid h-[400px] grid-cols-2 gap-2 sm:h-[430px] md:h-[520px] md:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => setSelectedMainImage(property.images[0])}
+              className="group relative col-span-2 row-span-1 min-h-0 overflow-hidden md:row-span-2 rounded-[18px] bg-[#e8eeeb] text-left md:rounded-[20px]"
+            >
+              <img src={selectedMainImage} alt={`${property.title} main view`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedMainImage(img2)}
+              className="group relative min-h-[88px] overflow-hidden rounded-[16px] bg-[#e8eeeb] md:min-h-0 md:rounded-[20px]"
+            >
+              <img src={img2} alt={`${property.title} view 2`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedMainImage(img3)}
+              className="group relative min-h-[88px] overflow-hidden rounded-[16px] bg-[#e8eeeb] md:min-h-0 md:rounded-[20px]"
+            >
+              <img src={img3} alt={`${property.title} view 3`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedMainImage(img4)}
+              className="group relative min-h-[88px] overflow-hidden rounded-[16px] bg-[#e8eeeb] md:min-h-0 md:rounded-[20px]"
+            >
+              <img src={img4} alt={`${property.title} view 4`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
+              <span className="absolute bottom-3 right-3 rounded-full bg-white/95 px-2.5 py-1.5 text-[10px] font-black text-[#123633] shadow sm:px-3 sm:py-2 sm:text-xs">
+                🖼 {totalImages} Photos
+              </span>
+            </button>
+          </div>
+        </section>
+
+        {/* Main content */}
+        <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <div className="space-y-5 sm:space-y-6">
+            <section className="rounded-[22px] border border-[#d7e2dd] bg-white p-4 sm:rounded-[24px] sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#e1f1ed] text-[#0f766e]">ℹ</span>
+                <div>
+                  <h2 className="text-lg font-black text-[#18302f] sm:text-xl">About this stay</h2>
+                  <p className="text-xs text-[#71807b]">A local space, handpicked for your stay</p>
+                </div>
+              </div>
+              <p className="mt-5 text-sm leading-7 text-[#52635f] sm:text-base">
+                {property.description || 'No description provided by host.'}
+              </p>
+              <div className="mt-6 border-t border-[#e6ece9] pt-5">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-[#69807a]">Amenities & highlights</h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {featuresList.map((feat, idx) => (
+                    <span key={idx} className="rounded-full border border-[#b9ddd6] bg-[#f2faf7] px-3 py-2 text-xs font-bold text-[#176b63]">
+                      ✓ {feat}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </section>
 
-            <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
-              <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">What’s included</p><h2 className="mt-2 text-2xl font-black">Amenities & highlights</h2></div><Wifi className="hidden h-7 w-7 text-[#28655c] sm:block"/></div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">{derived.amenities.map((a,i)=><div key={a+i} className="flex items-center gap-3 rounded-2xl bg-[#f4f7f4] p-4 text-sm font-bold"><span className="grid h-8 w-8 place-items-center rounded-xl bg-[#dcece4] text-[#28655c]"><Check className="h-4 w-4"/></span>{a}</div>)}</div>
+            <section className="rounded-[22px] border border-[#d7e2dd] bg-white p-4 sm:rounded-[24px] sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
+              <h2 className="text-lg font-black text-[#18302f] sm:text-xl">🏡 Property details</h2>
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-[#dce6e2] bg-[#fafcfb] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#77857f]">Bedrooms</p>
+                  <p className="mt-2 text-2xl font-black text-[#173532]">{bedroomCount || '—'}</p>
+                </div>
+                <div className="rounded-2xl border border-[#dce6e2] bg-[#fafcfb] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#77857f]">Bathrooms</p>
+                  <p className="mt-2 text-2xl font-black text-[#173532]">{bathroomCount > 0 ? bathroomCountLabel : '—'}</p>
+                </div>
+                <div className="col-span-2 rounded-2xl border border-[#b9ddd6] bg-[#eaf7f3] p-4 sm:col-span-1">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#34746c]">Stay summary</p>
+                  <p className="mt-2 text-sm font-black leading-5 text-[#173532]">
+                    {bedroomCount > 0 || bathroomCount > 0 ? `${bedroomCount || 0} bedrooms · ${bathroomCountLabel || 0} bathrooms` : 'Details not provided'}
+                  </p>
+                </div>
+              </div>
+
+              {bathroomTypeItems.length > 0 && (
+                <div className="mt-5 border-t border-[#e6ece9] pt-5">
+                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#69807a]">Bathroom type</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {bathroomTypeItems.map((item) => (
+                      <span key={item} className="rounded-full border border-[#dce6e2] bg-[#fafcfb] px-3 py-2 text-xs font-bold text-[#43534f]">
+                        🚿 {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
-            <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
-              <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">Hosted locally</p><h2 className="mt-2 text-2xl font-black">Meet your host</h2>
-              <div className="mt-6 flex flex-col gap-5 rounded-3xl bg-[#f4f7f4] p-5 sm:flex-row sm:items-center"><img src={derived.avatar} alt={derived.hostName} className="h-16 w-16 rounded-2xl object-cover"/><div className="flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{derived.hostName}</h3>{derived.host.isVerified && <span className="rounded-full bg-[#dcece4] px-2.5 py-1 text-[10px] font-black text-[#28655c]">Verified host</span>}</div><p className="mt-1 text-sm text-[#70817b]">Local host on StayGuwahati</p></div>{hostProfileHref ? (
-                  <Link
-                    href={hostProfileHref}
-                    className="inline-flex items-center gap-2 text-xs font-bold text-[#28655c] transition hover:text-[#173f3a] hover:underline"
-                    aria-label={`View ${derived.hostName}'s host profile`}
-                  >
-                    <UserRound className="h-4 w-4"/> Host profile
-                  </Link>
+            {property.host && (
+              <section className="rounded-[22px] border border-[#d7e2dd] bg-white p-4 sm:rounded-[24px] sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#69807a]">Hosted by</p>
+                <div className="mt-4 flex items-center gap-4">
+                  <img
+                    src={hostAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName)}&background=0d9488&color=fff&size=128`}
+                    alt={hostName}
+                    className="h-16 w-16 rounded-full border-2 border-[#d5ebe5] object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName || 'Host')}&background=0d9488&color=fff&size=128`;
+                    }}
+                  />
+                  <div className="min-w-0">
+                    <h3 className="truncate text-lg font-black text-[#18302f]">{hostName}</h3>
+                    <p className="mt-1 text-xs font-semibold text-[#70807b]">{hostPhone}</p>
+                    <p className="mt-2 text-xs font-bold text-[#d09b00]">★ Local StayGuwahati host {hostIsVerified ? '· Verified' : ''}</p>
+                  </div>
+                </div>
+                <Link href={hostProfileHref} className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-[#103d3a] px-4 py-3 text-sm font-black text-white transition hover:bg-[#0a2f2c]">
+                  View Host Profile →
+                </Link>
+              </section>
+            )}
+
+            <section className="rounded-[22px] border border-[#d7e2dd] bg-white p-4 sm:rounded-[24px] sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
+              <h2 className="text-lg font-black text-[#18302f] sm:text-xl">💬 Guest reviews</h2>
+              <div className="mt-5">
+                {reviewsLoading ? (
+                  <p className="text-sm text-[#71807b]">Loading reviews...</p>
+                ) : reviews.length === 0 ? (
+                  <p className="text-sm text-[#71807b]">No reviews yet for this property.</p>
                 ) : (
-                  <span className="inline-flex items-center gap-2 text-xs font-bold text-[#91a19b]">
-                    <UserRound className="h-4 w-4"/> Host profile
-                  </span>
-                )}</div>
-            </section>
-
-            <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
-              <div className="flex items-center justify-between"><div><p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">Guest feedback</p><h2 className="mt-2 text-2xl font-black">Reviews</h2></div><div className="rounded-2xl bg-[#fff2bd] px-4 py-3 text-sm font-black"><Star className="mr-1 inline h-4 w-4 fill-[#d69f22] text-[#d69f22]"/>{rating > 0 ? rating.toFixed(1) : 'New'}</div></div>
-              <div className="mt-6 space-y-3">{reviewsLoading ? <p className="text-sm text-[#71827d]">Loading guest reviews…</p> : reviews.length ? reviews.slice(0,4).map((r,i)=><article key={r._id || i} className="rounded-2xl border border-[#e1e6e2] p-5"><div className="flex justify-between gap-3"><strong className="text-sm">{r.guestName || 'Verified guest'}</strong><span className="text-xs text-[#d69f22]">{'★'.repeat(Math.max(0,Math.min(5,Number(r.rating||0))))}</span></div><p className="mt-3 text-sm leading-6 text-[#657670]">{r.comment || 'No written comment provided.'}</p></article>) : <div className="rounded-2xl bg-[#f4f7f4] p-5 text-sm text-[#71827d]">No reviews yet. This stay is ready for its first guest feedback.</div>}</div>
-            </section>
-
-            <section className="grid gap-5 lg:grid-cols-2">
-              <div className="rounded-[28px] border border-[#d9e0db] bg-white p-6"><p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">Location</p><h2 className="mt-2 text-2xl font-black">Explore the area</h2><p className="mt-3 text-sm leading-6 text-[#71827d]">{property.address || `${property.locality || property.city || 'Guwahati'}, Assam`}</p><a href={mapHref} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-xl border border-[#b9cec4] px-4 py-3 text-sm font-black text-[#28655c] hover:bg-[#e8f1ec]"><MapPin className="h-4 w-4"/> Open in Maps</a></div>
-              <div className="rounded-[28px] bg-[#173f3a] p-6 text-white"><p className="text-xs font-black uppercase tracking-[.18em] text-[#b7d4c8]">Stay rules</p><h2 className="mt-2 text-2xl font-black">Good to know</h2><ul className="mt-4 space-y-3 text-sm leading-6 text-[#d2e0da]"><li className="flex gap-2"><Check className="mt-1 h-4 w-4 text-[#e9bf52]"/>Follow the host’s check-in instructions.</li><li className="flex gap-2"><Check className="mt-1 h-4 w-4 text-[#e9bf52]"/>Respect the property and local neighbourhood.</li><li className="flex gap-2"><Check className="mt-1 h-4 w-4 text-[#e9bf52]"/>{derived.policy.text}</li></ul></div>
+                  <div className="space-y-3">
+                    {reviews.map((rev) => (
+                      <div key={rev._id} className="rounded-2xl border border-[#e0e8e5] bg-[#fafcfb] p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <strong className="text-sm text-[#18302f]">{rev.guestName || 'Verified Guest'}</strong>
+                          <span className="text-xs text-[#73817d]">{rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recent'}</span>
+                        </div>
+                        <div className="mt-2 text-sm text-[#d09b00]">{'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}</div>
+                        <p className="mt-2 text-sm leading-6 text-[#596965]">{rev.comment || 'No comment provided.'}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </section>
           </div>
 
-          <aside className="xl:sticky xl:top-24">
-            <div className="overflow-hidden rounded-[32px] border border-[#c9d9d0] bg-white shadow-[0_25px_70px_rgba(23,63,58,.14)]">
-              <div className="bg-[#173f3a] p-6 text-white"><p className="text-xs font-black uppercase tracking-[.16em] text-[#b7d4c8]">Reserve this stay</p><div className="mt-3 flex items-end justify-between"><div><span className="text-4xl font-black">₹{derived.price.toLocaleString('en-IN')}</span><span className="ml-1 text-sm text-[#b7d4c8]">/ night</span></div><span className="rounded-full bg-[#e9bf52] px-3 py-1.5 text-[10px] font-black text-[#173f3a]">Verified local stay</span></div></div>
-              <div className="p-5 sm:p-6">
-                <div className="rounded-2xl bg-[#f4f7f4] p-4">
-                  <p className="text-sm font-bold text-[#173f3a]">Ready to reserve?</p>
-                  <p className="mt-1 text-xs leading-5 text-[#71827d]">Continue to the booking page to provide your stay details and complete your reservation.</p>
+          {/* Reservation card */}
+          <aside className="order-last lg:sticky lg:top-24 lg:order-last">
+            <div className="overflow-hidden rounded-[26px] border border-[#d7e2dd] bg-white p-5 shadow-[0_16px_40px_rgba(18,54,51,0.10)] sm:p-6">
+              <div className="flex items-start justify-between gap-3 border-b border-[#e5ece8] pb-5">
+                <div>
+                  <p className="text-3xl font-black tracking-tight text-[#18302f]">₹{priceFormatted}</p>
+                  <p className="mt-1 text-xs font-semibold text-[#74817d]">per night</p>
                 </div>
-                <button onClick={book} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#e9bf52] px-5 py-4 text-sm font-black text-[#173f3a] transition hover:brightness-105">Proceed to reservation <ArrowRight className="h-4 w-4"/></button>
-                <p className="mt-3 text-center text-xs text-[#71827d]">You will review your booking details before confirming.</p>
-                <div className="mt-5 space-y-3 border-t border-[#e1e7e3] pt-5 text-sm"><div className="flex justify-between gap-3"><span className="text-[#71827d]">Cancellation</span><strong className="text-[#28655c]">{derived.policy.name}</strong></div><div className="flex justify-between gap-3"><span className="text-[#71827d]">Hosted by</span><strong>{derived.hostName}</strong></div><div className="flex items-center gap-2 text-xs text-[#71827d]"><ShieldCheck className="h-4 w-4 text-[#28655c]"/> Booking details are reviewed before confirmation.</div></div>
+                <span className="rounded-full border border-[#b9ddd6] bg-[#edf8f5] px-3 py-2 text-xs font-black text-[#176b63]">🛡 Verified stay</span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                <div className="rounded-2xl border border-[#e0e8e5] bg-[#fafcfb] p-4">
+                  <div className="flex items-center justify-between gap-3 text-xs font-black">
+                    <span className="text-[#5f6f6a]">Cancellation policy</span>
+                    <span className="text-[#176b63]">{getCancellationPolicy(property.cancellationPolicy).title}</span>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-[#74817d]">{getCancellationPolicy(property.cancellationPolicy).short}</p>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-[#e0e8e5] bg-[#fafcfb] p-4 text-xs font-bold text-[#5f6f6a]">
+                  <span>Check-in</span><span className="text-[#18302f]">Self check-in</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleReserveSpace}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ffd24a] px-4 py-4 text-sm font-black text-[#173532] shadow-[0_10px_24px_rgba(255,210,74,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ffc928]"
+              >
+                Reserve this stay <span>→</span>
+              </button>
+
+              <div className="mt-5 rounded-2xl bg-[#103d3a] p-4 text-white">
+                <p className="text-sm font-black">Need help?</p>
+                <p className="mt-1 text-xs leading-5 text-[#cfe2de]">Questions about this stay? Our local support team is here to help.</p>
+                <a
+                  href={SUPPORT_WHATSAPP ? getWhatsAppUrl(SUPPORT_WHATSAPP, `Hi StayGuwahati Support, I need help with ${property.title}.`) : `mailto:${SUPPORT_EMAIL}`}
+                  target={SUPPORT_WHATSAPP ? "_blank" : undefined}
+                  rel={SUPPORT_WHATSAPP ? "noreferrer" : undefined}
+                  className="mt-3 inline-flex rounded-xl bg-white px-4 py-2.5 text-xs font-black text-[#103d3a]"
+                >
+                  💬 WhatsApp support
+                </a>
               </div>
             </div>
-            <div className="mt-4 rounded-3xl border border-[#d9e0db] bg-white p-5"><div className="flex gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e4efe9] text-[#28655c]"><MessageCircle className="h-5 w-5"/></span><div><strong className="text-sm">Need help with this stay?</strong><p className="mt-1 text-xs leading-5 text-[#71827d]">Our support team can help with bookings and property questions.</p><Link href="/support" className="mt-3 inline-block text-xs font-black text-[#28655c]">Contact support →</Link></div></div></div>
           </aside>
         </div>
-      </div>
 
-      {galleryOpen && <div className="fixed inset-0 z-[100] bg-[#071f1c]/95 p-4 text-white"><div className="mx-auto flex h-full max-w-7xl flex-col"><div className="flex items-center justify-between py-3"><strong>{property.title || 'Photos'} · {selected+1} / {images.length}</strong><button onClick={()=>setGalleryOpen(false)} className="rounded-full bg-white/10 p-3"><X className="h-5 w-5"/></button></div><div className="relative flex flex-1 items-center justify-center overflow-hidden"><img src={images[selected]} alt="" className="max-h-[78vh] max-w-full rounded-2xl object-contain"/><button onClick={()=>setSelected((selected-1+images.length)%images.length)} className="absolute left-2 rounded-full bg-white/10 p-3"><ChevronLeft/></button><button onClick={()=>setSelected((selected+1)%images.length)} className="absolute right-2 rounded-full bg-white/10 p-3"><ChevronRight/></button></div><div className="flex gap-2 overflow-x-auto py-4">{images.map((img,i)=><button key={img+i} onClick={()=>setSelected(i)} className={`h-16 w-20 shrink-0 overflow-hidden rounded-lg border-2 ${selected===i?'border-[#e9bf52]':'border-transparent'}`}><img src={img} alt="" className="h-full w-full object-cover"/></button>)}</div></div></div>}
-      {copied && <div className="fixed bottom-6 left-1/2 z-[101] -translate-x-1/2 rounded-full bg-[#173f3a] px-4 py-3 text-sm font-bold text-white shadow-xl"><Copy className="mr-2 inline h-4 w-4"/> Link copied</div>}
+        {/* Mobile reservation bar: keeps the primary action reachable without
+            changing the desktop reservation sidebar or booking route. */}
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#d7e2dd] bg-white/95 px-3 py-2.5 shadow-[0_-8px_30px_rgba(18,54,51,0.10)] backdrop-blur-md lg:hidden">
+          <div className="mx-auto flex max-w-7xl items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#69807a]">From</p>
+              <p className="truncate text-lg font-black text-[#18302f]">₹{priceFormatted}<span className="ml-1 text-[11px] font-semibold text-[#74817d]">/ night</span></p>
+            </div>
+            <button
+              type="button"
+              onClick={handleReserveSpace}
+              className="shrink-0 rounded-2xl bg-[#ffd24a] px-5 py-3 text-sm font-black text-[#173532] shadow-[0_8px_18px_rgba(255,210,74,0.24)] active:scale-[0.98]"
+            >
+              Reserve this stay →
+            </button>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
 
-export default function PropertyDetailsPage() {
+function getCancellationPolicy(policy?: string) {
+  if (policy === 'moderate') {
+    return {
+      title: 'Moderate',
+      short: 'Free cancellation up to 5 days before check-in.',
+      detail: 'Free cancellation is available up to 5 days before check-in.'
+    };
+  }
+
+  if (policy === 'strict') {
+    return {
+      title: 'Strict',
+      short: 'Limited cancellation.',
+      detail: 'Cancellation is limited. After the host confirms your booking, please contact the host or StayGuwahati support for assistance.'
+    };
+  }
+
+  return {
+    title: 'Flexible',
+    short: 'Free cancellation up to 24 hours before check-in.',
+    detail: 'Free cancellation is available up to 24 hours before check-in.'
+  };
+}
+
+export default function PropertyPage() {
   return (
-    <div className="min-h-screen bg-[#f5f1e9]">
-      <Suspense fallback={<main className="min-h-screen grid place-items-center">Loading stay…</main>}>
+    <div className="bg-[#f6f4ef] text-[#18302f] font-sans antialiased min-h-screen flex flex-col">
+      {/* Navigation Bar */}
+      <nav className="bg-[#f8f7f2]/95 backdrop-blur-md sticky top-0 z-50 border-b border-[#d7e2dd] shrink-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex justify-between items-center">
+          <Link href="/" className="flex items-center gap-2 cursor-pointer">
+            <span className="h-9 w-9 rounded-full bg-[#0f766e] grid place-items-center text-base shadow-sm">🏠</span>
+            <span className="text-lg sm:text-xl font-black text-[#18302f] tracking-tight">
+              Stay<span className="text-[#0f766e]">Guwahati</span>
+            </span>
+          </Link>
+          <div className="flex gap-2 sm:gap-6 items-center text-xs sm:text-sm">
+            <Link href="/" className="hidden sm:inline font-bold text-[#18302f] hover:text-[#0f766e] transition">
+              Home
+            </Link>
+            <Link
+              href="/map"
+              className="bg-[#103d3a] text-white px-4 sm:px-5 py-2.5 rounded-full font-black hover:bg-[#0a2f2c] transition shadow-sm"
+            >
+              Explore Map
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading...</div>}>
         <PropertyDetailsContent />
       </Suspense>
+
+      {/* Footer */}
+      <footer className="max-w-7xl w-full mx-auto py-7 px-4 text-center text-xs text-[#82908b] border-t border-[#d7e2dd] shrink-0">
+        &copy; 2026 StayGuwahati. All rights reserved.
+      </footer>
     </div>
   );
 }
