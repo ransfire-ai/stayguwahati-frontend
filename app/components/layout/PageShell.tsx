@@ -13,7 +13,15 @@ export default function PageShell({
 
   useEffect(() => {
     const checkAuth = () => {
+      // Authentication is session-scoped. Prefer sessionStorage so normal
+      // navigation between Home, Dashboard, Property and Booking never logs
+      // the user out. The localStorage fallbacks are kept only for legacy
+      // sessions created by older versions of the app.
       const token =
+        sessionStorage.getItem("token") ||
+        sessionStorage.getItem("authToken") ||
+        sessionStorage.getItem("stayguwahati_token") ||
+        sessionStorage.getItem("userToken") ||
         localStorage.getItem("token") ||
         localStorage.getItem("authToken") ||
         localStorage.getItem("stayguwahati_token") ||
