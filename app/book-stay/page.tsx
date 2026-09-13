@@ -316,9 +316,8 @@ function BookingContent() {
     return parsed.toISOString().slice(0, 10);
   };
 
-  // Check availability through the dedicated backend endpoint whenever
-  // the property or selected dates change. The booking POST still performs
-  // its own final overlap check, so this pre-check cannot create a race.
+  // Check existing Requested/Confirmed bookings immediately when dates change.
+  // The POST endpoint still performs the final overlap check, preventing races.
   useEffect(() => {
     if (!propertyId || !checkIn || !checkOut || checkOut <= checkIn) {
       setDateAvailability('idle');
@@ -332,49 +331,34 @@ function BookingContent() {
     async function checkAvailability() {
       setCheckingAvailability(true);
       setDateAvailability('checking');
-      setAvailabilityMessage('Checking availability…');
-      setError('');
-
+      setAvailabilityMessage('');
       try {
-        const baseUrl = BACKEND_URL.replace(/\/+$/, '');
-        const url = `${baseUrl}/api/bookings/availability?propertyId=${encodeURIComponent(propertyId)}&checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`;
-
-        const response = await fetch(url, {
-          method: 'GET',
-          cache: 'no-store',
-          signal: controller.signal,
-          headers: {
-            Accept: 'application/json',
-            'Cache-Control': 'no-cache',
-          },
+        const response = await fetch(`${BACKEND_URL}/api/bookings`, {
+          cache: 'no-store', signal: controller.signal,
+          headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
         });
-
-        const payload = await response.json().catch(() => null);
-
-        if (!response.ok) {
-          throw new Error(payload?.message || `Availability check failed (${response.status}).`);
-        }
-
-        if (payload?.success !== true) {
-          throw new Error(payload?.message || 'The availability service returned an invalid response.');
-        }
-
-        if (payload.available === false) {
+        if (!response.ok) throw new Error('Could not check availability right now.');
+        const payload = await response.json();
+        const bookings = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+        const conflict = bookings.some((booking: any) => {
+          const bookingPropertyId = String(booking?.homestayId?._id || booking?.homestayId || booking?.propertyId?._id || booking?.propertyId || '');
+          if (bookingPropertyId !== String(propertyId)) return false;
+          const status = String(booking?.status || '').toLowerCase();
+          if (status !== 'requested' && status !== 'confirmed') return false;
+          const existingCheckIn = normalizeBookingDate(booking?.checkInDate || booking?.checkIn);
+          const existingCheckOut = normalizeBookingDate(booking?.checkOutDate || booking?.checkOut);
+          if (!existingCheckIn || !existingCheckOut) return false;
+          return checkIn < existingCheckOut && checkOut > existingCheckIn;
+        });
+        if (conflict) {
           setDateAvailability('unavailable');
-          setAvailabilityMessage(payload.message || 'These dates are unavailable. Please choose different dates.');
-          return;
-        }
-
-        if (payload.available === true) {
+          setAvailabilityMessage('These dates are unavailable because this stay is already requested or booked.');
+        } else {
           setDateAvailability('available');
-          setAvailabilityMessage(payload.message || 'Great news — these dates are currently available.');
-          return;
+          setAvailabilityMessage('Great news — these dates are currently available.');
         }
-
-        throw new Error('The availability service returned an unexpected response.');
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') return;
-        console.error('Availability check failed:', err);
         setDateAvailability('error');
         setAvailabilityMessage('We could not verify these dates right now. Please try again.');
       } finally {
@@ -383,10 +367,7 @@ function BookingContent() {
     }
 
     const timeout = window.setTimeout(checkAvailability, 250);
-    return () => {
-      window.clearTimeout(timeout);
-      controller.abort();
-    };
+    return () => { window.clearTimeout(timeout); controller.abort(); };
   }, [propertyId, checkIn, checkOut]);
 
   const nights = useMemo(() => {
@@ -451,16 +432,6 @@ function BookingContent() {
     }
     if (dateAvailability === 'error') {
       setError('We could not verify these dates. Please try changing the dates and try again.');
-      return;
-    }
-
-    if (dateAvailability === 'error') {
-      setError('We could not verify these dates. Please try again.');
-      return;
-    }
-
-    if (dateAvailability !== 'available') {
-      setError('Please wait until the selected dates are verified as available.');
       return;
     }
 
@@ -863,7 +834,7 @@ function BookingContent() {
 
             <button
               type="submit"
-              disabled={submitting || !property.isAvailable || checkingAvailability || dateAvailability !== 'available'}
+              disabled={submitting || !property.isAvailable || checkingAvailability || dateAvailability === 'unavailable'}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#123f3d] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[#123f3d]/15 transition hover:-translate-y-0.5 hover:bg-[#0d3432] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? (
@@ -872,10 +843,6 @@ function BookingContent() {
                 <><Loader2 className="h-4 w-4 animate-spin" />Checking availability…</>
               ) : dateAvailability === 'unavailable' ? (
                 <>Choose different dates</>
-              ) : dateAvailability === 'error' ? (
-                <>Retry date check</>
-              ) : dateAvailability !== 'available' ? (
-                <>Checking dates…</>
               ) : (
                 <>Complete booking request<Send className="h-4 w-4" /></>
               )}
