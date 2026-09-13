@@ -28,6 +28,7 @@ export default function LiveMapPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerGroupRef = useRef<any>(null);
+  const leafletRef = useRef<any>(null);
 
   const [loadedProperties, setLoadedProperties] = useState<Homestay[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<Homestay[]>([]);
@@ -46,6 +47,7 @@ export default function LiveMapPage() {
     const loadLeaflet = async () => {
       if (typeof window !== 'undefined') {
         const L = await import('leaflet');
+        leafletRef.current = L;
         // Inject Leaflet CSS dynamically if not present
         if (!document.getElementById('leaflet-css')) {
           const link = document.createElement('link');
@@ -117,20 +119,31 @@ export default function LiveMapPage() {
   useEffect(() => {
     if (!isLeafletLoaded || !mapContainerRef.current || mapInstanceRef.current) return;
 
-    const L = (window as any).L || require('leaflet');
+    const L = leafletRef.current;
+    if (!L) return;
 
     const map = L.map(mapContainerRef.current, { zoomControl: false }).setView([26.1445, 91.7362], 13);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19
+    // Use OpenStreetMap's standard tile server instead of the previous
+    // Carto endpoint, which can return "API KEY REQUIRED".
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+      crossOrigin: true
     }).addTo(map);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     markerGroupRef.current = L.layerGroup().addTo(map);
     mapInstanceRef.current = map;
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+      markerGroupRef.current = null;
+    };
   }, [isLeafletLoaded]);
 
   // Handle Search & Filtering
@@ -159,7 +172,8 @@ export default function LiveMapPage() {
   useEffect(() => {
     if (!mapInstanceRef.current || !markerGroupRef.current || !isLeafletLoaded) return;
 
-    const L = (window as any).L || require('leaflet');
+    const L = leafletRef.current;
+    if (!L) return;
 
     markerGroupRef.current.clearLayers();
     const newMarkersMap: Record<string, any> = {};
