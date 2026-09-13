@@ -6,8 +6,7 @@ import Link from 'next/link';
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
-// Authentication helpers. sessionStorage is the authoritative login store.
-// localStorage is kept only as a legacy compatibility fallback.
+// Helper functions to handle session and local storage interoperability
 const getAuthData = (key: string) => {
   if (typeof window === 'undefined') return null;
   return sessionStorage.getItem(key) || localStorage.getItem(key);
@@ -15,52 +14,8 @@ const getAuthData = (key: string) => {
 
 const clearAuthData = () => {
   if (typeof window === 'undefined') return;
-
-  sessionStorage.removeItem('token');
-  sessionStorage.removeItem('authToken');
-  sessionStorage.removeItem('userProfile');
-  sessionStorage.removeItem('activeDashboardRole');
-
-  localStorage.removeItem('token');
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('userProfile');
-  localStorage.removeItem('activeDashboardRole');
-};
-
-const getUserProfile = () => {
-  if (typeof window === 'undefined') return null;
-
-  const raw =
-    sessionStorage.getItem('userProfile') ||
-    localStorage.getItem('userProfile');
-
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-};
-
-// UI fallback for older sessions. The backend JWT middleware remains the
-// real security boundary for every admin API request.
-const getTokenRole = (token: string | null) => {
-  if (!token) return '';
-
-  try {
-    const payload = token.split('.')[1];
-    if (!payload) return '';
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized.padEnd(
-      normalized.length + ((4 - (normalized.length % 4)) % 4),
-      '='
-    );
-    const decoded = JSON.parse(atob(padded));
-    return String(decoded?.role || '').toLowerCase();
-  } catch {
-    return '';
-  }
+  sessionStorage.clear();
+  localStorage.clear();
 };
 
 export default function AdminDashboardPage() {
@@ -88,43 +43,82 @@ export default function AdminDashboardPage() {
   const checkAdminAccess = useCallback(() => {
     if (typeof window === 'undefined') return false;
 
-    const token =
-      sessionStorage.getItem('token') ||
-      sessionStorage.getItem('authToken') ||
-      localStorage.getItem('token') ||
-      localStorage.getItem('authToken');
+    const token = getAuthData('token') || getAuthData('authToken');
+    const userProfileStr = getAuthData('userProfile');
 
     if (!token) {
       router.replace('/login?redirect=%2Fadmin');
       return false;
     }
 
-    const user = getUserProfile();
-    const profileRole = String(
-      user?.role ||
-      (user?.isAdmin === true ? 'admin' : '') ||
-      user?.type ||
-      ''
-    ).toLowerCase();
-    const tokenRole = getTokenRole(token);
-    const role = profileRole || tokenRole;
+    try {
+      // Prefer sessionStorage, but support older sessions in localStorage.
+      // Older versions stored an incomplete session profile without `role`,
+      // so recover the role from the JWT when possible.
+      let user: any = null;
 
-    // Repair an older session where the profile omitted the role.
-    if (user && !user.role && tokenRole) {
+      if (userProfileStr) {
+        try {
+          user = JSON.parse(userProfileStr);
+        } catch {
+          user = null;
+        }
+      }
+
+      const decodeJwtPayload = (jwt: string) => {
+        try {
+          const part = jwt.split('.')[1];
+          if (!part) return null;
+          const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
+          const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+          return JSON.parse(atob(padded));
+        } catch {
+          return null;
+        }
+      };
+
+      const jwtPayload = decodeJwtPayload(token);
+      const role = String(
+        user?.role ||
+        user?.type ||
+        (user?.isAdmin === true || user?.isAdmin === 'true' ? 'admin' : '') ||
+        jwtPayload?.role ||
+        jwtPayload?.type ||
+        (jwtPayload?.isAdmin === true ? 'admin' : '')
+      ).trim().toLowerCase();
+
+      const isAdmin =
+        role === 'admin' ||
+        user?.isAdmin === true ||
+        user?.isAdmin === 'true' ||
+        jwtPayload?.isAdmin === true;
+
+      if (!isAdmin) {
+        router.replace('/dashboard');
+        return false;
+      }
+
+      // Repair old/incomplete sessions so the rest of the admin page sees
+      // the same authenticated admin profile.
       const repairedUser = {
-        ...user,
-        role: tokenRole,
-        isAdmin: tokenRole === 'admin',
+        ...(user || {}),
+        role: 'admin',
       };
       sessionStorage.setItem('userProfile', JSON.stringify(repairedUser));
-    }
+      sessionStorage.setItem('activeDashboardRole', 'admin');
 
-    if (role !== 'admin') {
-      router.replace('/dashboard');
+      return true;
+    } catch (e) {
+      console.error('Error validating admin session:', e);
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('userProfile');
+      sessionStorage.removeItem('activeDashboardRole');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userProfile');
+      localStorage.removeItem('activeDashboardRole');
+      router.replace('/login?redirect=%2Fadmin');
       return false;
     }
-
-    return true;
   }, [router]);
 
   const logoutAdmin = () => {

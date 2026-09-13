@@ -77,32 +77,12 @@ const user =
   data?.user ||
   data?.data?.user ||
   {
-    id: data?.id || data?.data?.id,
     name:
       data?.name ||
       data?.data?.name ||
       cleanEmail.split("@")[0],
     email: cleanEmail,
-    role: data?.role || data?.data?.role || "traveler",
   };
-
-// Normalize the authenticated user once so every protected page sees the
-// same role information. The admin page specifically needs role="admin".
-const normalizedUser = {
-  id: user?.id || user?._id || data?.userId || data?.data?.userId,
-  name:
-    user?.name ||
-    user?.fullName ||
-    user?.username ||
-    cleanEmail.split("@")[0],
-  email: user?.email || cleanEmail,
-  role: String(
-    user?.role || data?.role || data?.data?.role || "traveler"
-  ).toLowerCase(),
-  isAdmin:
-    user?.isAdmin === true ||
-    String(user?.role || "").toLowerCase() === "admin",
-};
 
 if (!token) {
   throw new Error(
@@ -110,20 +90,51 @@ if (!token) {
   );
 }
 
+let loginIsAdmin = false;
+
 if (typeof window !== "undefined") {
   // IMPORTANT: Original dashboard requires sessionStorage
   sessionStorage.setItem("token", token);
 
-  // sessionStorage is the authoritative authenticated session. Store the
-  // complete normalized profile, including the role, so /admin can authorize
-  // the UI correctly after login.
-  sessionStorage.setItem("userProfile", JSON.stringify(normalizedUser));
-  sessionStorage.setItem("activeDashboardRole", normalizedUser.role);
+  // Store the COMPLETE user object in sessionStorage.
+  // The admin guard needs the role from this object.
+  const normalizedUser = {
+    ...user,
+    name:
+      user?.name ||
+      user?.fullName ||
+      user?.username ||
+      cleanEmail.split("@")[0],
+    email: user?.email || cleanEmail,
+    role: String(user?.role || user?.type || "").toLowerCase(),
+  };
 
-  // Compatibility with older pages. These are not the authoritative
-  // authentication source for protected pages.
+  sessionStorage.setItem(
+    "userProfile",
+    JSON.stringify(normalizedUser)
+  );
+
+  // Store the actual authenticated role. Admin must never fall back to traveler.
+  const normalizedRole = normalizedUser.role;
+  loginIsAdmin =
+    normalizedRole === "admin" ||
+    normalizedUser.isAdmin === true ||
+    normalizedUser.isAdmin === "true";
+
+  const activeRole = loginIsAdmin
+    ? "admin"
+    : normalizedRole === "host"
+      ? "host"
+      : "traveler";
+
+  sessionStorage.setItem("activeDashboardRole", activeRole);
+
+  // Keep compatibility with other existing pages
   localStorage.setItem("token", token);
-  localStorage.setItem("userProfile", JSON.stringify(normalizedUser));
+  localStorage.setItem(
+    "userProfile",
+    JSON.stringify(user)
+  );
 }
 
 // Return the user to the page that originally required authentication.
@@ -135,9 +146,11 @@ const safeRedirect =
   redirectParam.startsWith("/") &&
   !redirectParam.startsWith("//")
     ? redirectParam
-    : "/dashboard";
+    : loginIsAdmin
+      ? "/admin"
+      : "/dashboard";
 
-router.replace(safeRedirect);
+window.location.replace(safeRedirect);
 
     } catch (err) {
       console.error("Login error:", err);
