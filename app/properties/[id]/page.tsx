@@ -25,17 +25,33 @@ import {
   X,
 } from 'lucide-react';
 
-type ImageValue = string | { url?: string; secure_url?: string; path?: string };
+type ImageValue =
+  | string
+  | {
+      url?: string;
+      secure_url?: string;
+      path?: string;
+    };
+
+type Bathrooms = {
+  privateAttached?: number | string;
+  dedicated?: number | string;
+  shared?: number | string;
+  total?: number | string;
+  attached?: number | string;
+  private?: number | string;
+  count?: number | string;
+};
 
 type Host = {
   name?: string;
   email?: string;
   phone?: string;
-  avatar?: string;
-  photo?: string;
-  image?: string;
-  profileImage?: string;
-  profilePicture?: string;
+  avatar?: ImageValue;
+  photo?: ImageValue;
+  image?: ImageValue;
+  profileImage?: ImageValue;
+  profilePicture?: ImageValue;
   isVerified?: boolean;
 };
 
@@ -44,55 +60,67 @@ type Property = {
   id?: string;
   title?: string;
   name?: string;
-  pricePerNight?: number | string;
-  price?: number | string;
+  description?: string;
   locality?: string;
   city?: string;
   address?: string;
-  description?: string;
-  images?: ImageValue[];
-  photos?: ImageValue[];
-  features?: string[];
-  amenities?: string[];
+  pricePerNight?: number | string;
+  price?: number | string;
   bedrooms?: number | string;
-  guests?: number | string;
-  maxGuests?: number | string;
-  bathrooms?: unknown;
+  bathrooms?: Bathrooms | number | string;
   bathroomCount?: number | string;
   bathroomsCount?: number | string;
   numberOfBathrooms?: number | string;
-  rating?: number;
-  reviewsCount?: number;
+  images?: ImageValue[];
+  photos?: ImageValue[];
+  image?: ImageValue;
+  imageUrl?: ImageValue;
+  features?: string[];
+  amenities?: string[];
+  rating?: number | string;
+  reviewsCount?: number | string;
   host?: Host | string;
   cancellationPolicy?: string;
+  lat?: number | string;
+  lng?: number | string;
   mapUrl?: string;
   googleMapsLink?: string;
+  isAvailable?: boolean;
   status?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 type Review = {
   _id?: string;
   guestName?: string;
-  rating?: number;
+  rating?: number | string;
   comment?: string;
   createdAt?: string;
 };
 
-const API_BASE_URL = (
+const RAW_API_BASE =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  'https://stayguwahati-backend.onrender.com'
-).replace(/\/$/, '');
+  'https://stayguwahati-backend.onrender.com';
+
+// Prevent /api/api/... when the environment variable already contains /api.
+const API_BASE_URL = RAW_API_BASE.replace(/\/+$/, '').replace(/\/api$/i, '');
+
+function numberValue(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 function resolveImage(value: ImageValue | unknown): string {
   if (typeof value === 'object' && value !== null) {
-    const objectValue = value as {
+    const image = value as {
       url?: string;
       secure_url?: string;
       path?: string;
     };
-    return resolveImage(
-      objectValue.url || objectValue.secure_url || objectValue.path || ''
-    );
+
+    return resolveImage(image.secure_url || image.url || image.path || '');
   }
 
   if (typeof value !== 'string') return '';
@@ -100,90 +128,26 @@ function resolveImage(value: ImageValue | unknown): string {
   const src = value.trim();
   if (!src) return '';
 
-  if (
-    /^https?:\/\//i.test(src) ||
-    src.startsWith('data:') ||
-    src.startsWith('blob:')
-  ) {
-    return src;
+  if (/^(https?:)?\/\//i.test(src)) {
+    return src.startsWith('//') ? `https:${src}` : src;
   }
 
-  return `${API_BASE_URL}${src.startsWith('/') ? '' : '/'}${src}`;
+  if (/^(data|blob):/i.test(src)) return src;
+
+  // Stored backend paths such as /uploads/foo.jpg.
+  const cleanPath = src.replace(/\\/g, '/');
+  return `${API_BASE_URL}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
 }
 
-function numberValue(value: unknown, fallback = 0) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function getBathroomCount(property: Property) {
-  const value = property.bathrooms;
-
-  if (typeof value === 'number' || typeof value === 'string') {
-    return numberValue(value);
-  }
-
-  if (value && typeof value === 'object') {
-    const b = value as Record<string, unknown>;
-
-    const explicit = numberValue(
-      b.total ??
-        b.count ??
-        property.bathroomCount ??
-        property.bathroomsCount ??
-        property.numberOfBathrooms,
-      0
-    );
-
-    if (explicit > 0) return explicit;
-
-    return (
-      numberValue(b.privateAttached) +
-      numberValue(b.attached) +
-      numberValue(b.dedicated) +
-      numberValue(b.shared)
-    );
-  }
-
-  return numberValue(
-    property.bathroomCount ??
-      property.bathroomsCount ??
-      property.numberOfBathrooms,
-    0
-  );
-}
-
-function cancellationPolicy(policy?: string) {
-  const value = String(policy || 'flexible').toLowerCase();
-
-  if (value === 'strict') {
-    return {
-      name: 'Strict',
-      text: 'Cancellation is limited. Contact support for help with changes.',
-    };
-  }
-
-  if (value === 'moderate') {
-    return {
-      name: 'Moderate',
-      text: 'Free cancellation may be available up to 5 days before check-in.',
-    };
-  }
-
-  return {
-    name: 'Flexible',
-    text: 'Free cancellation may be available up to 24 hours before check-in.',
-  };
-}
-
-function extractProperty(payload: any): Property | null {
+function extractProperty(payload: unknown): Property | null {
+  const body = payload as any;
   const candidates = [
-    payload?.data?.property,
-    payload?.data?.homestay,
-    payload?.property,
-    payload?.homestay,
-    payload?.data,
-    payload,
+    body?.data?.property,
+    body?.data?.homestay,
+    body?.property,
+    body?.homestay,
+    body?.data,
+    body,
   ];
 
   for (const candidate of candidates) {
@@ -200,41 +164,123 @@ function extractProperty(payload: any): Property | null {
   return null;
 }
 
-function normalizeProperty(property: Property): Property {
-  const sourceImages = [
-    ...(Array.isArray(property.images) ? property.images : []),
-    ...(Array.isArray(property.photos) ? property.photos : []),
+function normalizeProperty(source: Property): Property {
+  const imageValues: ImageValue[] = [
+    ...(Array.isArray(source.images) ? source.images : []),
+    ...(Array.isArray(source.photos) ? source.photos : []),
   ];
 
+  if (source.image) imageValues.push(source.image);
+  if (source.imageUrl) imageValues.push(source.imageUrl);
+
   const images = Array.from(
-    new Set(sourceImages.map(resolveImage).filter(Boolean))
+    new Set(imageValues.map(resolveImage).filter(Boolean))
   );
 
   return {
-    ...property,
+    ...source,
+    _id: source._id || source.id,
+    title: source.title || source.name || 'StayGuwahati stay',
+    locality: source.locality || source.city || 'Guwahati',
+    pricePerNight: numberValue(source.pricePerNight ?? source.price, 0),
     images,
-    title: property.title || property.name || 'StayGuwahati stay',
-    locality: property.locality || property.city || 'Guwahati',
-    pricePerNight: numberValue(
-      property.pricePerNight ?? property.price,
-      0
-    ),
+    features: Array.isArray(source.features) ? source.features : [],
+    amenities: Array.isArray(source.amenities) ? source.amenities : [],
   };
 }
 
-async function fetchJson(url: string) {
+function getBathroomData(property: Property): Bathrooms {
+  const value = property.bathrooms;
+
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Bathrooms;
+  }
+
+  const count = numberValue(
+    value ??
+      property.bathroomCount ??
+      property.bathroomsCount ??
+      property.numberOfBathrooms,
+    0
+  );
+
+  return { total: count };
+}
+
+function getBathroomCount(property: Property): number {
+  const b = getBathroomData(property);
+  const explicit = numberValue(
+    b.total ??
+      b.count ??
+      property.bathroomCount ??
+      property.bathroomsCount ??
+      property.numberOfBathrooms,
+    0
+  );
+
+  if (explicit > 0) return explicit;
+
+  return (
+    numberValue(b.privateAttached) +
+    numberValue(b.attached) +
+    numberValue(b.private) +
+    numberValue(b.dedicated) +
+    numberValue(b.shared)
+  );
+}
+
+function getBathroomLabels(property: Property): string[] {
+  const b = getBathroomData(property);
+  const labels: string[] = [];
+
+  const add = (count: unknown, label: string) => {
+    const n = numberValue(count);
+    if (n > 0) labels.push(`${n} ${label}${n === 1 ? '' : 's'}`);
+  };
+
+  add(b.privateAttached, 'private attached');
+  add(b.dedicated, 'dedicated');
+  add(b.shared, 'shared');
+
+  return labels;
+}
+
+function getPolicy(policy?: string) {
+  const value = String(policy || 'flexible').toLowerCase();
+
+  if (value === 'strict') {
+    return {
+      name: 'Strict',
+      text: 'Cancellation is subject to the host policy.',
+    };
+  }
+
+  if (value === 'moderate') {
+    return {
+      name: 'Moderate',
+      text: 'Free cancellation may be available up to 5 days before check-in.',
+    };
+  }
+
+  return {
+    name: 'Flexible',
+    text: 'Free cancellation may be available up to 24 hours before check-in.',
+  };
+}
+
+async function fetchJson(url: string, signal?: AbortSignal) {
   const response = await fetch(url, {
     method: 'GET',
     cache: 'no-store',
     headers: { Accept: 'application/json' },
+    signal,
   });
 
-  let payload: any = null;
-
+  let payload: unknown = null;
   try {
     payload = await response.json();
   } catch {
-    // Keep the original status for a useful error message.
+    // Preserve the HTTP status even when the backend returned non-JSON text.
   }
 
   return { response, payload };
@@ -246,9 +292,9 @@ function PropertyDetailsContent() {
 
   const propertyId =
     typeof params?.id === 'string'
-      ? params.id
+      ? params.id.trim()
       : Array.isArray(params?.id)
-        ? params.id[0]
+        ? String(params.id[0] || '').trim()
         : '';
 
   const [property, setProperty] = useState<Property | null>(null);
@@ -262,143 +308,84 @@ function PropertyDetailsContent() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (!propertyId) {
+      setLoadError('Property ID is missing from the URL.');
+      setLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
     let alive = true;
 
     async function loadProperty() {
-      if (!propertyId) {
-        setLoadError('Property ID is missing from the URL.');
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       setLoadError('');
 
-      let loaded: Property | null = null;
-      const errors: string[] = [];
-
-      // 1. Fetch the exact MongoDB property by the URL ID.
-      const exactEndpoints = [
+      // This is the real public single-property endpoint in server.js.
+      // It returns { success: true, data: homestay }.
+      const endpoints = [
         `${API_BASE_URL}/api/homestays/${encodeURIComponent(propertyId)}`,
         `${API_BASE_URL}/api/properties/${encodeURIComponent(propertyId)}`,
       ];
 
-      for (const endpoint of exactEndpoints) {
-        if (loaded) break;
+      let loaded: Property | null = null;
+      let lastError = '';
 
+      for (const endpoint of endpoints) {
         try {
-          const { response, payload } = await fetchJson(endpoint);
+          const { response, payload } = await fetchJson(
+            endpoint,
+            controller.signal
+          );
 
           if (!response.ok) {
-            errors.push(`${response.status} from ${endpoint}`);
+            lastError = `${response.status} ${response.statusText}`;
             continue;
           }
 
-          loaded = extractProperty(payload);
+          const extracted = extractProperty(payload);
+          if (extracted) {
+            loaded = normalizeProperty(extracted);
+            break;
+          }
+
+          lastError = 'The backend response did not contain a property.';
         } catch (error) {
-          errors.push(`Network error from ${endpoint}`);
+          if (controller.signal.aborted) return;
+          lastError =
+            error instanceof Error ? error.message : 'Network request failed.';
         }
       }
 
-      // 2. If the single-property endpoint is unavailable, use the approved
-      // listings endpoint and locate the same MongoDB _id.
-      if (!loaded) {
-        try {
-          const { response, payload } = await fetchJson(
-            `${API_BASE_URL}/api/homestays`
-          );
-
-          if (response.ok) {
-            const list = Array.isArray(payload)
-              ? payload
-              : Array.isArray(payload?.data)
-                ? payload.data
-                : Array.isArray(payload?.homestays)
-                  ? payload.homestays
-                  : Array.isArray(payload?.properties)
-                    ? payload.properties
-                    : [];
-
-            const match = list.find(
-              (item: Property) =>
-                String(item?._id || item?.id || '') === String(propertyId)
-            );
-
-            if (match) loaded = match;
-          } else {
-            errors.push(`${response.status} from /api/homestays`);
-          }
-        } catch {
-          errors.push('Network error from /api/homestays');
-        }
-      }
-
-      // 3. Browser cache is only a final fallback. It must never replace
-      // live backend data when the backend successfully returned the property.
-      if (!loaded && typeof window !== 'undefined') {
-        try {
-          const cached = sessionStorage.getItem('selectedProperty');
-
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (
-              String(parsed?._id || parsed?.id || '') ===
-              String(propertyId)
-            ) {
-              loaded = parsed;
-            }
-          }
-
-          if (!loaded) {
-            const rawList = localStorage.getItem('userProperties');
-            const list = rawList ? JSON.parse(rawList) : [];
-
-            if (Array.isArray(list)) {
-              loaded =
-                list.find(
-                  (item: Property) =>
-                    String(item?._id || item?.id || '') ===
-                    String(propertyId)
-                ) || null;
-            }
-          }
-        } catch {
-          // Ignore invalid browser cache.
-        }
-      }
+      if (!alive) return;
 
       if (!loaded) {
-        if (alive) {
-          setProperty(null);
-          setLoadError(
-            `Unable to load property ${propertyId}. ` +
-              (errors.length
-                ? 'Please verify that the backend deployment is serving this property ID.'
-                : 'The property was not returned by the backend.')
-          );
-          setLoading(false);
-        }
+        setProperty(null);
+        setLoadError(
+          lastError
+            ? `Unable to load this property (${lastError}).`
+            : 'Property was not returned by the backend.'
+        );
+        setLoading(false);
         return;
       }
 
-      const normalized = normalizeProperty(loaded);
-
-      if (alive) {
-        setProperty(normalized);
-        setSelected(0);
-        setLoading(false);
-      }
+      setProperty(loaded);
+      setSelected(0);
+      setLoading(false);
     }
 
     loadProperty();
 
     return () => {
       alive = false;
+      controller.abort();
     };
   }, [propertyId]);
 
   useEffect(() => {
     let alive = true;
+    const controller = new AbortController();
 
     async function loadReviews() {
       if (!propertyId) {
@@ -406,11 +393,12 @@ function PropertyDetailsContent() {
         return;
       }
 
+      setReviewsLoading(true);
+
       try {
         const { response, payload } = await fetchJson(
-          `${API_BASE_URL}/api/reviews?propertyId=${encodeURIComponent(
-            propertyId
-          )}`
+          `${API_BASE_URL}/api/reviews?propertyId=${encodeURIComponent(propertyId)}`,
+          controller.signal
         );
 
         if (!response.ok) {
@@ -418,10 +406,11 @@ function PropertyDetailsContent() {
           return;
         }
 
-        const list = Array.isArray(payload?.data)
-          ? payload.data
-          : Array.isArray(payload)
-            ? payload
+        const body = payload as any;
+        const list = Array.isArray(body?.data)
+          ? body.data
+          : Array.isArray(body)
+            ? body
             : [];
 
         if (alive) setReviews(list);
@@ -436,6 +425,7 @@ function PropertyDetailsContent() {
 
     return () => {
       alive = false;
+      controller.abort();
     };
   }, [propertyId]);
 
@@ -457,29 +447,27 @@ function PropertyDetailsContent() {
 
     const bedrooms = numberValue(property.bedrooms);
     const bathrooms = getBathroomCount(property);
-    const guests =
-      numberValue(property.maxGuests ?? property.guests, 0) || 2;
-    const price =
-      numberValue(property.pricePerNight ?? property.price, 0);
-
-    const amenitiesSource =
-      Array.isArray(property.features) && property.features.length
-        ? property.features
-        : Array.isArray(property.amenities) && property.amenities.length
-          ? property.amenities
-          : ['Local host', 'Comfortable stay'];
+    const maxGuests = numberValue(
+      (property as any).maxGuests ?? (property as any).guests,
+      0
+    );
+    const price = numberValue(property.pricePerNight ?? property.price, 0);
 
     const amenities = Array.from(
-      new Set(amenitiesSource.filter(Boolean))
+      new Set(
+        (property.features?.length
+          ? property.features
+          : property.amenities || []
+        ).filter((item) => typeof item === 'string' && item.trim())
+      )
     );
 
     const host =
       typeof property.host === 'string'
-        ? { name: property.host }
-        : property.host || {};
+        ? ({ name: property.host } as Host)
+        : property.host || ({} as Host);
 
     const hostName = host.name || 'StayGuwahati Host';
-
     const avatar = resolveImage(
       host.avatar ||
         host.photo ||
@@ -492,13 +480,14 @@ function PropertyDetailsContent() {
     return {
       bedrooms,
       bathrooms,
-      guests,
+      maxGuests,
       price,
       amenities,
       host,
       hostName,
       avatar,
-      policy: cancellationPolicy(property.cancellationPolicy),
+      policy: getPolicy(property.cancellationPolicy),
+      bathroomLabels: getBathroomLabels(property),
     };
   }, [property]);
 
@@ -506,19 +495,15 @@ function PropertyDetailsContent() {
     if (!propertyId) return;
 
     try {
-      const old = JSON.parse(
+      const stored = JSON.parse(
         localStorage.getItem('stayguwahati_wishlist') || '[]'
       );
-      const list = Array.isArray(old) ? old : [];
-
+      const list = Array.isArray(stored) ? stored : [];
       const next = list.includes(propertyId)
-        ? list.filter((x: string) => x !== propertyId)
+        ? list.filter((id: string) => id !== propertyId)
         : [...list, propertyId];
 
-      localStorage.setItem(
-        'stayguwahati_wishlist',
-        JSON.stringify(next)
-      );
+      localStorage.setItem('stayguwahati_wishlist', JSON.stringify(next));
       setSaved(next.includes(propertyId));
     } catch {
       setSaved((value) => !value);
@@ -535,7 +520,7 @@ function PropertyDetailsContent() {
           text: 'Check out this stay on StayGuwahati',
           url,
         });
-      } else {
+      } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(url);
         setCopied(true);
         window.setTimeout(() => setCopied(false), 1800);
@@ -548,31 +533,42 @@ function PropertyDetailsContent() {
   function book() {
     if (!property || !derived) return;
 
-    const id = String(property._id || property.id || propertyId || '');
-
+    const id = String(property._id || property.id || propertyId || '').trim();
     if (!id) {
       alert('This property is missing its booking ID.');
       return;
     }
 
-    sessionStorage.setItem(
-      'pendingBooking',
-      JSON.stringify({
-        id,
-        title: property.title || property.name || 'Stay',
-        price: derived.price,
-        locality:
-          property.locality || property.city || 'Guwahati',
-        image: property.images?.[0] || '',
-      })
-    );
+    const firstImage =
+      Array.isArray(property.images) && property.images.length
+        ? resolveImage(property.images[0])
+        : '';
+
+    try {
+      sessionStorage.setItem(
+        'pendingBooking',
+        JSON.stringify({
+          id,
+          propertyId: id,
+          title: property.title || property.name || 'Stay',
+          price: derived.price,
+          pricePerNight: derived.price,
+          locality: property.locality || property.city || 'Guwahati',
+          image: firstImage,
+          images: property.images || [],
+          cancellationPolicy: property.cancellationPolicy || 'flexible',
+        })
+      );
+    } catch {
+      // Booking page can fetch the property again using the URL ID.
+    }
 
     router.push(`/book-stay?id=${encodeURIComponent(id)}`);
   }
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#f5f1e9] grid place-items-center">
+      <main className="grid min-h-screen place-items-center bg-[#f5f1e9] px-5">
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#d6e0da] border-t-[#28655c]" />
           <p className="mt-4 text-sm font-semibold text-[#62736e]">
@@ -585,10 +581,10 @@ function PropertyDetailsContent() {
 
   if (!property || !derived) {
     return (
-      <main className="min-h-screen bg-[#f5f1e9] grid place-items-center px-5">
+      <main className="grid min-h-screen place-items-center bg-[#f5f1e9] px-5">
         <div className="max-w-md rounded-3xl border border-[#d7ded8] bg-white p-8 text-center shadow-sm">
           <MapPin className="mx-auto h-10 w-10 text-[#28655c]" />
-          <h1 className="mt-4 text-2xl font-black">
+          <h1 className="mt-4 text-2xl font-black text-[#173f3a]">
             Stay could not be loaded
           </h1>
           <p className="mt-2 text-sm leading-6 text-[#71827d]">
@@ -605,30 +601,20 @@ function PropertyDetailsContent() {
     );
   }
 
-  // IMPORTANT:
-  // Never use unrelated stock/fallback photos here. If MongoDB has no images,
-  // show a clean placeholder instead of making it look like the property has
-  // photos that were not actually stored for it.
-  const images: string[] = (property.images || [])
-    .map((image) => resolveImage(image))
-    .filter((image): image is string => Boolean(image));
+  const images = (property.images || [])
+    .map(resolveImage)
+    .filter((src): src is string => Boolean(src));
 
-  const rating = Number(
-    property.rating ||
-      (reviews.length
-        ? reviews.reduce(
-            (sum, review) => sum + Number(review.rating || 0),
-            0
-          ) / reviews.length
-        : 0)
-  );
+  const rating = numberValue(property.rating, 0);
+  const reviewRating = reviews.length
+    ? reviews.reduce((sum, review) => sum + numberValue(review.rating), 0) /
+      reviews.length
+    : 0;
+  const displayRating = rating > 0 ? rating : reviewRating;
 
   const mapQuery = encodeURIComponent(
-    `${property.title || property.name || 'Homestay'} ${
-      property.address ||
-      property.locality ||
-      property.city ||
-      'Guwahati'
+    `${property.title || 'Homestay'}, ${
+      property.address || property.locality || property.city || 'Guwahati'
     }, Assam`
   );
 
@@ -638,21 +624,25 @@ function PropertyDetailsContent() {
     `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
   const heroImage = images[0] || '';
+  const propertyDetails = [
+    derived.bedrooms > 0
+      ? `${derived.bedrooms} ${derived.bedrooms === 1 ? 'bedroom' : 'bedrooms'}`
+      : null,
+    derived.bathrooms > 0
+      ? `${derived.bathrooms} ${derived.bathrooms === 1 ? 'bathroom' : 'bathrooms'}`
+      : null,
+    derived.maxGuests > 0 ? `Up to ${derived.maxGuests} guests` : null,
+  ].filter(Boolean) as string[];
 
   return (
     <main className="min-h-screen bg-[#f5f1e9] text-[#173f3a]">
       <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8">
         <div className="mb-5 flex items-center justify-between gap-4">
           <button
+            type="button"
             onClick={() => {
-              if (
-                typeof window !== 'undefined' &&
-                window.history.length > 1
-              ) {
-                router.back();
-              } else {
-                router.push('/explore');
-              }
+              if (window.history.length > 1) router.back();
+              else router.push('/explore');
             }}
             className="inline-flex items-center gap-2 text-sm font-bold text-[#46625c]"
           >
@@ -661,41 +651,38 @@ function PropertyDetailsContent() {
             <span className="sm:hidden">Back</span>
           </button>
 
-          <div className="hidden gap-2 sm:flex">
+          <div className="flex gap-2">
             <button
+              type="button"
               onClick={share}
               className="rounded-full border border-[#d5ddd8] bg-white p-2.5"
-              aria-label="Share"
+              aria-label="Share this stay"
             >
               <Share2 className="h-4 w-4" />
             </button>
-
             <button
+              type="button"
               onClick={toggleSave}
               className={`rounded-full border p-2.5 ${
                 saved
                   ? 'border-[#cba848] bg-[#fff4c7] text-[#8a6510]'
                   : 'border-[#d5ddd8] bg-white'
               }`}
-              aria-label="Save"
+              aria-label="Save this stay"
             >
-              <Heart
-                className={`h-4 w-4 ${
-                  saved ? 'fill-current' : ''
-                }`}
-              />
+              <Heart className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
             </button>
           </div>
         </div>
 
-        <header className="mb-6 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+        <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#e4efe9] px-3 py-1 text-[10px] font-black uppercase tracking-[.16em] text-[#28655c]">
               <ShieldCheck className="h-3.5 w-3.5" />
               Local stay · Guwahati
             </div>
 
-            <h1 className="text-[46px] leading-[1.02] font-black tracking-tight sm:text-5xl">
+            <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
               {property.title || property.name || 'StayGuwahati Home'}
             </h1>
 
@@ -704,36 +691,42 @@ function PropertyDetailsContent() {
                 <MapPin className="h-4 w-4 text-[#28655c]" />
                 {property.locality || property.city || 'Guwahati'}, Assam
               </span>
-
               <span className="inline-flex items-center gap-1">
                 <Star className="h-4 w-4 fill-[#e0ad36] text-[#e0ad36]" />
-                {rating > 0 ? rating.toFixed(1) : 'New'}
+                {displayRating > 0 ? displayRating.toFixed(1) : 'New'}
                 {reviews.length ? ` · ${reviews.length} reviews` : ''}
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 text-sm font-bold min-[430px]:grid-cols-2 sm:flex sm:flex-wrap sm:gap-2 sm:text-xs">
-            <span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2">
-              <BedDouble className="mr-1 inline h-3.5 w-3.5" />
-              {derived.bedrooms || '—'} bedrooms
-            </span>
-
-            <span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2">
-              <Bath className="mr-1 inline h-3.5 w-3.5" />
-              {derived.bathrooms || '—'} bathrooms
-            </span>
-
-            <span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2">
-              <Users className="mr-1 inline h-3.5 w-3.5" />
-              Up to {derived.guests} guests
-            </span>
-          </div>
+          {propertyDetails.length > 0 && (
+            <div className="flex flex-wrap gap-2 text-xs font-bold">
+              {derived.bedrooms > 0 && (
+                <span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2">
+                  <BedDouble className="mr-1 inline h-3.5 w-3.5" />
+                  {derived.bedrooms} {derived.bedrooms === 1 ? 'bedroom' : 'bedrooms'}
+                </span>
+              )}
+              {derived.bathrooms > 0 && (
+                <span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2">
+                  <Bath className="mr-1 inline h-3.5 w-3.5" />
+                  {derived.bathrooms} {derived.bathrooms === 1 ? 'bathroom' : 'bathrooms'}
+                </span>
+              )}
+              {derived.maxGuests > 0 && (
+                <span className="rounded-full border border-[#d6ded9] bg-white px-3 py-2">
+                  <Users className="mr-1 inline h-3.5 w-3.5" />
+                  Up to {derived.maxGuests} guests
+                </span>
+              )}
+            </div>
+          )}
         </header>
 
         <section className="relative overflow-hidden rounded-[30px] bg-[#e5e9e6] p-2 shadow-sm">
           <div className="hidden h-[520px] gap-2 md:grid md:grid-cols-[1.18fr_0.82fr]">
             <button
+              type="button"
               onClick={() => {
                 if (images.length) {
                   setSelected(0);
@@ -745,11 +738,8 @@ function PropertyDetailsContent() {
               {heroImage ? (
                 <img
                   src={heroImage}
-                  alt={property.title || 'Property'}
+                  alt={property.title || 'Property photo'}
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]"
-                  onError={(event) => {
-                    event.currentTarget.style.display = 'none';
-                  }}
                 />
               ) : (
                 <div className="grid h-full w-full place-items-center bg-[#dfe8e2] text-[#28655c]">
@@ -759,20 +749,13 @@ function PropertyDetailsContent() {
                   </div>
                 </div>
               )}
-
-              {heroImage && (
-                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent px-5 pb-5 pt-16 text-left">
-                  <span className="rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-black text-[#173f3a] shadow-sm">
-                    Featured view
-                  </span>
-                </span>
-              )}
             </button>
 
             <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-2">
-              {images.slice(1, 5).map((img, index) => (
+              {images.slice(1, 5).map((src, index) => (
                 <button
-                  key={`${img}-${index}`}
+                  type="button"
+                  key={`${src}-${index}`}
                   onClick={() => {
                     setSelected(index + 1);
                     setGalleryOpen(true);
@@ -780,8 +763,8 @@ function PropertyDetailsContent() {
                   className="group relative min-h-0 overflow-hidden rounded-[20px]"
                 >
                   <img
-                    src={img}
-                    alt={`Property view ${index + 2}`}
+                    src={src}
+                    alt={`${property.title || 'Property'} view ${index + 2}`}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]"
                   />
                 </button>
@@ -790,55 +773,57 @@ function PropertyDetailsContent() {
           </div>
 
           <div className="md:hidden">
-            <div className="grid grid-cols-2 grid-rows-2 gap-2">
-              <button
-                onClick={() => {
-                  if (images.length) {
-                    setSelected(0);
-                    setGalleryOpen(true);
-                  }
-                }}
-                className="relative row-span-2 h-[330px] overflow-hidden rounded-[24px]"
-              >
-                {heroImage ? (
-                  <img
-                    src={heroImage}
-                    alt={property.title || 'Property'}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="grid h-full w-full place-items-center bg-[#dfe8e2] text-[#28655c]">
-                    <div className="text-center">
-                      <ImageIcon className="mx-auto h-12 w-12" />
-                      <p className="mt-3 font-bold">Photos coming soon</p>
-                    </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (images.length) setGalleryOpen(true);
+              }}
+              className="relative h-[330px] w-full overflow-hidden rounded-[24px]"
+            >
+              {heroImage ? (
+                <img
+                  src={heroImage}
+                  alt={property.title || 'Property photo'}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="grid h-full w-full place-items-center bg-[#dfe8e2] text-[#28655c]">
+                  <div className="text-center">
+                    <ImageIcon className="mx-auto h-12 w-12" />
+                    <p className="mt-3 font-bold">Photos coming soon</p>
                   </div>
-                )}
-              </button>
+                </div>
+              )}
+            </button>
 
-              {images.slice(1, 4).map((img, index) => (
-                <button
-                  key={`${img}-${index}`}
-                  onClick={() => {
-                    setSelected(index + 1);
-                    setGalleryOpen(true);
-                  }}
-                  className="relative h-[161px] overflow-hidden rounded-[20px]"
-                >
-                  <img
-                    src={img}
-                    alt={`Property view ${index + 2}`}
-                    className="h-full w-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {images.length > 1 && (
+              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                {images.slice(1).map((src, index) => (
+                  <button
+                    type="button"
+                    key={`${src}-${index}`}
+                    onClick={() => {
+                      setSelected(index + 1);
+                      setGalleryOpen(true);
+                    }}
+                    className="h-24 w-32 shrink-0 overflow-hidden rounded-2xl"
+                  >
+                    <img
+                      src={src}
+                      alt={`${property.title || 'Property'} view ${index + 2}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {images.length > 0 && (
             <button
+              type="button"
               onClick={() => setGalleryOpen(true)}
-              className="absolute bottom-4 right-4 z-10 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[#173f3a] shadow-lg sm:bottom-5 sm:right-5 sm:px-4 sm:py-2.5 sm:text-xs"
+              className="absolute bottom-5 right-5 z-10 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-black text-[#173f3a] shadow-lg"
             >
               <ImageIcon className="h-4 w-4" />
               View all {images.length} photos
@@ -846,113 +831,16 @@ function PropertyDetailsContent() {
           )}
         </section>
 
-        <section className="mt-8 space-y-5 md:hidden">
-          <div className="rounded-[28px] border border-[#d9e0db] bg-white p-5">
-            <p className="text-[11px] font-black uppercase tracking-[.18em] text-[#28655c]">
-              About this stay
-            </p>
-            <h2 className="mt-2 text-[27px] leading-tight font-black">
-              {property.title || 'A comfortable stay in Guwahati'}
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-[#60716c]">
-              {property.description ||
-                'Experience premier hospitality in Guwahati. This verified local homestay offers a comfortable base for your visit.'}
-            </p>
-
-            <div className="my-5 border-t border-[#e1e7e3]" />
-
-            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#28655c]">
-              Amenities & highlights
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {derived.amenities.slice(0, 8).map((amenity, index) => (
-                <span
-                  key={`${amenity}-${index}`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#b9cec4] bg-[#f7faf8] px-3 py-1.5 text-[10px] font-bold text-[#28655c]"
-                >
-                  <Check className="h-3 w-3" />
-                  {amenity}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[28px] border border-[#d9e0db] bg-white p-5">
-            <div className="flex items-center gap-2">
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#e4efe9] text-[#28655c]">
-                <BedDouble className="h-4 w-4" />
-              </span>
-              <h2 className="text-lg font-black">Property details</h2>
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-xl border border-[#d9e0db] p-3">
-                <p className="text-[9px] font-black uppercase tracking-wider text-[#71827d]">
-                  Bedrooms
-                </p>
-                <p className="mt-1 text-sm font-black">
-                  {derived.bedrooms || '—'}
-                </p>
-              </div>
-              <div className="rounded-xl border border-[#d9e0db] p-3">
-                <p className="text-[9px] font-black uppercase tracking-wider text-[#71827d]">
-                  Bathrooms
-                </p>
-                <p className="mt-1 text-sm font-black">
-                  {derived.bathrooms || '—'}
-                </p>
-              </div>
-              <div className="rounded-xl border border-[#b8d9cf] bg-[#eef8f4] p-3">
-                <p className="text-[9px] font-black uppercase tracking-wider text-[#28655c]">
-                  Guest capacity
-                </p>
-                <p className="mt-1 text-sm font-black text-[#173f3a]">
-                  Up to {derived.guests}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[28px] border border-[#d9e0db] bg-white p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#28655c]">
-                  Guest feedback
-                </p>
-                <h2 className="mt-1 text-lg font-black">Guest reviews</h2>
-              </div>
-              <span className="rounded-full bg-[#fff2bd] px-3 py-1.5 text-xs font-black">
-                ★ {rating > 0 ? rating.toFixed(1) : 'New'}
-              </span>
-            </div>
-            <p className="mt-4 text-xs leading-5 text-[#71827d]">
-              {reviews.length
-                ? `${reviews.length} guest review${reviews.length === 1 ? '' : 's'} available.`
-                : 'No reviews yet for this property.'}
-            </p>
-          </div>
-
-          <button
-            onClick={book}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#e9bf52] px-5 py-4 text-sm font-black text-[#173f3a]"
-          >
-            Reserve this stay
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </section>
-
-        <div className="mt-8 hidden items-start gap-8 md:grid xl:grid-cols-[minmax(0,1fr)_410px]">
+        <div className="mt-8 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_410px]">
           <div className="space-y-8">
             <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
               <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">
                 About this stay
               </p>
-
               <h2 className="mt-2 text-2xl font-black sm:text-3xl">
                 {property.title || 'A comfortable base for your Guwahati visit'}
               </h2>
-
-              <p className="mt-5 max-w-3xl text-[15px] leading-8 text-[#60716c]">
+              <p className="mt-5 max-w-3xl whitespace-pre-line text-[15px] leading-8 text-[#60716c]">
                 {property.description ||
                   'Description for this property has not been provided yet.'}
               </p>
@@ -962,28 +850,92 @@ function PropertyDetailsContent() {
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">
+                    Property details
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black">Stay information</h2>
+                </div>
+                <BedDouble className="hidden h-7 w-7 text-[#28655c] sm:block" />
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-[#f4f7f4] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#80908b]">
+                    Bedrooms
+                  </p>
+                  <p className="mt-1 text-xl font-black">
+                    {derived.bedrooms > 0 ? derived.bedrooms : '—'}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-[#f4f7f4] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#80908b]">
+                    Bathrooms
+                  </p>
+                  <p className="mt-1 text-xl font-black">
+                    {derived.bathrooms > 0 ? derived.bathrooms : '—'}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[#cce4da] bg-[#eaf5f0] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#28655c]">
+                    Guest capacity
+                  </p>
+                  <p className="mt-1 text-sm font-black">
+                    {derived.maxGuests > 0
+                      ? `Up to ${derived.maxGuests} guests`
+                      : 'Not provided'}
+                  </p>
+                </div>
+              </div>
+
+              {derived.bathroomLabels.length > 0 && (
+                <div className="mt-5 border-t border-[#e1e7e3] pt-5">
+                  <p className="text-xs font-black uppercase tracking-[.16em] text-[#80908b]">
+                    Bathroom types
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {derived.bathroomLabels.map((label) => (
+                      <span
+                        key={label}
+                        className="rounded-full border border-[#d6e2dc] bg-[#f7faf8] px-3 py-2 text-xs font-bold text-[#48645d]"
+                      >
+                        <Bath className="mr-1 inline h-3.5 w-3.5" />
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">
                     What’s included
                   </p>
-                  <h2 className="mt-2 text-2xl font-black">
-                    Amenities & highlights
-                  </h2>
+                  <h2 className="mt-2 text-2xl font-black">Amenities & highlights</h2>
                 </div>
                 <Wifi className="hidden h-7 w-7 text-[#28655c] sm:block" />
               </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                {derived.amenities.map((amenity, index) => (
-                  <div
-                    key={`${amenity}-${index}`}
-                    className="flex items-center gap-3 rounded-2xl bg-[#f4f7f4] p-4 text-sm font-bold"
-                  >
-                    <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#dcece4] text-[#28655c]">
-                      <Check className="h-4 w-4" />
-                    </span>
-                    {amenity}
-                  </div>
-                ))}
-              </div>
+              {derived.amenities.length > 0 ? (
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {derived.amenities.map((amenity, index) => (
+                    <div
+                      key={`${amenity}-${index}`}
+                      className="flex items-center gap-3 rounded-2xl bg-[#f4f7f4] p-4 text-sm font-bold"
+                    >
+                      <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#dcece4] text-[#28655c]">
+                        <Check className="h-4 w-4" />
+                      </span>
+                      {amenity}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-6 rounded-2xl bg-[#f4f7f4] p-4 text-sm text-[#71827d]">
+                  No amenities have been added to this property yet.
+                </p>
+              )}
             </section>
 
             <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
@@ -1004,7 +956,6 @@ function PropertyDetailsContent() {
                     <UserRound />
                   </div>
                 )}
-
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-black">{derived.hostName}</h3>
@@ -1018,34 +969,26 @@ function PropertyDetailsContent() {
                     Local host on StayGuwahati
                   </p>
                 </div>
-
-                <span className="inline-flex items-center gap-2 text-xs font-bold text-[#28655c]">
-                  <UserRound className="h-4 w-4" />
-                  Host profile
-                </span>
               </div>
             </section>
 
             <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">
                     Guest feedback
                   </p>
                   <h2 className="mt-2 text-2xl font-black">Reviews</h2>
                 </div>
-
                 <div className="rounded-2xl bg-[#fff2bd] px-4 py-3 text-sm font-black">
                   <Star className="mr-1 inline h-4 w-4 fill-[#d69f22] text-[#d69f22]" />
-                  {rating > 0 ? rating.toFixed(1) : 'New'}
+                  {displayRating > 0 ? displayRating.toFixed(1) : 'New'}
                 </div>
               </div>
 
               <div className="mt-6 space-y-3">
                 {reviewsLoading ? (
-                  <p className="text-sm text-[#71827d]">
-                    Loading guest reviews…
-                  </p>
+                  <p className="text-sm text-[#71827d]">Loading guest reviews…</p>
                 ) : reviews.length ? (
                   reviews.slice(0, 4).map((review, index) => (
                     <article
@@ -1058,14 +1001,10 @@ function PropertyDetailsContent() {
                         </strong>
                         <span className="text-xs text-[#d69f22]">
                           {'★'.repeat(
-                            Math.max(
-                              0,
-                              Math.min(5, Number(review.rating || 0))
-                            )
+                            Math.max(0, Math.min(5, Math.round(numberValue(review.rating))))
                           )}
                         </span>
                       </div>
-
                       <p className="mt-3 text-sm leading-6 text-[#657670]">
                         {review.comment || 'No written comment provided.'}
                       </p>
@@ -1073,8 +1012,7 @@ function PropertyDetailsContent() {
                   ))
                 ) : (
                   <div className="rounded-2xl bg-[#f4f7f4] p-5 text-sm text-[#71827d]">
-                    No reviews yet. This stay is ready for its first guest
-                    feedback.
+                    No reviews yet. This stay is ready for its first guest feedback.
                   </div>
                 )}
               </div>
@@ -1085,9 +1023,7 @@ function PropertyDetailsContent() {
                 <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">
                   Location
                 </p>
-                <h2 className="mt-2 text-2xl font-black">
-                  Explore the area
-                </h2>
+                <h2 className="mt-2 text-2xl font-black">Explore the area</h2>
                 <p className="mt-3 text-sm leading-6 text-[#71827d]">
                   {property.address ||
                     `${property.locality || property.city || 'Guwahati'}, Assam`}
@@ -1108,18 +1044,17 @@ function PropertyDetailsContent() {
                   Stay rules
                 </p>
                 <h2 className="mt-2 text-2xl font-black">Good to know</h2>
-
                 <ul className="mt-4 space-y-3 text-sm leading-6 text-[#d2e0da]">
                   <li className="flex gap-2">
-                    <Check className="mt-1 h-4 w-4 text-[#e9bf52]" />
+                    <Check className="mt-1 h-4 w-4 shrink-0 text-[#e9bf52]" />
                     Follow the host’s check-in instructions.
                   </li>
                   <li className="flex gap-2">
-                    <Check className="mt-1 h-4 w-4 text-[#e9bf52]" />
+                    <Check className="mt-1 h-4 w-4 shrink-0 text-[#e9bf52]" />
                     Respect the property and local neighbourhood.
                   </li>
                   <li className="flex gap-2">
-                    <Check className="mt-1 h-4 w-4 text-[#e9bf52]" />
+                    <Check className="mt-1 h-4 w-4 shrink-0 text-[#e9bf52]" />
                     {derived.policy.text}
                   </li>
                 </ul>
@@ -1133,35 +1068,31 @@ function PropertyDetailsContent() {
                 <p className="text-xs font-black uppercase tracking-[.16em] text-[#b7d4c8]">
                   Reserve this stay
                 </p>
-
                 <div className="mt-3 flex items-end justify-between gap-3">
                   <div>
                     <span className="text-4xl font-black">
                       ₹{derived.price.toLocaleString('en-IN')}
                     </span>
-                    <span className="ml-1 text-sm text-[#b7d4c8]">
-                      / night
-                    </span>
+                    <span className="ml-1 text-sm text-[#b7d4c8]">/ night</span>
                   </div>
-
                   <span className="rounded-full bg-[#e9bf52] px-3 py-1.5 text-[10px] font-black text-[#173f3a]">
-                    Verified local stay
+                    {property.status === 'approved' || property.isAvailable !== false
+                      ? 'Verified local stay'
+                      : 'Local stay'}
                   </span>
                 </div>
               </div>
 
               <div className="p-5 sm:p-6">
                 <div className="rounded-2xl bg-[#f4f7f4] p-4">
-                  <p className="text-sm font-bold text-[#173f3a]">
-                    Ready to reserve?
-                  </p>
+                  <p className="text-sm font-bold text-[#173f3a]">Ready to reserve?</p>
                   <p className="mt-1 text-xs leading-5 text-[#71827d]">
-                    Continue to the booking page to provide your stay details
-                    and complete your reservation.
+                    Continue to the booking page to provide your dates and guest details.
                   </p>
                 </div>
 
                 <button
+                  type="button"
                   onClick={book}
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#e9bf52] px-5 py-4 text-sm font-black text-[#173f3a]"
                 >
@@ -1169,23 +1100,15 @@ function PropertyDetailsContent() {
                   <ArrowRight className="h-4 w-4" />
                 </button>
 
-                <p className="mt-3 text-center text-xs text-[#71827d]">
-                  You will review your booking details before confirming.
-                </p>
-
                 <div className="mt-5 space-y-3 border-t border-[#e1e7e3] pt-5 text-sm">
                   <div className="flex justify-between gap-3">
                     <span className="text-[#71827d]">Cancellation</span>
-                    <strong className="text-[#28655c]">
-                      {derived.policy.name}
-                    </strong>
+                    <strong className="text-[#28655c]">{derived.policy.name}</strong>
                   </div>
-
                   <div className="flex justify-between gap-3">
                     <span className="text-[#71827d]">Hosted by</span>
                     <strong>{derived.hostName}</strong>
                   </div>
-
                   <div className="flex items-center gap-2 text-xs text-[#71827d]">
                     <ShieldCheck className="h-4 w-4 text-[#28655c]" />
                     Booking details are reviewed before confirmation.
@@ -1199,14 +1122,10 @@ function PropertyDetailsContent() {
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e4efe9] text-[#28655c]">
                   <MessageCircle className="h-5 w-5" />
                 </span>
-
                 <div>
-                  <strong className="text-sm">
-                    Need help with this stay?
-                  </strong>
+                  <strong className="text-sm">Need help with this stay?</strong>
                   <p className="mt-1 text-xs leading-5 text-[#71827d]">
-                    Our support team can help with bookings and property
-                    questions.
+                    Our support team can help with bookings and property questions.
                   </p>
                   <Link
                     href="/support"
@@ -1226,11 +1145,10 @@ function PropertyDetailsContent() {
           <div className="mx-auto flex h-full max-w-7xl flex-col">
             <div className="flex items-center justify-between py-3">
               <strong>
-                {property.title || 'Photos'} · {selected + 1} /{' '}
-                {images.length}
+                {property.title || 'Photos'} · {selected + 1} / {images.length}
               </strong>
-
               <button
+                type="button"
                 onClick={() => setGalleryOpen(false)}
                 className="rounded-full bg-white/10 p-3"
                 aria-label="Close gallery"
@@ -1241,32 +1159,26 @@ function PropertyDetailsContent() {
 
             <div className="relative flex flex-1 items-center justify-center overflow-hidden">
               <img
-                src={images[selected]}
-                alt=""
+                src={images[selected] || images[0]}
+                alt={property.title || 'Property photo'}
                 className="max-h-[78vh] max-w-full rounded-2xl object-contain"
               />
 
               {images.length > 1 && (
                 <>
                   <button
+                    type="button"
                     onClick={() =>
-                      setSelected(
-                        (selected - 1 + images.length) %
-                          images.length
-                      )
+                      setSelected((selected - 1 + images.length) % images.length)
                     }
                     className="absolute left-2 rounded-full bg-white/10 p-3"
                     aria-label="Previous photo"
                   >
                     <ChevronLeft />
                   </button>
-
                   <button
-                    onClick={() =>
-                      setSelected(
-                        (selected + 1) % images.length
-                      )
-                    }
+                    type="button"
+                    onClick={() => setSelected((selected + 1) % images.length)}
                     className="absolute right-2 rounded-full bg-white/10 p-3"
                     aria-label="Next photo"
                   >
@@ -1277,19 +1189,18 @@ function PropertyDetailsContent() {
             </div>
 
             <div className="flex gap-2 overflow-x-auto py-4">
-              {images.map((img, index) => (
+              {images.map((src, index) => (
                 <button
-                  key={`${img}-${index}`}
+                  type="button"
+                  key={`${src}-${index}`}
                   onClick={() => setSelected(index)}
                   className={`h-16 w-20 shrink-0 overflow-hidden rounded-lg border-2 ${
-                    selected === index
-                      ? 'border-[#e9bf52]'
-                      : 'border-transparent'
+                    selected === index ? 'border-[#e9bf52]' : 'border-transparent'
                   }`}
                 >
                   <img
-                    src={img}
-                    alt=""
+                    src={src}
+                    alt={`${property.title || 'Property'} thumbnail ${index + 1}`}
                     className="h-full w-full object-cover"
                   />
                 </button>
@@ -1311,16 +1222,14 @@ function PropertyDetailsContent() {
 
 export default function PropertyDetailsPage() {
   return (
-    <div className="min-h-screen bg-[#f5f1e9]">
-      <Suspense
-        fallback={
-          <main className="min-h-screen grid place-items-center bg-[#f5f1e9]">
-            Loading stay…
-          </main>
-        }
-      >
-        <PropertyDetailsContent />
-      </Suspense>
-    </div>
+    <Suspense
+      fallback={
+        <main className="grid min-h-screen place-items-center bg-[#f5f1e9]">
+          Loading stay…
+        </main>
+      }
+    >
+      <PropertyDetailsContent />
+    </Suspense>
   );
 }
