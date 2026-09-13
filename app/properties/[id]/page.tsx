@@ -609,7 +609,9 @@ function PropertyDetailsContent() {
   // Never use unrelated stock/fallback photos here. If MongoDB has no images,
   // show a clean placeholder instead of making it look like the property has
   // photos that were not actually stored for it.
-  const images = property.images || [];
+  const images: string[] = (property.images || [])
+    .map((image) => resolveImage(image))
+    .filter((image): image is string => Boolean(image));
 
   const rating = Number(
     property.rating ||
