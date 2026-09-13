@@ -20,10 +20,11 @@ import {
   Send,
 } from 'lucide-react';
 
-const BACKEND_URL =
+const BACKEND_URL = (
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  'https://stayguwahati-backend.onrender.com';
+  'https://stayguwahati-backend.onrender.com'
+).replace(/\/$/, '');
 
 interface Homestay {
   _id: string;
@@ -339,7 +340,17 @@ function BookingContent() {
       setDateAvailability('checking');
       setAvailabilityMessage('Checking date availability…');
 
+      let timedOut = false;
+      const timeoutId = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, 15000);
+
       try {
+        // Keep this request CORS-simple. In particular, do NOT send a custom
+        // Cache-Control request header from the browser; that header can trigger
+        // a preflight on a cross-origin GET and older API CORS configurations may
+        // reject it. The backend itself sends no-store on the response.
         const response = await fetch(
           `${BACKEND_URL}/api/bookings/availability?${query.toString()}`,
           {
@@ -348,7 +359,6 @@ function BookingContent() {
             signal: controller.signal,
             headers: {
               Accept: 'application/json',
-              'Cache-Control': 'no-cache',
             },
           }
         );
@@ -372,17 +382,24 @@ function BookingContent() {
           );
         }
       } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') return;
+        // Abort caused by the effect cleanup means the customer changed the
+        // dates; the next effect run will perform the new check.
+        if (err instanceof Error && err.name === 'AbortError' && !timedOut) {
+          return;
+        }
 
         console.error('Availability check failed:', err);
         setDateAvailability('error');
         setAvailabilityMessage(
-          err instanceof Error
-            ? err.message
-            : 'We could not verify these dates right now. Please try again.'
+          timedOut
+            ? 'The availability check timed out. Please try again.'
+            : err instanceof Error && err.message
+              ? err.message
+              : 'We could not verify these dates right now. Please try again.'
         );
       } finally {
-        if (!controller.signal.aborted) {
+        window.clearTimeout(timeoutId);
+        if (!controller.signal.aborted || timedOut) {
           setCheckingAvailability(false);
         }
       }
