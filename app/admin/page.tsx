@@ -6,7 +6,8 @@ import Link from 'next/link';
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
-// Helper functions to handle session and local storage interoperability
+// Authentication helpers. sessionStorage is the authoritative login store.
+// localStorage is kept only as a legacy compatibility fallback.
 const getAuthData = (key: string) => {
   if (typeof window === 'undefined') return null;
   return sessionStorage.getItem(key) || localStorage.getItem(key);
@@ -14,8 +15,52 @@ const getAuthData = (key: string) => {
 
 const clearAuthData = () => {
   if (typeof window === 'undefined') return;
-  sessionStorage.clear();
-  localStorage.clear();
+
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('authToken');
+  sessionStorage.removeItem('userProfile');
+  sessionStorage.removeItem('activeDashboardRole');
+
+  localStorage.removeItem('token');
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('userProfile');
+  localStorage.removeItem('activeDashboardRole');
+};
+
+const getUserProfile = () => {
+  if (typeof window === 'undefined') return null;
+
+  const raw =
+    sessionStorage.getItem('userProfile') ||
+    localStorage.getItem('userProfile');
+
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+// UI fallback for older sessions. The backend JWT middleware remains the
+// real security boundary for every admin API request.
+const getTokenRole = (token: string | null) => {
+  if (!token) return '';
+
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return '';
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      '='
+    );
+    const decoded = JSON.parse(atob(padded));
+    return String(decoded?.role || '').toLowerCase();
+  } catch {
+    return '';
+  }
 };
 
 export default function AdminDashboardPage() {
@@ -43,33 +88,43 @@ export default function AdminDashboardPage() {
   const checkAdminAccess = useCallback(() => {
     if (typeof window === 'undefined') return false;
 
-    const token = getAuthData('token') || getAuthData('authToken');
-    const userProfileStr = getAuthData('userProfile');
+    const token =
+      sessionStorage.getItem('token') ||
+      sessionStorage.getItem('authToken') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('authToken');
 
-    if (!token || !userProfileStr) {
-      router.push('/login');
+    if (!token) {
+      router.replace('/login?redirect=%2Fadmin');
       return false;
     }
 
-    try {
-      const user = JSON.parse(userProfileStr);
-      const isAdmin =
-        user.role === 'admin' ||
-        user.role === 'ADMIN' ||
-        user.isAdmin === true ||
-        user.type === 'admin';
+    const user = getUserProfile();
+    const profileRole = String(
+      user?.role ||
+      (user?.isAdmin === true ? 'admin' : '') ||
+      user?.type ||
+      ''
+    ).toLowerCase();
+    const tokenRole = getTokenRole(token);
+    const role = profileRole || tokenRole;
 
-      if (!isAdmin) {
-        router.push('/dashboard');
-        return false;
-      }
-      return true;
-    } catch (e) {
-      console.error('Error parsing user profile:', e);
-      clearAuthData();
-      router.push('/login');
+    // Repair an older session where the profile omitted the role.
+    if (user && !user.role && tokenRole) {
+      const repairedUser = {
+        ...user,
+        role: tokenRole,
+        isAdmin: tokenRole === 'admin',
+      };
+      sessionStorage.setItem('userProfile', JSON.stringify(repairedUser));
+    }
+
+    if (role !== 'admin') {
+      router.replace('/dashboard');
       return false;
     }
+
+    return true;
   }, [router]);
 
   const logoutAdmin = () => {

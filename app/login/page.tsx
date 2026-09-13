@@ -77,12 +77,32 @@ const user =
   data?.user ||
   data?.data?.user ||
   {
+    id: data?.id || data?.data?.id,
     name:
       data?.name ||
       data?.data?.name ||
       cleanEmail.split("@")[0],
     email: cleanEmail,
+    role: data?.role || data?.data?.role || "traveler",
   };
+
+// Normalize the authenticated user once so every protected page sees the
+// same role information. The admin page specifically needs role="admin".
+const normalizedUser = {
+  id: user?.id || user?._id || data?.userId || data?.data?.userId,
+  name:
+    user?.name ||
+    user?.fullName ||
+    user?.username ||
+    cleanEmail.split("@")[0],
+  email: user?.email || cleanEmail,
+  role: String(
+    user?.role || data?.role || data?.data?.role || "traveler"
+  ).toLowerCase(),
+  isAdmin:
+    user?.isAdmin === true ||
+    String(user?.role || "").toLowerCase() === "admin",
+};
 
 if (!token) {
   throw new Error(
@@ -94,30 +114,16 @@ if (typeof window !== "undefined") {
   // IMPORTANT: Original dashboard requires sessionStorage
   sessionStorage.setItem("token", token);
 
-  sessionStorage.setItem(
-    "userProfile",
-    JSON.stringify({
-      name:
-        user?.name ||
-        user?.fullName ||
-        user?.username ||
-        cleanEmail.split("@")[0],
-      email: user?.email || cleanEmail,
-    })
-  );
+  // sessionStorage is the authoritative authenticated session. Store the
+  // complete normalized profile, including the role, so /admin can authorize
+  // the UI correctly after login.
+  sessionStorage.setItem("userProfile", JSON.stringify(normalizedUser));
+  sessionStorage.setItem("activeDashboardRole", normalizedUser.role);
 
-  // Default dashboard mode
-  sessionStorage.setItem(
-    "activeDashboardRole",
-    user?.role === "host" ? "host" : "traveler"
-  );
-
-  // Keep compatibility with other existing pages
+  // Compatibility with older pages. These are not the authoritative
+  // authentication source for protected pages.
   localStorage.setItem("token", token);
-  localStorage.setItem(
-    "userProfile",
-    JSON.stringify(user)
-  );
+  localStorage.setItem("userProfile", JSON.stringify(normalizedUser));
 }
 
 // Return the user to the page that originally required authentication.
@@ -131,7 +137,7 @@ const safeRedirect =
     ? redirectParam
     : "/dashboard";
 
-window.location.href = safeRedirect;
+router.replace(safeRedirect);
 
     } catch (err) {
       console.error("Login error:", err);
