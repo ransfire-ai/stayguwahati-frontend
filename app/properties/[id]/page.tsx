@@ -1,296 +1,1024 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 
-export default function PropertyPage() {
-  const params = useParams();
+interface PropertyHost {
+  name: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+  photo?: string;
+  image?: string;
+  profileImage?: string;
+  profilePicture?: string;
+  isVerified?: boolean;
+}
+
+interface PropertyData {
+  id: string;
+  _id?: string;
+  title: string;
+  pricePerNight?: string | number;
+  price?: string | number;
+  locality?: string;
+  description?: string;
+  images: string[];
+  features?: string[];
+  amenities?: string[];
+  bedrooms?: number | string;
+  bathrooms?: {
+    privateAttached?: number | string;
+    attached?: number | string;
+    private?: number | string;
+    dedicated?: number | string;
+    shared?: number | string;
+    total?: number | string;
+    count?: number | string;
+  };
+  bathroomCount?: number | string;
+  bathroomsCount?: number | string;
+  numberOfBathrooms?: number | string;
+  host?: PropertyHost | string;
+  cancellationPolicy?: 'flexible' | 'moderate' | 'strict' | string;
+}
+
+interface Review {
+  _id: string;
+  guestName?: string;
+  rating: number;
+  comment?: string;
+  createdAt?: string;
+}
+
+const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
+
+const SUPPORT_EMAIL = 'support@stayguwahati.in';
+const SUPPORT_WHATSAPP =
+  process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\\D/g, '') || '';
+
+const getWhatsAppUrl = (phone: string, message: string) => {
+  const digits = phone.replace(/\\D/g, '');
+  if (!digits) return '';
+  const normalized = digits.startsWith('91') ? digits : `91${digits}`;
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+};
+
+const getHostAvatarUrl = (host?: PropertyHost | string) => {
+  if (!host) return null;
+
+  let name = 'Host';
+  let rawPath = '';
+
+  if (typeof host === 'string') {
+    name = host;
+  } else {
+    name = host.name || 'Host';
+    rawPath = (
+      host.avatar ||
+      host.photo ||
+      host.image ||
+      host.profileImage ||
+      host.profilePicture ||
+      ''
+    ).trim();
+  }
+
+  // Check localStorage fallback if backend didn't return an avatar path
+  if (!rawPath) {
+    try {
+      const localAvatar = localStorage.getItem('hostAvatar');
+      if (localAvatar) return localAvatar;
+
+      const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      const profileAvatar = userProfile.avatar || userProfile.photo || userProfile.image;
+      if (profileAvatar) {
+        return profileAvatar.startsWith('http') ? profileAvatar : `${BACKEND_URL}${profileAvatar.startsWith('/') ? '' : '/'}${profileAvatar}`;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+
+    const formattedName = encodeURIComponent(name);
+    return `https://ui-avatars.com/api/?name=${formattedName}&background=0d9488&color=fff&size=128`;
+  }
+
+  if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+    return rawPath;
+  }
+  return `${BACKEND_URL}${rawPath.startsWith('/') ? '' : '/'}${rawPath}`;
+};
+
+function PropertyDetailsContent() {
   const router = useRouter();
-  const id = params?.id as string;
+  const searchParams = useSearchParams();
+  const params = useParams<{ id?: string }>();
 
-  const [property, setProperty] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [property, setProperty] = useState<PropertyData | null>(null);
+  const [selectedMainImage, setSelectedMainImage] = useState<string>('');
+  const [isSaved, setIsSaved] = useState(false);
 
-  // Booking Form State
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [bookingError, setBookingError] = useState('');
-
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchProperty = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`${API_BASE_URL}/api/properties/${id}`);
-        const data = await res.json();
+    // IMPORTANT:
+    // This is app/properties/[id]/page.tsx, so the real property ID normally
+    // comes from the pathname (/properties/<mongo-id>), not ?id=<mongo-id>.
+    // Keep the query-string fallback for older links.
+    const routeId =
+      typeof params?.id === 'string' && params.id.trim()
+        ? params.id.trim()
+        : '';
 
-        if (data.success && data.data) {
-          setProperty(data.data);
-        } else {
-          setError('Property details could not be found.');
+    const queryId = searchParams.get('id')?.trim() || '';
+    const propertyId =
+      routeId && routeId !== 'default'
+        ? routeId
+        : queryId && queryId !== 'default'
+          ? queryId
+          : '';
+
+    const titleParam = searchParams.get('title');
+
+    async function loadProperty() {
+      let prop: PropertyData | null = null;
+
+      // 1. ALWAYS fetch the latest property from the backend first.
+      // The dynamic [id] route is the primary source of truth.
+      if (propertyId) {
+        try {
+          const response = await fetch(
+            `${BACKEND_URL}/api/homestays/${encodeURIComponent(propertyId)}`,
+            {
+              cache: 'no-store',
+              headers: { Accept: 'application/json' },
+            }
+          );
+
+          const json = await response.json().catch(() => null);
+
+          if (response.ok) {
+            prop = json?.data || json?.homestay || json?.property || json;
+          } else {
+            console.warn(
+              `[PROPERTY] API returned ${response.status}:`,
+              json?.message || json
+            );
+          }
+        } catch (err) {
+          console.warn(
+            '[PROPERTY] Could not fetch property from API; checking local stores...',
+            err
+          );
         }
-      } catch (err) {
-        setError('Failed to load property data. Check backend connection.');
-      } finally {
-        setLoading(false);
       }
-    };
 
-    if (id) fetchProperty();
-  }, [id, API_BASE_URL]);
+      // 2. SessionStorage is only a fallback when the API did not return data.
+      if (!prop) {
+        const cachedProp = sessionStorage.getItem('selectedProperty');
+        if (cachedProp) {
+          try {
+            const parsed = JSON.parse(cachedProp);
+            if (!propertyId || parsed.id === propertyId || parsed._id === propertyId) {
+              prop = parsed;
+            }
+          } catch (e) {
+            console.error('Invalid cached property:', e);
+          }
+        }
+      }
 
-  const calculateNights = () => {
-    if (!checkIn || !checkOut) return 0;
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
-  };
+      // 3. Fallback to LocalStorage
+      if (!prop) {
+        const localPropsStr = localStorage.getItem('userProperties');
+        if (localPropsStr) {
+          const localProps: PropertyData[] = JSON.parse(localPropsStr);
+          prop =
+            localProps.find(
+              (p) => p.id === propertyId || p._id === propertyId || p.title === titleParam
+            ) || null;
+        }
+      }
 
-  const nights = calculateNights();
-  const totalPrice = property ? nights * (property.pricePerNight || 0) : 0;
+      // 4. Default Fallback Object
+      if (!prop) {
+        prop = {
+          id: propertyId || 'default',
+          title: titleParam || 'Paltan House',
+          pricePerNight: searchParams.get('price') || '1500',
+          locality: searchParams.get('locality') || 'Paltan Bazar',
+          description:
+            'Experience premier hospitality in Guwahati. This verified local homestay features handpicked interior accents, responsive management, and comprehensive amenities.',
+          images: [],
+          features: ['Premium Linens', 'Free Wi-Fi', 'Great Location', 'Air Conditioning'],
+        };
 
-  const handleBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBookingLoading(true);
-    setBookingError('');
+        const singleImg = searchParams.get('image');
+        if (singleImg && singleImg !== 'null' && singleImg !== '' && singleImg.length < 1000) {
+          let cleanImg = decodeURIComponent(singleImg);
+          if (cleanImg.startsWith('/uploads')) cleanImg = `${BACKEND_URL}${cleanImg}`;
+          prop.images.push(cleanImg);
+        }
+      }
 
-    if (nights <= 0) {
-      setBookingError('Check-out date must be after check-in date.');
-      setBookingLoading(false);
+      // Normalize bathroom information from MongoDB and older listing formats.
+      // The current List Property form stores:
+      // bathrooms: { privateAttached, dedicated, shared, total }
+      if (prop) {
+        const rawBathrooms: any =
+          prop.bathrooms && typeof prop.bathrooms === 'object'
+            ? prop.bathrooms
+            : {};
+
+        const toCount = (value: unknown): number => {
+          const n = Number(value);
+          return Number.isFinite(n) && n >= 0 ? n : 0;
+        };
+
+        const privateAttached = toCount(
+          rawBathrooms.privateAttached ??
+          rawBathrooms.attached ??
+          rawBathrooms.private ??
+          0
+        );
+
+        const dedicated = toCount(rawBathrooms.dedicated ?? 0);
+        const shared = toCount(rawBathrooms.shared ?? 0);
+
+        const explicitTotal = toCount(
+          rawBathrooms.total ??
+          rawBathrooms.count ??
+          prop.bathroomCount ??
+          prop.bathroomsCount ??
+          prop.numberOfBathrooms ??
+          0
+        );
+
+        const calculatedTotal =
+          privateAttached + dedicated + shared;
+
+        prop.bathrooms = {
+          privateAttached,
+          dedicated,
+          shared,
+          total: explicitTotal > 0 ? explicitTotal : calculatedTotal,
+        };
+      }
+
+      // Automatically attach local host avatar if backend host object is missing avatar
+      if (prop) {
+        if (typeof prop.host === 'string') {
+          prop.host = { name: prop.host };
+        }
+        if (prop.host && typeof prop.host === 'object') {
+          if (!prop.host.avatar) {
+            const localHostAvatar = localStorage.getItem('hostAvatar') || (() => {
+              try {
+                const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                return profile.avatar || profile.photo || profile.image || null;
+              } catch {
+                return null;
+              }
+            })();
+            if (localHostAvatar) {
+              prop.host.avatar = localHostAvatar;
+            }
+          }
+        }
+      }
+
+      // Normalize image values returned by MongoDB / older listing formats.
+      // Supports:
+      //   ["https://..."]
+      //   ["/uploads/..."]
+      //   [{ url: "https://..." }]
+      //   [{ secure_url: "https://..." }]
+      const rawImages: unknown[] = Array.isArray((prop as any)?.images)
+        ? (prop as any).images
+        : Array.isArray((prop as any)?.photos)
+          ? (prop as any).photos
+          : Array.isArray((prop as any)?.imageUrls)
+            ? (prop as any).imageUrls
+            : [];
+
+      const normalizedImages = rawImages
+        .map((item: any) => {
+          if (typeof item === 'string') return item.trim();
+
+          if (item && typeof item === 'object') {
+            return String(
+              item.url ||
+              item.secure_url ||
+              item.secureUrl ||
+              item.src ||
+              item.path ||
+              item.location ||
+              ''
+            ).trim();
+          }
+
+          return '';
+        })
+        .filter(Boolean)
+        .map((img) => {
+          if (img.startsWith('//')) return `https:${img}`;
+
+          if (img.startsWith('/uploads/')) {
+            return `${BACKEND_URL}${img}`;
+          }
+
+          if (img.startsWith('uploads/')) {
+            return `${BACKEND_URL}/${img}`;
+          }
+
+          return img;
+        });
+
+      prop.images = Array.from(new Set(normalizedImages));
+
+      // Do NOT replace a real property with fake Unsplash photos.
+      // A missing photo should remain empty so a broken backend/image record
+      // is visible instead of making the property appear to have other photos.
+      if (prop.images.length === 0) {
+        prop.images = [];
+      }
+
+      setProperty(prop);
+      setSelectedMainImage(prop.images[0] || '');
+    }
+
+    loadProperty();
+  }, [params?.id, searchParams]);
+
+  // Dynamic reviews fetcher
+  useEffect(() => {
+    const propertyId =
+      (typeof params?.id === 'string' && params.id.trim()
+        ? params.id.trim()
+        : searchParams.get('id')?.trim()) || '';
+
+    if (!propertyId) {
+      setReviewsLoading(false);
       return;
     }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/bookings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          phone,
-          homestayId: property._id,
-          propertyName: property.title || property.name || 'Property',
-          checkIn,
-          checkOut,
-          dates: `${checkIn} to ${checkOut}`,
-          nights,
-          totalPrice
-        })
-      });
-
-      const resData = await response.json();
-
-      if (resData.success) {
-        setBookingSuccess(true);
-      } else {
-        setBookingError(resData.message || 'Booking failed. Please try again.');
+    async function fetchReviews() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/reviews?propertyId=${propertyId}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setReviews(data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching reviews:', err);
+      } finally {
+        setReviewsLoading(false);
       }
-    } catch (err) {
-      setBookingError('Network error while processing booking.');
-    } finally {
-      setBookingLoading(false);
+    }
+
+    fetchReviews();
+  }, [params?.id, searchParams]);
+
+  const handleShareProperty = () => {
+    const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}${window.location.search.split('&image=')[0]}`;
+    const shareData = {
+      title: property ? `StayGuwahati | ${property.title}` : 'StayGuwahati Homestay',
+      text: 'Check out this amazing local stay on StayGuwahati!',
+      url: cleanUrl,
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch((err) => console.log('Error sharing:', err));
+    } else {
+      navigator.clipboard
+        .writeText(cleanUrl)
+        .then(() => alert('Property link copied to your clipboard!'))
+        .catch(() => alert('Could not copy link automatically. Please manually copy the URL.'));
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-20 text-gray-600 font-medium">Loading property details...</div>;
-  }
+  const handleToggleWishlist = () => {
+    setIsSaved(!isSaved);
+  };
 
-  if (error || !property) {
+  const handleReserveSpace = () => {
+    if (!property) return;
+    const mainImage = property.images && property.images.length > 0 ? property.images[0] : '';
+    const bookingData = {
+      id: property.id || property._id || '',
+      title: property.title || '',
+      price: property.pricePerNight || property.price || 1500,
+      locality: property.locality || 'Guwahati',
+      image: mainImage,
+    };
+    if (!bookingData.id) {
+      console.error('Cannot open booking page: property ID is missing.');
+      return;
+    }
+
+    sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+
+    // /book-stay loads the property using the `id` query parameter.
+    // Keep pendingBooking as well so existing booking data continues to work.
+    router.push(`/book-stay?id=${encodeURIComponent(bookingData.id)}`);
+  };
+
+  if (!property) {
     return (
-      <div className="text-center py-20 text-red-600">
-        <p>{error || 'Property not found.'}</p>
-        <button onClick={() => router.push('/')} className="mt-4 px-4 py-2 bg-teal-600 text-white rounded">
-          Back to Listings
-        </button>
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="text-slate-500 font-medium animate-pulse">Loading property details...</div>
       </div>
     );
   }
 
-  const mainImage = property.images?.[0] || property.imageUrl || property.image || `${API_BASE_URL}/api/homestays/${property._id}/image`;
+  const featuresList =
+    property.features || property.amenities || ['Premium Linens', 'Free Wi-Fi', 'Great Location'];
+  const priceFormatted = parseInt(
+    String(property.pricePerNight || property.price || 1500)
+  ).toLocaleString('en-IN');
+
+  const bedroomCount = Number(property.bedrooms ?? 0);
+  const privateAttachedBathrooms = Number(property.bathrooms?.privateAttached ?? 0);
+  const dedicatedBathrooms = Number(property.bathrooms?.dedicated ?? 0);
+  const sharedBathrooms = Number(property.bathrooms?.shared ?? 0);
+  const bathroomTotalFromTypes =
+    privateAttachedBathrooms + dedicatedBathrooms + sharedBathrooms;
+
+  const explicitBathroomTotal = Number(
+    property.bathrooms?.total ??
+    property.bathroomCount ??
+    property.bathroomsCount ??
+    property.numberOfBathrooms ??
+    0
+  );
+
+  const bathroomCount =
+    explicitBathroomTotal > 0
+      ? explicitBathroomTotal
+      : bathroomTotalFromTypes;
+
+  const bathroomCountLabel = Number.isInteger(bathroomCount)
+    ? String(bathroomCount)
+    : bathroomCount.toFixed(1).replace(/\.0$/, '');
+
+  const totalImages = property.images.length;
+  const hasImages = totalImages > 0;
+  const img2 = property.images[1] || selectedMainImage;
+  const img3 = property.images[2] || selectedMainImage;
+  const img4 = property.images[3] || selectedMainImage;
+  
+  const hostAvatarUrl = getHostAvatarUrl(property.host);
+  const hostName =
+    typeof property.host === 'object' && property.host !== null
+      ? property.host.name
+      : (typeof property.host === 'string' ? property.host : 'Host');
+
+  const hostPhone =
+    typeof property.host === 'object' && property.host !== null
+      ? (property.host.phone || 'Verified Host')
+      : 'Verified Host';
+
+  const hostEmail =
+    typeof property.host === 'object' && property.host !== null
+      ? (property.host.email || '')
+      : '';
+
+  const hostIsVerified =
+    typeof property.host === 'object' &&
+    property.host !== null &&
+    property.host.isVerified === true;
+
+  const hostProfileHref = `/host-profile?${hostEmail
+    ? `email=${encodeURIComponent(hostEmail)}`
+    : `name=${encodeURIComponent(hostName || 'Host')}`}`;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <button onClick={() => router.back()} className="mb-6 text-teal-600 font-semibold hover:underline">
-        ← Back to Search
-      </button>
+    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8 flex-1">
+      {/* Back button - return to the actual previous page */}
+      <div className="w-full mb-6">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window === 'undefined') return;
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{property.title || property.name || 'Property Details'}</h1>
-        <p className="text-gray-600 mt-1 flex items-center gap-1">
-          📍 {property.address || property.locality || 'Guwahati, Assam'}
-        </p>
+            const referrer = document.referrer;
+
+            try {
+              if (referrer) {
+                const previousUrl = new URL(referrer);
+
+                if (
+                  previousUrl.origin === window.location.origin &&
+                  previousUrl.pathname !== '/property-details'
+                ) {
+                  router.push(
+                    `${previousUrl.pathname}${previousUrl.search}${previousUrl.hash}`
+                  );
+                  return;
+                }
+              }
+            } catch (error) {
+              console.warn('Unable to resolve previous page:', error);
+            }
+
+            if (window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/map');
+            }
+          }}
+          className="text-xs sm:text-sm font-bold text-teal-600 hover:text-teal-700 inline-flex items-center gap-2 group transition"
+        >
+          <span className="transition-transform group-hover:-translate-x-1">←</span>
+          Back
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 rounded-xl overflow-hidden shadow-sm">
-        <div className="md:col-span-2 h-96 bg-gray-100">
-          <img
-            src={mainImage}
-            alt={property.title || 'Property Image'}
-            className="w-full h-full object-cover"
-            onError={(e: any) => {
-              e.target.src = 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80';
-            }}
-          />
+      {/* Property Title & Top Actions */}
+      <div className="w-full mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+            {property.title}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-2 flex items-center gap-2 font-medium">
+            <span className="text-teal-600 animate-pulse">📍</span> {property.locality || 'Guwahati'}, Guwahati
+          </p>
         </div>
-        <div className="hidden md:flex flex-col gap-4 h-96">
-          <img
-            src={property.images?.[1] || mainImage}
-            alt="Property interior"
-            className="w-full h-1/2 object-cover bg-gray-100"
-          />
-          <img
-            src={property.images?.[2] || mainImage}
-            alt="Property room"
-            className="w-full h-1/2 object-cover bg-gray-100"
-          />
+
+        <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-600">
+          <button
+            onClick={handleShareProperty}
+            className="flex items-center gap-2 hover:text-teal-600 transition bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm"
+          >
+            <span>🔗</span> Share
+          </button>
+          <button
+            onClick={handleToggleWishlist}
+            className={`flex items-center gap-2 transition px-3 py-2 rounded-xl border shadow-sm ${
+              isSaved
+                ? 'text-rose-600 border-rose-200 bg-rose-50'
+                : 'text-slate-600 hover:text-rose-600 border-slate-200 bg-white'
+            }`}
+          >
+            <span>{isSaved ? '❤️' : '🤍'}</span>
+            <span>{isSaved ? 'Saved' : 'Save'}</span>
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="border-b pb-6">
-            <h2 className="text-xl font-semibold mb-2">Hosted by {property.host?.name || property.owner || 'Host'}</h2>
-            <div className="flex gap-4 text-sm text-gray-600">
-              <span>🛏️ {property.bedrooms || 1} Bedrooms</span>
-              <span>🚿 {property.bathrooms || 1} Bathrooms</span>
-              <span>👥 Up to {property.maxGuests || 2} Guests</span>
+      {/* Dynamic Image Gallery Grid Container */}
+      <div className="w-full mb-8 sm:mb-10">
+        <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 md:grid md:grid-cols-4 md:grid-rows-2 h-[280px] sm:h-[350px] md:h-[450px] pb-2 md:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {!hasImages && (
+            <div className="col-span-4 row-span-2 w-full h-full rounded-2xl border border-slate-200 bg-slate-100 flex flex-col items-center justify-center text-center p-6">
+              <span className="text-4xl mb-3">🏠</span>
+              <p className="font-bold text-slate-700">Photos unavailable</p>
+              <p className="text-xs text-slate-500 mt-1">
+                This property has no valid image URLs stored yet.
+              </p>
             </div>
-          </div>
+          )}
 
-          <div className="border-b pb-6">
-            <h3 className="text-lg font-semibold mb-2">About this space</h3>
-            <p className="text-gray-700 leading-relaxed">
-              {property.description || 'Enjoy a peaceful stay at this property located in Guwahati.'}
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Amenities</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {(property.features || ['Wi-Fi', 'Air Conditioning', 'Kitchen', 'Free Parking', 'Power Backup']).map((item: string, idx: number) => (
-                <div key={idx} className="flex items-center gap-2 text-gray-700 bg-gray-50 p-2 rounded border">
-                  <span>✓</span> {item}
-                </div>
-              ))}
+          {totalImages === 1 && (
+            <div className="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-4 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group">
+              <img
+                src={selectedMainImage}
+                className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                alt="Main Property View"
+              />
             </div>
-          </div>
-        </div>
+          )}
 
-        <div className="bg-white border rounded-xl p-6 shadow-lg h-fit sticky top-6">
-          <div className="flex justify-between items-baseline mb-4">
-            <span className="text-2xl font-bold text-teal-700">₹{property.pricePerNight}</span>
-            <span className="text-gray-500">/ night</span>
-          </div>
-
-          {bookingSuccess ? (
-            <div className="bg-teal-50 border border-teal-200 text-teal-800 p-4 rounded-lg text-center">
-              <h4 className="font-bold text-lg mb-1">🎉 Reservation Received!</h4>
-              <p className="text-sm">A confirmation email has been dispatched with property details and location map.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleBooking} className="space-y-4">
-              {bookingError && (
-                <div className="bg-red-50 text-red-600 text-sm p-3 rounded border border-red-200">
-                  {bookingError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Check-In</label>
-                  <input
-                    type="date"
-                    required
-                    value={checkIn}
-                    onChange={(e) => setCheckIn(e.target.value)}
-                    className="w-full border rounded p-2 text-sm text-gray-900"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Check-Out</label>
-                  <input
-                    type="date"
-                    required
-                    value={checkOut}
-                    onChange={(e) => setCheckOut(e.target.value)}
-                    className="w-full border rounded p-2 text-sm text-gray-900"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder="First Name"
-                  required
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full border rounded p-2 text-sm text-gray-900"
-                />
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  required
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full border rounded p-2 text-sm text-gray-900"
+          {totalImages === 2 && (
+            <>
+              <div className="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group">
+                <img
+                  src={selectedMainImage}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Main Property View"
                 />
               </div>
-
-              <input
-                type="email"
-                placeholder="Email Address"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border rounded p-2 text-sm text-gray-900"
-              />
-
-              <input
-                type="tel"
-                placeholder="Phone Number"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full border rounded p-2 text-sm text-gray-900"
-              />
-
-              {nights > 0 && (
-                <div className="border-t pt-3 text-sm text-gray-600 space-y-1">
-                  <div className="flex justify-between">
-                    <span>₹{property.pricePerNight} x {nights} nights</span>
-                    <span>₹{totalPrice}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-gray-900 text-base pt-2 border-t">
-                    <span>Total</span>
-                    <span>₹{totalPrice}</span>
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={bookingLoading}
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-lg transition disabled:opacity-50"
+              <div
+                className="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group cursor-pointer"
+                onClick={() => setSelectedMainImage(img2)}
               >
-                {bookingLoading ? 'Processing...' : 'Reserve Now'}
-              </button>
-            </form>
+                <img
+                  src={img2}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Property View 2"
+                />
+              </div>
+            </>
+          )}
+
+          {totalImages >= 3 && (
+            <>
+              <div className="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group">
+                <img
+                  src={selectedMainImage}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Main Property View"
+                />
+              </div>
+
+              <div
+                className="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:row-start-1 md:col-span-1 md:row-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group cursor-pointer"
+                onClick={() => setSelectedMainImage(img2)}
+              >
+                <img
+                  src={img2}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Property View 2"
+                />
+              </div>
+
+              <div
+                className="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:row-start-2 md:col-span-1 md:row-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group cursor-pointer"
+                onClick={() => setSelectedMainImage(img3)}
+              >
+                <img
+                  src={img3}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Property View 3"
+                />
+              </div>
+
+              <div
+                className="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-4 md:row-start-1 md:col-span-1 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group cursor-pointer"
+                onClick={() => setSelectedMainImage(img4)}
+              >
+                <img
+                  src={img4}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Property View 4"
+                />
+                <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur text-slate-900 px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-[10px] md:text-xs font-bold shadow-md border border-slate-200/50 pointer-events-none flex items-center gap-1.5">
+                  <span className="text-teal-600">🖼️</span> <span>{totalImages}</span> Photos
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
+
+      {/* Content & Sidebar Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-start w-full">
+        <div className="lg:col-span-2 space-y-6">
+          {/* About Space Box */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span className="text-teal-600">ℹ️</span> About This Space
+            </h2>
+            <p className="text-slate-600 leading-relaxed text-sm sm:text-base">
+              {property.description || 'No description provided by host.'}
+            </p>
+
+            <div className="border-t border-slate-100 mt-6 pt-6">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                Amenities & Highlights
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {featuresList.map((feat, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-teal-100/50 flex items-center gap-1.5"
+                  >
+                    <span>✓</span> {feat}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Property Details */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-5">
+              Property Details
+            </h2>
+
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 mb-6">
+              {bedroomCount > 0 && (
+                <span className="font-semibold">
+                  {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
+                </span>
+              )}
+
+              {bedroomCount > 0 && bathroomCount > 0 && (
+                <span>·</span>
+              )}
+
+              {bathroomCount > 0 && (
+                <span className="font-semibold">
+                  {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
+                </span>
+              )}
+            </div>
+
+            {bathroomCount > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Bathrooms
+                </h3>
+
+                <div className="flex flex-wrap gap-2">
+                  {privateAttachedBathrooms > 0 && (
+                    <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-2 rounded-xl border border-teal-100">
+                      🚿 {privateAttachedBathrooms} Private &amp; attached
+                    </span>
+                  )}
+
+                  {dedicatedBathrooms > 0 && (
+                    <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-2 rounded-xl border border-teal-100">
+                      🚿 {dedicatedBathrooms} Dedicated
+                    </span>
+                  )}
+
+                  {sharedBathrooms > 0 && (
+                    <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-2 rounded-xl border border-teal-100">
+                      🚿 {sharedBathrooms} Shared
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {bathroomCount === 0 && bedroomCount === 0 && (
+              <p className="text-sm text-slate-500">
+                Property details have not been provided yet.
+              </p>
+            )}
+          </div>
+
+          {/* Host Profile */}
+          {property.host && (
+            <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">
+                    Hosted by
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Get to know your local StayGuwahati host
+                  </p>
+                </div>
+
+                {hostIsVerified && (
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 text-[10px] font-black">
+                    ✓ StayGuwahati Verified
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-50 border border-teal-100 shrink-0 flex items-center justify-center relative shadow-sm">
+                  <img
+                    src={
+                      hostAvatarUrl ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        hostName
+                      )}&background=0d9488&color=fff&size=128`
+                    }
+                    alt={hostName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        hostName || 'Host'
+                      )}&background=0d9488&color=fff&size=128`;
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-black text-slate-900 text-base sm:text-lg truncate">
+                    {hostName}
+                  </h4>
+
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {hostPhone}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-xs font-bold text-amber-500">
+                      ★ Host profile
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      • Local host
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                href={hostProfileHref}
+                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-teal-600 text-white font-bold py-3 px-4 text-sm transition shadow-sm"
+              >
+                View Host Profile
+                <span>→</span>
+              </Link>
+            </div>
+          )}
+
+          {/* Dynamic Reviews Section */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <span className="text-teal-600">💬</span> Verified Guest Reviews
+            </h2>
+            {reviewsLoading ? (
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">Loading reviews...</p>
+            ) : reviews.length === 0 ? (
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">No reviews yet for this property.</p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((rev) => (
+                  <div key={rev._id} className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                        {rev.guestName || 'Verified Guest'}
+                      </span>
+                      <span className="text-[10px] sm:text-xs text-slate-400 font-medium">
+                        {rev.createdAt
+                          ? new Date(rev.createdAt).toLocaleDateString('en-US', {
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : 'Recent'}
+                      </span>
+                    </div>
+                    <div className="text-amber-400 text-xs mb-2">
+                      {'★'.repeat(rev.rating)}
+                      {'☆'.repeat(5 - rev.rating)}
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {rev.comment || 'No comment provided.'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Booking Sidebar Sticky Card */}
+        <div className="lg:sticky lg:top-24 z-10 w-full">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xl shadow-slate-100 space-y-5 sm:space-y-6 w-full">
+            <div className="flex justify-between items-center border-b border-slate-50 pb-4">
+              <div>
+                <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  ₹{priceFormatted}
+                </span>
+                <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block mt-0.5">
+                  / night value
+                </span>
+              </div>
+              <div className="bg-emerald-50 text-emerald-700 font-bold px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs border border-emerald-100 flex items-center gap-1">
+                <span>🛡️</span> Verified Stay
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-slate-500">Cancellation Policy</span>
+                  <span className="text-teal-700">{getCancellationPolicy(property.cancellationPolicy).title}</span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {getCancellationPolicy(property.cancellationPolicy).short}
+                </p>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex justify-between items-center text-xs font-semibold text-slate-500">
+                <span>Check-in Status</span>
+                <span className="text-slate-800">Self Check-in</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleReserveSpace}
+              className="w-full bg-slate-900 hover:bg-teal-600 text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2 group text-sm sm:text-base cursor-pointer"
+            >
+              Proceed to Reservation{' '}
+              <span className="text-sm transition-transform group-hover:translate-x-1">→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Guest Support */}
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal-50 text-xl">
+            💬
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-slate-900">Need help?</h2>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500">
+              Our support team can help with your booking, dates, or property questions.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <a
+            href={
+              SUPPORT_WHATSAPP
+                ? getWhatsAppUrl(
+                    SUPPORT_WHATSAPP,
+                    `Hi StayGuwahati Support, I need help with ${property.title}.`
+                  )
+                : `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+                    `Help with ${property.title}`
+                  )}`
+            }
+            target={SUPPORT_WHATSAPP ? "_blank" : undefined}
+            rel={SUPPORT_WHATSAPP ? "noreferrer" : undefined}
+            className="rounded-xl bg-teal-600 px-4 py-3 text-center text-sm font-black text-white hover:bg-teal-700 transition"
+          >
+            💬 WhatsApp Support
+          </a>
+
+          <a
+            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+              `Support request - ${property.title}`
+            )}`}
+            className="rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-black text-slate-700 hover:border-teal-300 hover:text-teal-700 transition"
+          >
+            🎧 Contact StayGuwahati
+          </a>
+        </div>
+
+        {!SUPPORT_WHATSAPP && (
+          <p className="mt-3 text-[11px] text-slate-400">
+            Configure NEXT_PUBLIC_SUPPORT_WHATSAPP to enable the direct WhatsApp button.
+          </p>
+        )}
+      </section>
+
+    </main>
+  );
+}
+
+function getCancellationPolicy(policy?: string) {
+  if (policy === 'moderate') {
+    return {
+      title: 'Moderate',
+      short: 'Free cancellation up to 5 days before check-in.',
+      detail: 'Free cancellation is available up to 5 days before check-in.'
+    };
+  }
+
+  if (policy === 'strict') {
+    return {
+      title: 'Strict',
+      short: 'Limited cancellation.',
+      detail: 'Cancellation is limited. After the host confirms your booking, please contact the host or StayGuwahati support for assistance.'
+    };
+  }
+
+  return {
+    title: 'Flexible',
+    short: 'Free cancellation up to 24 hours before check-in.',
+    detail: 'Free cancellation is available up to 24 hours before check-in.'
+  };
+}
+
+export default function PropertyPage() {
+  return (
+    <div className="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
+      {/* Navigation Bar */}
+      <nav className="bg-white/85 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-slate-100 shrink-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
+          <Link href="/" className="flex items-center gap-2 cursor-pointer">
+            <span className="text-xl sm:text-2xl text-teal-600">🏠</span>
+            <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+              Stay<span className="text-teal-600">Guwahati</span>
+            </span>
+          </Link>
+          <div className="flex gap-3 sm:gap-6 items-center text-xs sm:text-sm">
+            <Link href="/" className="font-medium text-slate-600 hover:text-teal-600 transition">
+              Home
+            </Link>
+            <Link
+              href="/map"
+              className="bg-teal-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-teal-700 transition shadow-sm"
+            >
+              Explore Map
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading...</div>}>
+        <PropertyDetailsContent />
+      </Suspense>
+
+      {/* Footer */}
+      <footer className="max-w-6xl w-full mx-auto py-6 px-4 text-center text-xs text-gray-400 border-t border-gray-100 mt-8 shrink-0">
+        &copy; 2026 StayGuwahati. All rights reserved.
+      </footer>
     </div>
   );
 }
