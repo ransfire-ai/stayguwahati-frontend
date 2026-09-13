@@ -30,14 +30,18 @@ interface PropertyData {
   bedrooms?: number | string;
   bathrooms?: {
     privateAttached?: number | string;
+    attached?: number | string;
+    private?: number | string;
     dedicated?: number | string;
     shared?: number | string;
     total?: number | string;
+    count?: number | string;
   };
+  bathroomCount?: number | string;
+  bathroomsCount?: number | string;
+  numberOfBathrooms?: number | string;
   host?: PropertyHost | string;
   cancellationPolicy?: 'flexible' | 'moderate' | 'strict' | string;
-  rating?: number;
-
 }
 
 interface Review {
@@ -50,9 +54,9 @@ interface Review {
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
 
-// StayGuwahati support WhatsApp (updated 23 Aug 2026)
 const SUPPORT_EMAIL = 'support@stayguwahati.in';
-const SUPPORT_WHATSAPP = '8486699452';
+const SUPPORT_WHATSAPP =
+  process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\\D/g, '') || '';
 
 const getWhatsAppUrl = (phone: string, message: string) => {
   const digits = phone.replace(/\\D/g, '');
@@ -124,29 +128,39 @@ function PropertyDetailsContent() {
     async function loadProperty() {
       let prop: PropertyData | null = null;
 
-      // 1. Check Session Storage
-      const cachedProp = sessionStorage.getItem('selectedProperty');
-      if (cachedProp) {
+      // 1. ALWAYS fetch the latest property from the backend first.
+      // Do not let an older selectedProperty session copy hide newly saved
+      // fields such as bathrooms.
+      if (propertyId && propertyId !== 'default') {
         try {
-          const parsed = JSON.parse(cachedProp);
-          if (!propertyId || parsed.id === propertyId || parsed._id === propertyId) {
-            prop = parsed;
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
+          const response = await fetch(
+            `${BACKEND_URL}/api/homestays/${encodeURIComponent(propertyId)}`,
+            { cache: 'no-store' }
+          );
 
-      // 2. Fetch from Backend API if not found in session
-      if (!prop && propertyId && propertyId !== 'default') {
-        try {
-          const response = await fetch(`${BACKEND_URL}/api/homestays/${propertyId}`);
           if (response.ok) {
             const json = await response.json();
             prop = json.data || json;
+          } else {
+            console.warn(`Property API returned ${response.status}`);
           }
         } catch (err) {
-          console.warn('Could not fetch property from API, checking local stores...', err);
+          console.warn('Could not fetch latest property from API, checking local stores...', err);
+        }
+      }
+
+      // 2. SessionStorage is only a fallback when the API did not return data.
+      if (!prop) {
+        const cachedProp = sessionStorage.getItem('selectedProperty');
+        if (cachedProp) {
+          try {
+            const parsed = JSON.parse(cachedProp);
+            if (!propertyId || parsed.id === propertyId || parsed._id === propertyId) {
+              prop = parsed;
+            }
+          } catch (e) {
+            console.error('Invalid cached property:', e);
+          }
         }
       }
 
@@ -181,6 +195,50 @@ function PropertyDetailsContent() {
           if (cleanImg.startsWith('/uploads')) cleanImg = `${BACKEND_URL}${cleanImg}`;
           prop.images.push(cleanImg);
         }
+      }
+
+      // Normalize bathroom information from MongoDB and older listing formats.
+      // The current List Property form stores:
+      // bathrooms: { privateAttached, dedicated, shared, total }
+      if (prop) {
+        const rawBathrooms: any =
+          prop.bathrooms && typeof prop.bathrooms === 'object'
+            ? prop.bathrooms
+            : {};
+
+        const toCount = (value: unknown): number => {
+          const n = Number(value);
+          return Number.isFinite(n) && n >= 0 ? n : 0;
+        };
+
+        const privateAttached = toCount(
+          rawBathrooms.privateAttached ??
+          rawBathrooms.attached ??
+          rawBathrooms.private ??
+          0
+        );
+
+        const dedicated = toCount(rawBathrooms.dedicated ?? 0);
+        const shared = toCount(rawBathrooms.shared ?? 0);
+
+        const explicitTotal = toCount(
+          rawBathrooms.total ??
+          rawBathrooms.count ??
+          prop.bathroomCount ??
+          prop.bathroomsCount ??
+          prop.numberOfBathrooms ??
+          0
+        );
+
+        const calculatedTotal =
+          privateAttached + dedicated + shared;
+
+        prop.bathrooms = {
+          privateAttached,
+          dedicated,
+          shared,
+          total: explicitTotal > 0 ? explicitTotal : calculatedTotal,
+        };
       }
 
       // Automatically attach local host avatar if backend host object is missing avatar
@@ -287,8 +345,16 @@ function PropertyDetailsContent() {
       locality: property.locality || 'Guwahati',
       image: mainImage,
     };
+    if (!bookingData.id) {
+      console.error('Cannot open booking page: property ID is missing.');
+      return;
+    }
+
     sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-    router.push('/book-stay');
+
+    // /book-stay loads the property using the `id` query parameter.
+    // Keep pendingBooking as well so existing booking data continues to work.
+    router.push(`/book-stay?id=${encodeURIComponent(bookingData.id)}`);
   };
 
   if (!property) {
@@ -305,28 +371,29 @@ function PropertyDetailsContent() {
     String(property.pricePerNight || property.price || 1500)
   ).toLocaleString('en-IN');
 
-  // Bedroom & bathroom summary shown to guests.
   const bedroomCount = Number(property.bedrooms ?? 0);
   const privateAttachedBathrooms = Number(property.bathrooms?.privateAttached ?? 0);
   const dedicatedBathrooms = Number(property.bathrooms?.dedicated ?? 0);
   const sharedBathrooms = Number(property.bathrooms?.shared ?? 0);
   const bathroomTotalFromTypes =
     privateAttachedBathrooms + dedicatedBathrooms + sharedBathrooms;
-  const bathroomCount = Number(
-    property.bathrooms?.total ?? bathroomTotalFromTypes
+
+  const explicitBathroomTotal = Number(
+    property.bathrooms?.total ??
+    property.bathroomCount ??
+    property.bathroomsCount ??
+    property.numberOfBathrooms ??
+    0
   );
+
+  const bathroomCount =
+    explicitBathroomTotal > 0
+      ? explicitBathroomTotal
+      : bathroomTotalFromTypes;
 
   const bathroomCountLabel = Number.isInteger(bathroomCount)
     ? String(bathroomCount)
-    : bathroomCount.toFixed(1).replace(/\\.0$/, '');
-
-  const bathroomTypeItems = [
-    privateAttachedBathrooms > 0
-      ? `${privateAttachedBathrooms} private & attached`
-      : null,
-    dedicatedBathrooms > 0 ? `${dedicatedBathrooms} dedicated` : null,
-    sharedBathrooms > 0 ? `${sharedBathrooms} shared` : null,
-  ].filter(Boolean) as string[];
+    : bathroomCount.toFixed(1).replace(/\.0$/, '');
 
   const totalImages = property.images.length;
   const img2 = property.images[1] || selectedMainImage;
@@ -359,292 +426,458 @@ function PropertyDetailsContent() {
     : `name=${encodeURIComponent(hostName || 'Host')}`}`;
 
   return (
-    <main className="flex-1 bg-[#f6f4ef] pb-24 lg:pb-0">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* Back */}
+    <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8 flex-1">
+      {/* Back button - return to the actual previous page */}
+      <div className="w-full mb-6">
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== 'undefined' && window.history.length > 1) router.back();
-            else router.push('/');
+            if (typeof window === 'undefined') return;
+
+            const referrer = document.referrer;
+
+            try {
+              if (referrer) {
+                const previousUrl = new URL(referrer);
+
+                if (
+                  previousUrl.origin === window.location.origin &&
+                  previousUrl.pathname !== '/property-details'
+                ) {
+                  router.push(
+                    `${previousUrl.pathname}${previousUrl.search}${previousUrl.hash}`
+                  );
+                  return;
+                }
+              }
+            } catch (error) {
+              console.warn('Unable to resolve previous page:', error);
+            }
+
+            if (window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/map');
+            }
           }}
-          className="mb-3 sm:mb-7 inline-flex items-center gap-2 text-sm font-extrabold text-[#0f766e] hover:text-[#064e4a] transition"
+          className="text-xs sm:text-sm font-bold text-teal-600 hover:text-teal-700 inline-flex items-center gap-2 group transition"
         >
-          <span className="text-lg">←</span> Back to stays
+          <span className="transition-transform group-hover:-translate-x-1">←</span>
+          Back
         </button>
+      </div>
 
-        {/* Homepage-matched property hero */}
-        <section className="relative overflow-hidden rounded-[24px] sm:rounded-[36px] bg-[#103d3a] px-4 py-5 sm:px-8 sm:py-9 lg:px-10 lg:py-11 text-white shadow-[0_18px_50px_rgba(15,61,58,0.16)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(45,143,132,0.30),transparent_38%),linear-gradient(120deg,#0b302e,#164944)]" />
-          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <span className="inline-flex items-center rounded-full border border-[#7bd1c6]/40 bg-white/10 px-3 py-1.5 text-[9px] font-black tracking-[0.18em] uppercase text-[#a9ebe2]">
-                ✦ VERIFIED LOCAL STAY
-              </span>
-
-              <h1 className="mt-4 text-[2.15rem] leading-[1.05] font-black tracking-tight sm:text-5xl lg:text-6xl">
-                {property.title}
-              </h1>
-
-              <p className="mt-2.5 flex items-center gap-2 text-sm font-semibold text-[#d3e8e4] sm:text-base">
-                <span className="text-[#ffd24a]">●</span>
-                {property.locality || 'Guwahati'}, Assam
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2 sm:mt-6">
-                {bedroomCount > 0 && (
-                  <span className="rounded-full border border-[#7bd1c6]/35 bg-[#164b47] px-3 py-2 text-xs font-extrabold text-white sm:px-4 sm:py-2.5 sm:text-sm">
-                    🛏️ {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
-                  </span>
-                )}
-                {bathroomCount > 0 && (
-                  <span className="rounded-full border border-[#7bd1c6]/35 bg-[#164b47] px-3 py-2 text-xs font-extrabold text-white sm:px-4 sm:py-2.5 sm:text-sm">
-                    🚿 {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
-                  </span>
-                )}
-                <span className="rounded-full bg-[#ffd24a] px-3 py-2 text-xs font-black text-[#123633] sm:px-4 sm:py-2.5 sm:text-sm shadow-sm">
-                  ★ {Number(property.rating || 0).toFixed(1)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex w-full flex-wrap gap-2 sm:w-auto lg:justify-end">
-              <button
-                type="button"
-                onClick={handleShareProperty}
-                className="rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-extrabold sm:px-5 sm:py-3 sm:text-sm text-white transition hover:bg-white/20"
-              >
-                ↗ Share
-              </button>
-              <button
-                type="button"
-                onClick={handleToggleWishlist}
-                className={`rounded-full px-4 py-2.5 text-xs font-extrabold sm:px-5 sm:py-3 sm:text-sm transition ${
-                  isSaved
-                    ? 'bg-[#ffd24a] text-[#123633]'
-                    : 'bg-white text-[#123633] hover:bg-[#fff8dc]'
-                }`}
-              >
-                {isSaved ? '♥ Saved' : '♡ Save'}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Gallery */}
-        <section className="mt-4 sm:mt-7 overflow-hidden rounded-[24px] sm:rounded-[28px] border border-[#d7e2dd] bg-white p-2.5 sm:p-3 shadow-[0_12px_35px_rgba(18,54,51,0.07)]">
-          <div className="grid h-[400px] grid-cols-2 gap-2 sm:h-[430px] md:h-[520px] md:grid-cols-4">
-            <button
-              type="button"
-              onClick={() => setSelectedMainImage(property.images[0])}
-              className="group relative col-span-2 row-span-1 min-h-0 overflow-hidden md:row-span-2 rounded-[18px] bg-[#e8eeeb] text-left md:rounded-[20px]"
-            >
-              <img src={selectedMainImage} alt={`${property.title} main view`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedMainImage(img2)}
-              className="group relative min-h-[88px] overflow-hidden rounded-[16px] bg-[#e8eeeb] md:min-h-0 md:rounded-[20px]"
-            >
-              <img src={img2} alt={`${property.title} view 2`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedMainImage(img3)}
-              className="group relative min-h-[88px] overflow-hidden rounded-[16px] bg-[#e8eeeb] md:min-h-0 md:rounded-[20px]"
-            >
-              <img src={img3} alt={`${property.title} view 3`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedMainImage(img4)}
-              className="group relative min-h-[88px] overflow-hidden rounded-[16px] bg-[#e8eeeb] md:min-h-0 md:rounded-[20px]"
-            >
-              <img src={img4} alt={`${property.title} view 4`} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
-              <span className="absolute bottom-3 right-3 rounded-full bg-white/95 px-2.5 py-1.5 text-[10px] font-black text-[#123633] shadow sm:px-3 sm:py-2 sm:text-xs">
-                🖼 {totalImages} Photos
-              </span>
-            </button>
-          </div>
-        </section>
-
-        {/* Main content */}
-        <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <div className="space-y-5 sm:space-y-6">
-            <section className="rounded-[22px] border border-[#d7e2dd] bg-white p-4 sm:rounded-[24px] sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
-              <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#e1f1ed] text-[#0f766e]">ℹ</span>
-                <div>
-                  <h2 className="text-lg font-black text-[#18302f] sm:text-xl">About this stay</h2>
-                  <p className="text-xs text-[#71807b]">A local space, handpicked for your stay</p>
-                </div>
-              </div>
-              <p className="mt-5 text-sm leading-7 text-[#52635f] sm:text-base">
-                {property.description || 'No description provided by host.'}
-              </p>
-              <div className="mt-6 border-t border-[#e6ece9] pt-5">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-[#69807a]">Amenities & highlights</h3>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {featuresList.map((feat, idx) => (
-                    <span key={idx} className="rounded-full border border-[#b9ddd6] bg-[#f2faf7] px-3 py-2 text-xs font-bold text-[#176b63]">
-                      ✓ {feat}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-[22px] border border-[#d7e2dd] bg-white p-4 sm:rounded-[24px] sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
-              <h2 className="text-lg font-black text-[#18302f] sm:text-xl">🏡 Property details</h2>
-              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-[#dce6e2] bg-[#fafcfb] p-4">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#77857f]">Bedrooms</p>
-                  <p className="mt-2 text-2xl font-black text-[#173532]">{bedroomCount || '—'}</p>
-                </div>
-                <div className="rounded-2xl border border-[#dce6e2] bg-[#fafcfb] p-4">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#77857f]">Bathrooms</p>
-                  <p className="mt-2 text-2xl font-black text-[#173532]">{bathroomCount > 0 ? bathroomCountLabel : '—'}</p>
-                </div>
-                <div className="col-span-2 rounded-2xl border border-[#b9ddd6] bg-[#eaf7f3] p-4 sm:col-span-1">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[#34746c]">Stay summary</p>
-                  <p className="mt-2 text-sm font-black leading-5 text-[#173532]">
-                    {bedroomCount > 0 || bathroomCount > 0 ? `${bedroomCount || 0} bedrooms · ${bathroomCountLabel || 0} bathrooms` : 'Details not provided'}
-                  </p>
-                </div>
-              </div>
-
-              {bathroomTypeItems.length > 0 && (
-                <div className="mt-5 border-t border-[#e6ece9] pt-5">
-                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#69807a]">Bathroom type</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {bathroomTypeItems.map((item) => (
-                      <span key={item} className="rounded-full border border-[#dce6e2] bg-[#fafcfb] px-3 py-2 text-xs font-bold text-[#43534f]">
-                        🚿 {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {property.host && (
-              <section className="rounded-[22px] border border-[#d7e2dd] bg-white p-4 sm:rounded-[24px] sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
-                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#69807a]">Hosted by</p>
-                <div className="mt-4 flex items-center gap-4">
-                  <img
-                    src={hostAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName)}&background=0d9488&color=fff&size=128`}
-                    alt={hostName}
-                    className="h-16 w-16 rounded-full border-2 border-[#d5ebe5] object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName || 'Host')}&background=0d9488&color=fff&size=128`;
-                    }}
-                  />
-                  <div className="min-w-0">
-                    <h3 className="truncate text-lg font-black text-[#18302f]">{hostName}</h3>
-                    <p className="mt-1 text-xs font-semibold text-[#70807b]">{hostPhone}</p>
-                    <p className="mt-2 text-xs font-bold text-[#d09b00]">★ Local StayGuwahati host {hostIsVerified ? '· Verified' : ''}</p>
-                  </div>
-                </div>
-                <Link href={hostProfileHref} className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-[#103d3a] px-4 py-3 text-sm font-black text-white transition hover:bg-[#0a2f2c]">
-                  View Host Profile →
-                </Link>
-              </section>
-            )}
-
-            <section className="rounded-[22px] border border-[#d7e2dd] bg-white p-4 sm:rounded-[24px] sm:p-7 shadow-[0_10px_28px_rgba(18,54,51,0.05)]">
-              <h2 className="text-lg font-black text-[#18302f] sm:text-xl">💬 Guest reviews</h2>
-              <div className="mt-5">
-                {reviewsLoading ? (
-                  <p className="text-sm text-[#71807b]">Loading reviews...</p>
-                ) : reviews.length === 0 ? (
-                  <p className="text-sm text-[#71807b]">No reviews yet for this property.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {reviews.map((rev) => (
-                      <div key={rev._id} className="rounded-2xl border border-[#e0e8e5] bg-[#fafcfb] p-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <strong className="text-sm text-[#18302f]">{rev.guestName || 'Verified Guest'}</strong>
-                          <span className="text-xs text-[#73817d]">{rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recent'}</span>
-                        </div>
-                        <div className="mt-2 text-sm text-[#d09b00]">{'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}</div>
-                        <p className="mt-2 text-sm leading-6 text-[#596965]">{rev.comment || 'No comment provided.'}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
-
-          {/* Reservation card */}
-          <aside className="order-last lg:sticky lg:top-24 lg:order-last">
-            <div className="overflow-hidden rounded-[26px] border border-[#d7e2dd] bg-white p-5 shadow-[0_16px_40px_rgba(18,54,51,0.10)] sm:p-6">
-              <div className="flex items-start justify-between gap-3 border-b border-[#e5ece8] pb-5">
-                <div>
-                  <p className="text-3xl font-black tracking-tight text-[#18302f]">₹{priceFormatted}</p>
-                  <p className="mt-1 text-xs font-semibold text-[#74817d]">per night</p>
-                </div>
-                <span className="rounded-full border border-[#b9ddd6] bg-[#edf8f5] px-3 py-2 text-xs font-black text-[#176b63]">🛡 Verified stay</span>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                <div className="rounded-2xl border border-[#e0e8e5] bg-[#fafcfb] p-4">
-                  <div className="flex items-center justify-between gap-3 text-xs font-black">
-                    <span className="text-[#5f6f6a]">Cancellation policy</span>
-                    <span className="text-[#176b63]">{getCancellationPolicy(property.cancellationPolicy).title}</span>
-                  </div>
-                  <p className="mt-2 text-xs leading-5 text-[#74817d]">{getCancellationPolicy(property.cancellationPolicy).short}</p>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-[#e0e8e5] bg-[#fafcfb] p-4 text-xs font-bold text-[#5f6f6a]">
-                  <span>Check-in</span><span className="text-[#18302f]">Self check-in</span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleReserveSpace}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ffd24a] px-4 py-4 text-sm font-black text-[#173532] shadow-[0_10px_24px_rgba(255,210,74,0.25)] transition hover:-translate-y-0.5 hover:bg-[#ffc928]"
-              >
-                Reserve this stay <span>→</span>
-              </button>
-
-              <div className="mt-5 rounded-2xl bg-[#103d3a] p-4 text-white">
-                <p className="text-sm font-black">Need help?</p>
-                <p className="mt-1 text-xs leading-5 text-[#cfe2de]">Questions about this stay? Our local support team is here to help.</p>
-                <a
-                  href={SUPPORT_WHATSAPP ? getWhatsAppUrl(SUPPORT_WHATSAPP, `Hi StayGuwahati Support, I need help with ${property.title}.`) : `mailto:${SUPPORT_EMAIL}`}
-                  target={SUPPORT_WHATSAPP ? "_blank" : undefined}
-                  rel={SUPPORT_WHATSAPP ? "noreferrer" : undefined}
-                  className="mt-3 inline-flex rounded-xl bg-white px-4 py-2.5 text-xs font-black text-[#103d3a]"
-                >
-                  💬 WhatsApp support
-                </a>
-              </div>
-            </div>
-          </aside>
+      {/* Property Title & Top Actions */}
+      <div className="w-full mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+            {property.title}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-2 flex items-center gap-2 font-medium">
+            <span className="text-teal-600 animate-pulse">📍</span> {property.locality || 'Guwahati'}, Guwahati
+          </p>
         </div>
 
-        {/* Mobile reservation bar: keeps the primary action reachable without
-            changing the desktop reservation sidebar or booking route. */}
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#d7e2dd] bg-white/95 px-3 py-2.5 shadow-[0_-8px_30px_rgba(18,54,51,0.10)] backdrop-blur-md lg:hidden">
-          <div className="mx-auto flex max-w-7xl items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#69807a]">From</p>
-              <p className="truncate text-lg font-black text-[#18302f]">₹{priceFormatted}<span className="ml-1 text-[11px] font-semibold text-[#74817d]">/ night</span></p>
+        <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-slate-600">
+          <button
+            onClick={handleShareProperty}
+            className="flex items-center gap-2 hover:text-teal-600 transition bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm"
+          >
+            <span>🔗</span> Share
+          </button>
+          <button
+            onClick={handleToggleWishlist}
+            className={`flex items-center gap-2 transition px-3 py-2 rounded-xl border shadow-sm ${
+              isSaved
+                ? 'text-rose-600 border-rose-200 bg-rose-50'
+                : 'text-slate-600 hover:text-rose-600 border-slate-200 bg-white'
+            }`}
+          >
+            <span>{isSaved ? '❤️' : '🤍'}</span>
+            <span>{isSaved ? 'Saved' : 'Save'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Dynamic Image Gallery Grid Container */}
+      <div className="w-full mb-8 sm:mb-10">
+        <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 md:grid md:grid-cols-4 md:grid-rows-2 h-[280px] sm:h-[350px] md:h-[450px] pb-2 md:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {totalImages === 1 && (
+            <div className="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-4 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group">
+              <img
+                src={selectedMainImage}
+                className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                alt="Main Property View"
+              />
             </div>
+          )}
+
+          {totalImages === 2 && (
+            <>
+              <div className="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group">
+                <img
+                  src={selectedMainImage}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Main Property View"
+                />
+              </div>
+              <div
+                className="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group cursor-pointer"
+                onClick={() => setSelectedMainImage(img2)}
+              >
+                <img
+                  src={img2}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Property View 2"
+                />
+              </div>
+            </>
+          )}
+
+          {totalImages >= 3 && (
+            <>
+              <div className="snap-center shrink-0 w-[90vw] md:w-auto md:col-span-2 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group">
+                <img
+                  src={selectedMainImage}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Main Property View"
+                />
+              </div>
+
+              <div
+                className="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:row-start-1 md:col-span-1 md:row-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group cursor-pointer"
+                onClick={() => setSelectedMainImage(img2)}
+              >
+                <img
+                  src={img2}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Property View 2"
+                />
+              </div>
+
+              <div
+                className="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-3 md:row-start-2 md:col-span-1 md:row-span-1 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group cursor-pointer"
+                onClick={() => setSelectedMainImage(img3)}
+              >
+                <img
+                  src={img3}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Property View 3"
+                />
+              </div>
+
+              <div
+                className="snap-center shrink-0 w-[80vw] md:w-auto md:col-start-4 md:row-start-1 md:col-span-1 md:row-span-2 h-full rounded-2xl overflow-hidden bg-slate-200 shadow-sm relative group cursor-pointer"
+                onClick={() => setSelectedMainImage(img4)}
+              >
+                <img
+                  src={img4}
+                  className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  alt="Property View 4"
+                />
+                <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur text-slate-900 px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-[10px] md:text-xs font-bold shadow-md border border-slate-200/50 pointer-events-none flex items-center gap-1.5">
+                  <span className="text-teal-600">🖼️</span> <span>{totalImages}</span> Photos
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Content & Sidebar Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-start w-full">
+        <div className="lg:col-span-2 space-y-6">
+          {/* About Space Box */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span className="text-teal-600">ℹ️</span> About This Space
+            </h2>
+            <p className="text-slate-600 leading-relaxed text-sm sm:text-base">
+              {property.description || 'No description provided by host.'}
+            </p>
+
+            <div className="border-t border-slate-100 mt-6 pt-6">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                Amenities & Highlights
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {featuresList.map((feat, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-teal-100/50 flex items-center gap-1.5"
+                  >
+                    <span>✓</span> {feat}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Property Details */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-5">
+              Property Details
+            </h2>
+
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 mb-6">
+              {bedroomCount > 0 && (
+                <span className="font-semibold">
+                  {bedroomCount} {bedroomCount === 1 ? 'bedroom' : 'bedrooms'}
+                </span>
+              )}
+
+              {bedroomCount > 0 && bathroomCount > 0 && (
+                <span>·</span>
+              )}
+
+              {bathroomCount > 0 && (
+                <span className="font-semibold">
+                  {bathroomCountLabel} {bathroomCount === 1 ? 'bathroom' : 'bathrooms'}
+                </span>
+              )}
+            </div>
+
+            {bathroomCount > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Bathrooms
+                </h3>
+
+                <div className="flex flex-wrap gap-2">
+                  {privateAttachedBathrooms > 0 && (
+                    <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-2 rounded-xl border border-teal-100">
+                      🚿 {privateAttachedBathrooms} Private &amp; attached
+                    </span>
+                  )}
+
+                  {dedicatedBathrooms > 0 && (
+                    <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-2 rounded-xl border border-teal-100">
+                      🚿 {dedicatedBathrooms} Dedicated
+                    </span>
+                  )}
+
+                  {sharedBathrooms > 0 && (
+                    <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-2 rounded-xl border border-teal-100">
+                      🚿 {sharedBathrooms} Shared
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {bathroomCount === 0 && bedroomCount === 0 && (
+              <p className="text-sm text-slate-500">
+                Property details have not been provided yet.
+              </p>
+            )}
+          </div>
+
+          {/* Host Profile */}
+          {property.host && (
+            <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">
+                    Hosted by
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Get to know your local StayGuwahati host
+                  </p>
+                </div>
+
+                {hostIsVerified && (
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 text-[10px] font-black">
+                    ✓ StayGuwahati Verified
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-50 border border-teal-100 shrink-0 flex items-center justify-center relative shadow-sm">
+                  <img
+                    src={
+                      hostAvatarUrl ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        hostName
+                      )}&background=0d9488&color=fff&size=128`
+                    }
+                    alt={hostName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        hostName || 'Host'
+                      )}&background=0d9488&color=fff&size=128`;
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-black text-slate-900 text-base sm:text-lg truncate">
+                    {hostName}
+                  </h4>
+
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {hostPhone}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-xs font-bold text-amber-500">
+                      ★ Host profile
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      • Local host
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                href={hostProfileHref}
+                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-teal-600 text-white font-bold py-3 px-4 text-sm transition shadow-sm"
+              >
+                View Host Profile
+                <span>→</span>
+              </Link>
+            </div>
+          )}
+
+          {/* Dynamic Reviews Section */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <span className="text-teal-600">💬</span> Verified Guest Reviews
+            </h2>
+            {reviewsLoading ? (
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">Loading reviews...</p>
+            ) : reviews.length === 0 ? (
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">No reviews yet for this property.</p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((rev) => (
+                  <div key={rev._id} className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                        {rev.guestName || 'Verified Guest'}
+                      </span>
+                      <span className="text-[10px] sm:text-xs text-slate-400 font-medium">
+                        {rev.createdAt
+                          ? new Date(rev.createdAt).toLocaleDateString('en-US', {
+                              month: 'long',
+                              year: 'numeric',
+                            })
+                          : 'Recent'}
+                      </span>
+                    </div>
+                    <div className="text-amber-400 text-xs mb-2">
+                      {'★'.repeat(rev.rating)}
+                      {'☆'.repeat(5 - rev.rating)}
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {rev.comment || 'No comment provided.'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Booking Sidebar Sticky Card */}
+        <div className="lg:sticky lg:top-24 z-10 w-full">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xl shadow-slate-100 space-y-5 sm:space-y-6 w-full">
+            <div className="flex justify-between items-center border-b border-slate-50 pb-4">
+              <div>
+                <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  ₹{priceFormatted}
+                </span>
+                <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block mt-0.5">
+                  / night value
+                </span>
+              </div>
+              <div className="bg-emerald-50 text-emerald-700 font-bold px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs border border-emerald-100 flex items-center gap-1">
+                <span>🛡️</span> Verified Stay
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-slate-500">Cancellation Policy</span>
+                  <span className="text-teal-700">{getCancellationPolicy(property.cancellationPolicy).title}</span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {getCancellationPolicy(property.cancellationPolicy).short}
+                </p>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex justify-between items-center text-xs font-semibold text-slate-500">
+                <span>Check-in Status</span>
+                <span className="text-slate-800">Self Check-in</span>
+              </div>
+            </div>
+
             <button
-              type="button"
               onClick={handleReserveSpace}
-              className="shrink-0 rounded-2xl bg-[#ffd24a] px-5 py-3 text-sm font-black text-[#173532] shadow-[0_8px_18px_rgba(255,210,74,0.24)] active:scale-[0.98]"
+              className="w-full bg-slate-900 hover:bg-teal-600 text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-md flex justify-center items-center gap-2 group text-sm sm:text-base cursor-pointer"
             >
-              Reserve this stay →
+              Proceed to Reservation{' '}
+              <span className="text-sm transition-transform group-hover:translate-x-1">→</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* Guest Support */}
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal-50 text-xl">
+            💬
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-slate-900">Need help?</h2>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500">
+              Our support team can help with your booking, dates, or property questions.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <a
+            href={
+              SUPPORT_WHATSAPP
+                ? getWhatsAppUrl(
+                    SUPPORT_WHATSAPP,
+                    `Hi StayGuwahati Support, I need help with ${property.title}.`
+                  )
+                : `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+                    `Help with ${property.title}`
+                  )}`
+            }
+            target={SUPPORT_WHATSAPP ? "_blank" : undefined}
+            rel={SUPPORT_WHATSAPP ? "noreferrer" : undefined}
+            className="rounded-xl bg-teal-600 px-4 py-3 text-center text-sm font-black text-white hover:bg-teal-700 transition"
+          >
+            💬 WhatsApp Support
+          </a>
+
+          <a
+            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+              `Support request - ${property.title}`
+            )}`}
+            className="rounded-xl border border-slate-200 px-4 py-3 text-center text-sm font-black text-slate-700 hover:border-teal-300 hover:text-teal-700 transition"
+          >
+            🎧 Contact StayGuwahati
+          </a>
+        </div>
+
+        {!SUPPORT_WHATSAPP && (
+          <p className="mt-3 text-[11px] text-slate-400">
+            Configure NEXT_PUBLIC_SUPPORT_WHATSAPP to enable the direct WhatsApp button.
+          </p>
+        )}
+      </section>
+
     </main>
   );
 }
@@ -675,23 +908,23 @@ function getCancellationPolicy(policy?: string) {
 
 export default function PropertyPage() {
   return (
-    <div className="bg-[#f6f4ef] text-[#18302f] font-sans antialiased min-h-screen flex flex-col">
+    <div className="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
       {/* Navigation Bar */}
-      <nav className="bg-[#f8f7f2]/95 backdrop-blur-md sticky top-0 z-50 border-b border-[#d7e2dd] shrink-0">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex justify-between items-center">
+      <nav className="bg-white/85 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-slate-100 shrink-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2 cursor-pointer">
-            <span className="h-9 w-9 rounded-full bg-[#0f766e] grid place-items-center text-base shadow-sm">🏠</span>
-            <span className="text-lg sm:text-xl font-black text-[#18302f] tracking-tight">
-              Stay<span className="text-[#0f766e]">Guwahati</span>
+            <span className="text-xl sm:text-2xl text-teal-600">🏠</span>
+            <span className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+              Stay<span className="text-teal-600">Guwahati</span>
             </span>
           </Link>
-          <div className="flex gap-2 sm:gap-6 items-center text-xs sm:text-sm">
-            <Link href="/" className="hidden sm:inline font-bold text-[#18302f] hover:text-[#0f766e] transition">
+          <div className="flex gap-3 sm:gap-6 items-center text-xs sm:text-sm">
+            <Link href="/" className="font-medium text-slate-600 hover:text-teal-600 transition">
               Home
             </Link>
             <Link
               href="/map"
-              className="bg-[#103d3a] text-white px-4 sm:px-5 py-2.5 rounded-full font-black hover:bg-[#0a2f2c] transition shadow-sm"
+              className="bg-teal-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-teal-700 transition shadow-sm"
             >
               Explore Map
             </Link>
@@ -704,7 +937,7 @@ export default function PropertyPage() {
       </Suspense>
 
       {/* Footer */}
-      <footer className="max-w-7xl w-full mx-auto py-7 px-4 text-center text-xs text-[#82908b] border-t border-[#d7e2dd] shrink-0">
+      <footer className="max-w-6xl w-full mx-auto py-6 px-4 text-center text-xs text-gray-400 border-t border-gray-100 mt-8 shrink-0">
         &copy; 2026 StayGuwahati. All rights reserved.
       </footer>
     </div>
