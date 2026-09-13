@@ -41,8 +41,8 @@ export default function PageShell({
     };
   }, []);
 
-  const accountHref = signedIn ? "/profile" : "/login";
-const accountLabel = signedIn ? "My account" : "Sign in";
+  const accountHref = signedIn ? "/dashboard" : "/login";
+  const accountLabel = signedIn ? "My account" : "Sign in";
 
   const closeMenu = () => setMenuOpen(false);
 
