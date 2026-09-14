@@ -327,34 +327,39 @@ function PropertyDetailsContent() {
             </div>
           </div>
 
-          {/* Mobile gallery: intentional horizontal cards instead of squeezed mosaic */}
+          {/* Mobile gallery: one photo at a time with native side-swipe scrolling */}
           <div className="md:hidden">
-            <button
-              onClick={() => { setSelected(0); setGalleryOpen(true); }}
-              className="relative h-[330px] w-full overflow-hidden rounded-[24px]"
-            >
-              <img
-                src={images[0]}
-                alt={property.title || 'Property'}
-                className="h-full w-full object-cover"
-              />
-            </button>
-
-            {images.length > 1 && (
-              <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                {images.slice(1).map((img, i) => (
+            {images.length > 0 ? (
+              <div
+                className="flex w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                aria-label={`${property.title || 'Property'} photos`}
+              >
+                {images.map((img, i) => (
                   <button
                     key={img + i}
-                    onClick={() => { setSelected(i + 1); setGalleryOpen(true); }}
-                    className="h-24 w-32 shrink-0 overflow-hidden rounded-2xl"
+                    type="button"
+                    onClick={() => { setSelected(i); setGalleryOpen(true); }}
+                    className="relative min-w-full snap-center overflow-hidden rounded-[24px] bg-[#e5e9e6] text-left"
+                    aria-label={`View property photo ${i + 1} of ${images.length}`}
                   >
-                    <img
-                      src={img}
-                      alt={`Property view ${i + 2}`}
-                      className="h-full w-full object-cover"
-                    />
+                    <div className="aspect-[4/3] w-full">
+                      <img
+                        src={img}
+                        alt={`${property.title || 'Property'} photo ${i + 1}`}
+                        className="h-full w-full object-cover"
+                        draggable={false}
+                      />
+                    </div>
+
+                    <span className="absolute bottom-4 right-4 rounded-full bg-black/65 px-3.5 py-2 text-xs font-black text-white shadow-sm backdrop-blur-sm">
+                      {i + 1} / {images.length}
+                    </span>
                   </button>
                 ))}
+              </div>
+            ) : (
+              <div className="grid aspect-[4/3] place-items-center rounded-[24px] bg-[#e5e9e6] text-sm font-semibold text-[#71827d]">
+                No property photos available
               </div>
             )}
           </div>
