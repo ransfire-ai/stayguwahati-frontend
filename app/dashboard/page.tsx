@@ -21,7 +21,9 @@ import {
   MessageSquare,
   ArrowRight,
   Loader2,
-  Calendar
+  Calendar,
+  FileText,
+  ShieldCheck
 } from 'lucide-react';
 
 const BACKEND_URL = 'https://stayguwahati-backend.onrender.com';
@@ -35,8 +37,11 @@ const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const INACTIVITY_CHECK_INTERVAL_MS = 60 * 1000;
 
 interface UserProfile {
+  id?: string;
+  _id?: string;
   name: string;
   email: string;
+  role?: string;
 }
 
 interface Property {
@@ -260,8 +265,6 @@ export default function DashboardPage() {
   const [hostReservations, setHostReservations] = useState<Booking[]>([]);
   const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
   const [hostRating, setHostRating] = useState<number>(0);
-  const [wishlistProperties, setWishlistProperties] = useState<Property[]>([]);
-  const [loadingWishlist, setLoadingWishlist] = useState(true);
 
   // Loading states
   const [loadingTraveler, setLoadingTraveler] = useState(true);
@@ -271,6 +274,14 @@ export default function DashboardPage() {
   // Modals state
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const [isHostAgreementOpen, setIsHostAgreementOpen] = useState(false);
+  const [hostAgreement, setHostAgreement] = useState<any | null>(null);
+  const [hostAgreementTerms, setHostAgreementTerms] = useState<any[]>([]);
+  const [hostAgreementConfig, setHostAgreementConfig] = useState<any>({});
+  const [hostAgreementLoading, setHostAgreementLoading] = useState(false);
+  const [hostAgreementAccepting, setHostAgreementAccepting] = useState(false);
+  const [hostAgreementConfirmed, setHostAgreementConfirmed] = useState(false);
+  const [hostAgreementError, setHostAgreementError] = useState('');
 
   // Chat State
   const [activeChat, setActiveChat] = useState<{ guestName: string; propTitle: string; guestPhone: string }>({
@@ -485,116 +496,6 @@ export default function DashboardPage() {
     localStorage.removeItem('activeDashboardRole');
 
     router.replace('/login');
-  };
-
-  // Fetch the stays saved by the traveler.
-  // The property page stores IDs in the shared `stayguwahati_wishlist` key.
-  // We intentionally use the same key here so Dashboard and Property pages
-  // see the exact same saved stays.
-  const fetchWishlist = async () => {
-    setLoadingWishlist(true);
-
-    try {
-      const raw = localStorage.getItem('stayguwahati_wishlist') || '[]';
-      let savedIds: string[] = [];
-
-      try {
-        const parsed = JSON.parse(raw);
-        savedIds = Array.isArray(parsed)
-          ? parsed.map((id) => String(id || '').trim()).filter(Boolean)
-          : [];
-      } catch {
-        savedIds = [];
-      }
-
-      // Remove duplicate IDs while preserving the user's save order.
-      savedIds = Array.from(new Set(savedIds));
-
-      if (savedIds.length === 0) {
-        setWishlistProperties([]);
-        return;
-      }
-
-      const responses = await Promise.all(
-        savedIds.map(async (id) => {
-          try {
-            const response = await fetch(
-              `${BACKEND_URL}/api/homestays/${encodeURIComponent(id)}`,
-              { cache: 'no-store' }
-            );
-
-            if (!response.ok) return null;
-
-            const payload = await response.json();
-            const property =
-              payload?.success && payload?.data
-                ? payload.data
-                : payload?.data || payload;
-
-            if (!property || typeof property !== 'object') return null;
-
-            return {
-              ...property,
-              _id: String(property._id || property.id || id),
-            } as Property;
-          } catch (error) {
-            console.error(`Failed to load wishlist property ${id}:`, error);
-            return null;
-          }
-        })
-      );
-
-      const loaded = responses.filter(
-        (property): property is Property => Boolean(property)
-      );
-
-      // Keep the same order as localStorage.
-      const order = new Map(savedIds.map((id, index) => [id, index]));
-      loaded.sort(
-        (a, b) =>
-          (order.get(String(a._id || a.id)) ?? 999999) -
-          (order.get(String(b._id || b.id)) ?? 999999)
-      );
-
-      setWishlistProperties(loaded);
-
-      // If a saved property was deleted/unavailable, remove its stale ID so
-      // the Dashboard does not keep showing a broken wishlist forever.
-      const loadedIds = new Set(
-        loaded.map((property) => String(property._id || property.id || ''))
-      );
-      const validSavedIds = savedIds.filter((id) => loadedIds.has(id));
-
-      if (validSavedIds.length !== savedIds.length) {
-        localStorage.setItem(
-          'stayguwahati_wishlist',
-          JSON.stringify(validSavedIds)
-        );
-      }
-    } catch (error) {
-      console.error('Failed to load wishlist:', error);
-      setWishlistProperties([]);
-    } finally {
-      setLoadingWishlist(false);
-    }
-  };
-
-  const removeFromWishlist = (propertyId: string) => {
-    try {
-      const raw = localStorage.getItem('stayguwahati_wishlist') || '[]';
-      const parsed = JSON.parse(raw);
-      const current = Array.isArray(parsed) ? parsed.map(String) : [];
-      const next = current.filter((id) => id !== String(propertyId));
-
-      localStorage.setItem('stayguwahati_wishlist', JSON.stringify(next));
-      setWishlistProperties((currentProperties) =>
-        currentProperties.filter(
-          (property) => String(property._id || property.id || '') !== String(propertyId)
-        )
-      );
-    } catch (error) {
-      console.error('Failed to remove wishlist item:', error);
-    }
   };
 
   // Fetch traveler bookings
@@ -846,33 +747,76 @@ export default function DashboardPage() {
     }
   };
 
+  // Host Partnership Agreement
+  const fetchHostAgreement = async () => {
+    if (!currentUser.email) return;
+    setHostAgreementLoading(true);
+    setHostAgreementError('');
+    try {
+      const token = sessionStorage.getItem('token') || '';
+      const response = await fetch(`${BACKEND_URL}/api/host-agreement`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        cache: 'no-store',
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Unable to load the Host Partnership Agreement.');
+      }
+      setHostAgreement(result.data?.agreement || null);
+      setHostAgreementTerms(Array.isArray(result.data?.terms) ? result.data.terms : []);
+      setHostAgreementConfig(result.data?.config || {});
+    } catch (error: any) {
+      console.error('Failed to load host partnership agreement:', error);
+      setHostAgreementError(error?.message || 'Unable to load the agreement.');
+    } finally {
+      setHostAgreementLoading(false);
+    }
+  };
+
+  const acceptHostAgreement = async () => {
+    if (!hostAgreement || !hostAgreementConfirmed) return;
+    setHostAgreementAccepting(true);
+    setHostAgreementError('');
+    try {
+      const token = sessionStorage.getItem('token') || '';
+      const response = await fetch(`${BACKEND_URL}/api/host-agreement/accept`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          agreementVersion: hostAgreement.version,
+          confirmed: true,
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Unable to record agreement acceptance.');
+      }
+      setHostAgreement(result.data || null);
+      setHostAgreementConfirmed(false);
+      setIsHostAgreementOpen(false);
+      alert('Host Partnership Agreement accepted successfully.');
+    } catch (error: any) {
+      console.error('Failed to accept host partnership agreement:', error);
+      setHostAgreementError(error?.message || 'Unable to record agreement acceptance.');
+    } finally {
+      setHostAgreementAccepting(false);
+    }
+  };
+
   // Load Data based on Current Role
   useEffect(() => {
     if (!currentUser.email) return;
 
     if (currentRole === 'host') {
       fetchHostProperties();
+      fetchHostAgreement();
     } else {
       fetchTravelerBookings();
     }
   }, [currentRole, currentUser.email]);
-
-  // Wishlist is traveler data and must be refreshed whenever Dashboard opens
-  // or the user returns to the traveler view.
-  useEffect(() => {
-    if (currentRole !== 'traveler') return;
-
-    fetchWishlist();
-
-    const handleWishlistChanged = () => fetchWishlist();
-    window.addEventListener('stayguwahati:wishlist-changed', handleWishlistChanged);
-    window.addEventListener('focus', handleWishlistChanged);
-
-    return () => {
-      window.removeEventListener('stayguwahati:wishlist-changed', handleWishlistChanged);
-      window.removeEventListener('focus', handleWishlistChanged);
-    };
-  }, [currentRole]);
 
   // Mode Switch
   const toggleUserRole = () => {
@@ -1194,92 +1138,11 @@ export default function DashboardPage() {
               <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 mb-4">
                 <Heart className="w-4 h-4 text-rose-500" /> {t.wishlistHead}
               </h3>
-
-              {loadingWishlist ? (
-                <div className="bg-white border border-[#d7dfda] p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm">
-                  <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2 text-[#28655c]" />
-                  Loading your saved stays...
-                </div>
-              ) : wishlistProperties.length === 0 ? (
-                <div className="bg-white border border-[#d7dfda] p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm">
-                  <Heart className="w-7 h-7 mx-auto mb-2 text-gray-300" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white border border-[#d7dfda] p-6 rounded-2xl text-center text-gray-400 text-xs shadow-sm col-span-full">
                   <p>{t.noWishlist}</p>
-                  <Link
-                    href="/explore"
-                    className="inline-flex mt-3 items-center gap-1 text-[#28655c] font-bold hover:underline"
-                  >
-                    Explore stays <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {wishlistProperties.map((property) => {
-                    const propertyId = String(property._id || property.id || '');
-                    const title = property.title || property.propertyName || 'Stay';
-                    const location = property.locality || property.location || property.city || 'Guwahati';
-                    const price = Number(property.pricePerNight ?? property.price ?? 0);
-                    const image =
-                      property.image ||
-                      property.imageUrl ||
-                      property.propertyImage ||
-                      (Array.isArray(property.images) ? property.images[0] : '');
-
-                    return (
-                      <div
-                        key={propertyId}
-                        className="bg-white border border-[#d7dfda] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition"
-                      >
-                        <div className="relative h-40 bg-gray-100">
-                          <img
-                            src={resolveImageUrl(image)}
-                            alt={title}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeFromWishlist(propertyId)}
-                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 text-rose-500 flex items-center justify-center shadow-sm hover:bg-white"
-                            aria-label={`Remove ${title} from saved stays`}
-                          >
-                            <Heart className="w-4 h-4 fill-current" />
-                          </button>
-                        </div>
-
-                        <div className="p-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <h4 className="font-bold text-gray-900 truncate">{title}</h4>
-                              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-[#28655c]" />
-                                <span className="truncate">{location}</span>
-                              </p>
-                            </div>
-                            {Number(property.rating) > 0 && (
-                              <span className="text-xs font-bold text-amber-500 whitespace-nowrap">
-                                ★ {Number(property.rating).toFixed(1)}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="mt-4 flex items-center justify-between gap-2">
-                            <p className="font-black text-gray-900">
-                              ₹{price.toLocaleString('en-IN')}
-                              <span className="font-normal text-xs text-gray-500"> / night</span>
-                            </p>
-                            <Link
-                              href={`/properties/${propertyId}`}
-                              className="text-xs font-bold text-[#28655c] hover:underline inline-flex items-center gap-1"
-                            >
-                              View details <ArrowRight className="w-3 h-3" />
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              </div>
             </div>
 
             {/* Past Trips History */}
@@ -1359,6 +1222,90 @@ export default function DashboardPage() {
                 <p className="text-lg sm:text-xl font-black text-amber-500 mt-1 flex items-center justify-center gap-1">
                   {hostRating.toFixed(1)} <Star className="w-3 h-3 fill-amber-500" />
                 </p>
+              </div>
+            </div>
+
+            {/* Host Partnership Agreement */}
+            <div className="bg-white border border-[#d7dfda] rounded-2xl shadow-sm p-4 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#28655c] flex items-center justify-center shrink-0">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-gray-900">Host Partnership Agreement</h3>
+                    <p className="text-xs text-gray-500 mt-1 max-w-2xl">
+                      Review the partnership terms covering direct guest payments, StayGuwahati commission, host responsibilities and bookings.
+                    </p>
+                  </div>
+                </div>
+                <span className={`self-start rounded-full px-3 py-1 text-[10px] font-black border ${
+                  hostAgreement?.status === 'accepted'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                    : 'bg-amber-50 text-amber-700 border-amber-100'
+                }`}>
+                  {hostAgreementLoading ? 'Loading…' : hostAgreement?.status === 'accepted' ? '✓ Agreement Accepted' : '⚠ Not Accepted'}
+                </span>
+              </div>
+
+              {hostAgreementError && (
+                <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
+                  {hostAgreementError}
+                </div>
+              )}
+
+              {hostAgreement && (
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                    <p className="text-[9px] uppercase tracking-wider font-black text-slate-400">Commission</p>
+                    <p className="mt-1 text-sm font-black text-slate-900">
+                      {hostAgreement.commissionRate != null
+                        ? `${hostAgreement.commissionRate}%`
+                        : `${hostAgreementConfig.foundingHostCommissionRate ?? 8}% founding / ${hostAgreementConfig.standardCommissionRate ?? 10}% standard`}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                    <p className="text-[9px] uppercase tracking-wider font-black text-slate-400">Guest Payment</p>
+                    <p className="mt-1 text-sm font-black text-slate-900">Directly to Host</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                    <p className="text-[9px] uppercase tracking-wider font-black text-slate-400">Agreement Version</p>
+                    <p className="mt-1 text-sm font-black text-slate-900">{hostAgreement.version || 'SG-2026-01'}</p>
+                  </div>
+                </div>
+              )}
+
+              {hostAgreement?.status === 'accepted' && hostAgreement.acceptedAt && (
+                <p className="mt-3 text-[11px] text-slate-500">
+                  Accepted on {new Date(hostAgreement.acceptedAt).toLocaleString('en-IN')}
+                </p>
+              )}
+
+              <div className="mt-5 flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHostAgreementConfirmed(false);
+                    setIsHostAgreementOpen(true);
+                  }}
+                  disabled={!hostAgreement || hostAgreementLoading}
+                  className="rounded-xl border border-[#b9d2c8] bg-[#e6f0ea] px-4 py-2.5 text-xs font-black text-[#28655c] hover:bg-[#dceae4] disabled:opacity-50"
+                >
+                  <span className="inline-flex items-center gap-2"><FileText className="w-3.5 h-3.5" /> View Agreement</span>
+                </button>
+                {hostAgreement?.status !== 'accepted' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHostAgreementConfirmed(false);
+                      setIsHostAgreementOpen(true);
+                    }}
+                    disabled={!hostAgreement || hostAgreementLoading}
+                    className="rounded-xl bg-[#173f3a] px-4 py-2.5 text-xs font-black text-white hover:bg-[#28655c] disabled:opacity-50"
+                  >
+                    I Agree &amp; Accept
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1563,6 +1510,92 @@ export default function DashboardPage() {
               </div>
             </div>
           </section>
+        )}
+
+        {/* Host Partnership Agreement Modal */}
+        {isHostAgreementOpen && hostAgreement && (
+          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-[70] p-3 sm:p-5">
+            <div className="bg-white rounded-2xl sm:rounded-3xl max-w-3xl w-full max-h-[92vh] shadow-2xl flex flex-col overflow-hidden">
+              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-5 py-4 sm:px-7 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest font-black text-teal-600">StayGuwahati</p>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-950 mt-1">Host Partnership Agreement</h2>
+                  <p className="text-[11px] text-slate-500 mt-1">Version {hostAgreement.version || 'SG-2026-01'}</p>
+                </div>
+                <button type="button" onClick={() => setIsHostAgreementOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200" aria-label="Close agreement">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto px-5 py-5 sm:px-7 space-y-5">
+                <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />
+                    <div className="text-xs text-teal-900 leading-5">
+                      <p className="font-black">Your partnership terms</p>
+                      <p className="mt-1">Guest accommodation payments are made directly to you. Your applicable StayGuwahati commission rate is recorded with this agreement.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div><span className="text-slate-400">Host</span><p className="font-black text-slate-900 mt-1">{hostAgreement.hostName || currentUser.name}</p></div>
+                    <div><span className="text-slate-400">Email</span><p className="font-black text-slate-900 mt-1 break-all">{hostAgreement.hostEmail || currentUser.email}</p></div>
+                    <div><span className="text-slate-400">Commission</span><p className="font-black text-slate-900 mt-1">{hostAgreement.commissionRate != null ? `${hostAgreement.commissionRate}%` : 'Assigned on acceptance'}</p></div>
+                    <div><span className="text-slate-400">Guest payment</span><p className="font-black text-slate-900 mt-1">Directly to Host</p></div>
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  {hostAgreementTerms.map((term, index) => (
+                    <section key={`${term.title}-${index}`}>
+                      <h3 className="text-sm font-black text-slate-950">{term.title}</h3>
+                      <p className="mt-1.5 text-xs sm:text-sm leading-6 text-slate-600">{term.body}</p>
+                    </section>
+                  ))}
+                </div>
+
+                {hostAgreement.status !== 'accepted' ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hostAgreementConfirmed}
+                        onChange={(e) => setHostAgreementConfirmed(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-500"
+                      />
+                      <span className="text-xs sm:text-sm leading-5 text-slate-700">
+                        I have read the complete Host Partnership Agreement and I agree to its terms, including the direct-to-host payment arrangement and the applicable StayGuwahati commission.
+                      </span>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-xs text-emerald-800 font-semibold">
+                    ✓ This agreement was accepted electronically on {hostAgreement.acceptedAt ? new Date(hostAgreement.acceptedAt).toLocaleString('en-IN') : 'the recorded acceptance date'}.
+                  </div>
+                )}
+
+                {hostAgreementError && (
+                  <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">{hostAgreementError}</div>
+                )}
+              </div>
+
+              <div className="border-t border-slate-100 bg-white px-5 py-4 sm:px-7 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <button type="button" onClick={() => setIsHostAgreementOpen(false)} className="rounded-xl border border-slate-200 px-5 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50">Close</button>
+                {hostAgreement.status !== 'accepted' && (
+                  <button
+                    type="button"
+                    disabled={!hostAgreementConfirmed || hostAgreementAccepting}
+                    onClick={acceptHostAgreement}
+                    className="rounded-xl bg-[#173f3a] px-5 py-3 text-xs font-black text-white hover:bg-[#28655c] disabled:opacity-50"
+                  >
+                    {hostAgreementAccepting ? 'Recording Acceptance…' : 'I Agree & Accept'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Message Modal */}
