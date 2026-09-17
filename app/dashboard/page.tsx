@@ -773,6 +773,11 @@ export default function DashboardPage() {
     }
   };
 
+  const printHostAgreement = () => {
+    if (typeof window === 'undefined') return;
+    window.print();
+  };
+
   const acceptHostAgreement = async () => {
     if (!hostAgreement || !hostAgreementConfirmed) return;
     setHostAgreementAccepting(true);
@@ -1582,6 +1587,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="border-t border-slate-100 bg-white px-5 py-4 sm:px-7 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <button type="button" onClick={printHostAgreement} className="rounded-xl border border-slate-200 px-5 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50">Print / Save PDF</button>
                 <button type="button" onClick={() => setIsHostAgreementOpen(false)} className="rounded-xl border border-slate-200 px-5 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50">Close</button>
                 {hostAgreement.status !== 'accepted' && (
                   <button

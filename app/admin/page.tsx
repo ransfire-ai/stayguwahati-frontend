@@ -47,6 +47,11 @@ export default function AdminDashboardPage() {
   const [paymentReference, setPaymentReference] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [paymentBusy, setPaymentBusy] = useState(false);
+  const [hostAgreements, setHostAgreements] = useState<any[]>([]);
+  const [hostAgreementConfig, setHostAgreementConfig] = useState<any>({});
+  const [hostAgreementsLoading, setHostAgreementsLoading] = useState(false);
+  const [hostAgreementsError, setHostAgreementsError] = useState('');
+  const [hostAgreementStatus, setHostAgreementStatus] = useState('all');
 
   // In this moderation workflow, an approved listing is the verified public listing.
   const isListingVerified = (stay: any) =>
@@ -159,13 +164,39 @@ export default function AdminDashboardPage() {
     }
   }, [checkAdminAccess, settlementHost, settlementStatus, settlementFrom, settlementTo]);
 
+  const fetchHostAgreements = useCallback(async () => {
+    if (!checkAdminAccess()) return;
+    setHostAgreementsLoading(true);
+    setHostAgreementsError('');
+    try {
+      const token = getAuthData('token') || getAuthData('authToken');
+      const params = new URLSearchParams();
+      if (hostAgreementStatus !== 'all') params.set('status', hostAgreementStatus);
+      const response = await fetch(`${BACKEND_URL}/api/admin/host-agreements?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load host agreements.');
+      setHostAgreements(Array.isArray(result.data) ? result.data : []);
+      setHostAgreementConfig(result.config || {});
+    } catch (error: any) {
+      console.error('Failed to load host partnership agreements:', error);
+      setHostAgreementsError(error?.message || 'Unable to load host partnership agreements.');
+      setHostAgreements([]);
+    } finally {
+      setHostAgreementsLoading(false);
+    }
+  }, [checkAdminAccess, hostAgreementStatus]);
+
   useEffect(() => {
     if (checkAdminAccess()) {
       setIsAuthorized(true);
       fetchAdminHomestays();
       fetchSettlements();
+      fetchHostAgreements();
     }
-  }, [fetchAdminHomestays, fetchSettlements, checkAdminAccess]);
+  }, [fetchAdminHomestays, fetchSettlements, fetchHostAgreements, checkAdminAccess]);
 
   const updateStatus = async (id: string, newStatus: string, reason = '') => {
     if (!checkAdminAccess()) return;
@@ -217,7 +248,7 @@ export default function AdminDashboardPage() {
   const refreshListings = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([fetchAdminHomestays(), fetchSettlements()]);
+      await Promise.all([fetchAdminHomestays(), fetchSettlements(), fetchHostAgreements()]);
     } finally {
       setRefreshing(false);
     }
@@ -548,6 +579,83 @@ export default function AdminDashboardPage() {
             })
           )}
         </div>
+      {/* HOST PARTNERSHIP AGREEMENTS */}
+      <section className="mt-8 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-slate-100 px-4 py-5 sm:px-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-teal-50 text-teal-700">
+                  <i className="fa-solid fa-file-signature"></i>
+                </span>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Host Partnership Agreements</h2>
+                  <p className="mt-0.5 text-xs sm:text-sm text-slate-500">Track electronic “I Agree &amp; Accept” acceptance records and each host’s recorded commission rate.</p>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black">
+                <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-teal-700">Version: {hostAgreementConfig.version || 'SG-2026-01'}</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600">Accepted: {hostAgreementConfig.acceptedCount ?? 0}</span>
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700">Founding slots used: {hostAgreementConfig.foundingAcceptedCount ?? 0}/{hostAgreementConfig.foundingHostLimit ?? 30}</span>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select value={hostAgreementStatus} onChange={(e) => setHostAgreementStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-teal-500">
+                <option value="all">All agreements</option>
+                <option value="accepted">Accepted</option>
+                <option value="pending">Pending</option>
+              </select>
+              <button type="button" onClick={fetchHostAgreements} className="rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-black text-white hover:bg-slate-800">Refresh</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-6">
+          {hostAgreementsError && <div className="mb-4 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">{hostAgreementsError}</div>}
+          {hostAgreementsLoading ? (
+            <div className="rounded-2xl bg-slate-50 p-8 text-center text-xs text-slate-400">Loading host agreements...</div>
+          ) : hostAgreements.length === 0 ? (
+            <div className="rounded-2xl bg-slate-50 p-8 text-center text-xs text-slate-400">No host agreement records found.</div>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+              <table className="w-full min-w-[820px] text-left text-xs">
+                <thead className="bg-slate-50 text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3 font-black">Host</th>
+                    <th className="px-4 py-3 font-black">Status</th>
+                    <th className="px-4 py-3 font-black">Commission</th>
+                    <th className="px-4 py-3 font-black">Version</th>
+                    <th className="px-4 py-3 font-black">Accepted / Updated</th>
+                    <th className="px-4 py-3 font-black">Acceptance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {hostAgreements.map((agreement) => {
+                    const accepted = agreement.status === 'accepted';
+                    return (
+                      <tr key={agreement._id} className="hover:bg-slate-50/70">
+                        <td className="px-4 py-4">
+                          <p className="font-black text-slate-900">{agreement.hostName || 'Host'}</p>
+                          <p className="mt-1 break-all text-[11px] text-slate-500">{agreement.hostEmail || 'No email'}</p>
+                        </td>
+                        <td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${accepted ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{accepted ? '✓ Accepted' : 'Pending'}</span></td>
+                        <td className="px-4 py-4 font-black text-slate-900">{agreement.commissionRate != null ? `${agreement.commissionRate}%` : 'Not assigned'}</td>
+                        <td className="px-4 py-4 font-bold text-slate-600">{agreement.version || '—'}</td>
+                        <td className="px-4 py-4 text-slate-500">{agreement.acceptedAt ? new Date(agreement.acceptedAt).toLocaleString('en-IN') : agreement.updatedAt ? new Date(agreement.updatedAt).toLocaleString('en-IN') : '—'}</td>
+                        <td className="px-4 py-4">
+                          <p className="font-bold text-slate-700">{agreement.acceptanceMethod === 'i_agree_accept' ? 'I Agree & Accept' : agreement.acceptanceMethod || '—'}</p>
+                          {accepted && agreement.ipAddress && <p className="mt-1 text-[10px] text-slate-400">IP: {agreement.ipAddress}</p>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* HOST COMMISSION & SETTLEMENTS */}
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="border-b border-slate-100 px-4 py-5 sm:px-6">
