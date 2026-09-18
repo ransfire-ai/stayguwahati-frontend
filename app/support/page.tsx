@@ -2,10 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import PageShell from "@/components/PageShell";
 import {
-  Building2,
-  Menu,
-  X,
   HelpCircle,
   ChevronDown,
   ShieldCheck,
@@ -126,7 +124,6 @@ const translations = {
 
 export default function TrustSupportPage() {
   const [lang, setLang] = useState<Language>('en');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   const [subject, setSubject] = useState('booking');
@@ -174,17 +171,7 @@ export default function TrustSupportPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#f5f1e9] text-[#173f3a]">
-      <nav className="sticky top-0 z-50 border-b border-[#d8dfd8] bg-[#f5f1e9]/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <Link href="/" className="flex items-center gap-2 font-black"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[#173f3a] text-white"><Building2 className="h-5 w-5"/></span><span>Stay<span className="text-[#28655c]">Guwahati</span></span></Link>
-          <div className="hidden items-center gap-7 text-sm font-semibold md:flex"><Link href="/">Home</Link><Link href="/explore">Explore</Link><Link href="/dashboard">Dashboard</Link><select value={lang} onChange={e=>setLang(e.target.value as Language)} className="rounded-xl border border-[#cbd7d1] bg-white px-3 py-2 outline-none"><option value="en">English</option><option value="as">অসমীয়া</option><option value="hi">हिंदी</option></select></div>
-          <button onClick={()=>setMobileMenuOpen(!mobileMenuOpen)} className="grid h-10 w-10 place-items-center rounded-xl border border-[#cbd7d1] md:hidden">{mobileMenuOpen?<X/>:<Menu/>}</button>
-        </div>
-        {mobileMenuOpen && <div className="border-t border-[#d8dfd8] bg-[#f5f1e9] px-5 py-4 md:hidden"><div className="flex flex-col gap-4 text-sm font-semibold"><Link href="/">Home</Link><Link href="/explore">Explore</Link><Link href="/dashboard">Dashboard</Link><select value={lang} onChange={e=>setLang(e.target.value as Language)} className="rounded-xl border border-[#cbd7d1] bg-white px-3 py-2"><option value="en">English</option><option value="as">অসমীয়া</option><option value="hi">हिंदी</option></select></div></div>}
-      </nav>
-
-      <main>
+    <PageShell>
         <section className="relative overflow-hidden bg-[#123f39] px-5 py-14 text-white sm:py-20">
           <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[#3d766c]/40 blur-3xl"/>
           <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-[#e8b84c]/10 blur-3xl"/>
@@ -262,6 +249,6 @@ export default function TrustSupportPage() {
           </div>
         </section>
       </main>
-    </div>
+    </PageShell>
   );
 }
