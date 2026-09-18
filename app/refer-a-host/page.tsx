@@ -113,20 +113,37 @@ export default function ReferAHostPage() {
       {/* Header — aligned with the main StayGuwahati pages */}
       <header className="sticky top-0 z-50 border-b border-[#d9ddd6] bg-[#f7f4ed]/95 backdrop-blur-md">
         <div className="mx-auto flex min-h-[64px] max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6 lg:px-8">
-          <Link href="/" className="flex shrink-0 items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-white text-[#0c3431] shadow-sm">
-              <Home className="h-4 w-4" />
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2.5"
+            aria-label="StayGuwahati home"
+          >
+            <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-[#0c4a45] shadow-[0_5px_14px_rgba(12,52,49,0.13)]">
+              <img
+                src="/favicon.ico"
+                alt=""
+                width={40}
+                height={40}
+                className="block h-full w-full object-cover"
+              />
             </span>
-            <span className="text-lg font-bold tracking-tight text-[#0c3431]">
-              Stay<span className="text-[#f2bf45]">Guwahati</span>
+
+            <span className="text-[17px] font-black leading-none tracking-[-0.045em] text-[#0c3431]">
+              Stay<span className="text-[#287b72]">Guwahati</span>
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-6 text-xs font-semibold text-gray-600 lg:flex">
-            <Link href="/" className="transition hover:text-[#0f625a]">Home</Link>
-            <Link href="/explore" className="transition hover:text-[#0f625a]">Explore</Link>
-            <Link href="/refer-a-host" className="font-bold text-[#0f625a]">Refer a host</Link>
-            <Link href="/support" className="transition hover:text-[#0f625a]">Support</Link>
+          <nav className="hidden items-center gap-6 text-xs font-semibold text-[#34514d] lg:flex" aria-label="Primary navigation">
+            <Link href="/" className="transition hover:text-[#24655d]">Home</Link>
+            <Link href="/explore" className="transition hover:text-[#24655d]">Explore</Link>
+            <Link href="/support" className="transition hover:text-[#24655d]">Support</Link>
+            <Link href="/refer-a-host" className="font-bold text-[#24655d]">Refer a host</Link>
+            <Link
+              href="/login"
+              className="rounded-xl border border-[#cfd9d4] bg-[#edf3f0] px-4 py-2 font-bold text-[#214b46] transition hover:border-[#aebfb8] hover:bg-[#e6eeeb]"
+            >
+              Sign in
+            </Link>
           </nav>
 
         </div>
