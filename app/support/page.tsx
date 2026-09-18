@@ -248,7 +248,6 @@ export default function TrustSupportPage() {
             </form>
           </div>
         </section>
-      </main>
     </PageShell>
   );
 }
