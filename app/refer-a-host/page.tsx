@@ -133,7 +133,7 @@ export default function ReferAHostPage() {
       </header>
 
       {/* Breadcrumb */}
-      <div className="mx-auto max-w-7xl px-4 pt-4 text-[11px] text-[#66766f] sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pt-4 text-sm leading-6 text-[#66766f] sm:px-6 lg:px-8">
         <Link href="/" className="hover:text-[#0f625a]">Home</Link>
         <span className="mx-2">/</span>
         <span>Refer a host</span>
