@@ -280,6 +280,7 @@ export default function DashboardPage() {
   const [hostAgreementConfig, setHostAgreementConfig] = useState<any>({});
   const [hostAgreementLoading, setHostAgreementLoading] = useState(false);
   const [hostAgreementAccepting, setHostAgreementAccepting] = useState(false);
+  const [hostAgreementStarting, setHostAgreementStarting] = useState(false);
   const [hostAgreementConfirmed, setHostAgreementConfirmed] = useState(false);
   const [hostAgreementError, setHostAgreementError] = useState('');
 
@@ -773,9 +774,28 @@ export default function DashboardPage() {
     }
   };
 
-  const printHostAgreement = () => {
-    if (typeof window === 'undefined') return;
-    window.print();
+  const initiateHostAgreement = async () => {
+    setHostAgreementStarting(true);
+    setHostAgreementError('');
+    try {
+      const token = sessionStorage.getItem('token') || '';
+      const response = await fetch(`${BACKEND_URL}/api/host-agreement/initiate`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Unable to start host onboarding.');
+      }
+      await fetchHostAgreement();
+      setHostAgreementConfirmed(false);
+      setIsHostAgreementOpen(true);
+    } catch (error: any) {
+      console.error('Failed to start host onboarding:', error);
+      setHostAgreementError(error?.message || 'Unable to start host onboarding.');
+    } finally {
+      setHostAgreementStarting(false);
+    }
   };
 
   const acceptHostAgreement = async () => {
@@ -1247,9 +1267,11 @@ export default function DashboardPage() {
                 <span className={`self-start rounded-full px-3 py-1 text-[10px] font-black border ${
                   hostAgreement?.status === 'accepted'
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                    : 'bg-amber-50 text-amber-700 border-amber-100'
+                    : hostAgreement
+                      ? 'bg-amber-50 text-amber-700 border-amber-100'
+                      : 'bg-slate-50 text-slate-600 border-slate-200'
                 }`}>
-                  {hostAgreementLoading ? 'Loading…' : hostAgreement?.status === 'accepted' ? '✓ Agreement Accepted' : '⚠ Not Accepted'}
+                  {hostAgreementLoading ? 'Loading…' : hostAgreement?.status === 'accepted' ? '✓ Agreement Accepted' : hostAgreement ? '⚠ Not Accepted' : 'Not Started'}
                 </span>
               </div>
 
@@ -1287,29 +1309,42 @@ export default function DashboardPage() {
               )}
 
               <div className="mt-5 flex flex-col sm:flex-row gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHostAgreementConfirmed(false);
-                    setIsHostAgreementOpen(true);
-                  }}
-                  disabled={!hostAgreement || hostAgreementLoading}
-                  className="rounded-xl border border-[#b9d2c8] bg-[#e6f0ea] px-4 py-2.5 text-xs font-black text-[#28655c] hover:bg-[#dceae4] disabled:opacity-50"
-                >
-                  <span className="inline-flex items-center gap-2"><FileText className="w-3.5 h-3.5" /> View Agreement</span>
-                </button>
-                {hostAgreement?.status !== 'accepted' && (
+                {!hostAgreement ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setHostAgreementConfirmed(false);
-                      setIsHostAgreementOpen(true);
-                    }}
-                    disabled={!hostAgreement || hostAgreementLoading}
+                    onClick={initiateHostAgreement}
+                    disabled={hostAgreementStarting || hostAgreementLoading}
                     className="rounded-xl bg-[#173f3a] px-4 py-2.5 text-xs font-black text-white hover:bg-[#28655c] disabled:opacity-50"
                   >
-                    I Agree &amp; Accept
+                    {hostAgreementStarting ? 'Starting…' : 'Become a Host & View Agreement'}
                   </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHostAgreementConfirmed(false);
+                        setIsHostAgreementOpen(true);
+                      }}
+                      disabled={hostAgreementLoading}
+                      className="rounded-xl border border-[#b9d2c8] bg-[#e6f0ea] px-4 py-2.5 text-xs font-black text-[#28655c] hover:bg-[#dceae4] disabled:opacity-50"
+                    >
+                      <span className="inline-flex items-center gap-2"><FileText className="w-3.5 h-3.5" /> View Agreement</span>
+                    </button>
+                    {hostAgreement.status !== 'accepted' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHostAgreementConfirmed(false);
+                          setIsHostAgreementOpen(true);
+                        }}
+                        disabled={hostAgreementLoading}
+                        className="rounded-xl bg-[#173f3a] px-4 py-2.5 text-xs font-black text-white hover:bg-[#28655c] disabled:opacity-50"
+                      >
+                        I Agree &amp; Accept
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -1587,7 +1622,6 @@ export default function DashboardPage() {
               </div>
 
               <div className="border-t border-slate-100 bg-white px-5 py-4 sm:px-7 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                <button type="button" onClick={printHostAgreement} className="rounded-xl border border-slate-200 px-5 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50">Print / Save PDF</button>
                 <button type="button" onClick={() => setIsHostAgreementOpen(false)} className="rounded-xl border border-slate-200 px-5 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50">Close</button>
                 {hostAgreement.status !== 'accepted' && (
                   <button
