@@ -71,25 +71,9 @@ export const metadata: Metadata = {
         url: '/favicon.ico',
         sizes: 'any',
       },
-      {
-        url: '/favicon-32x32.png',
-        type: 'image/png',
-        sizes: '32x32',
-      },
-      {
-        url: '/favicon-48x48.png',
-        type: 'image/png',
-        sizes: '48x48',
-      },
-    ],
-    apple: [
-      {
-        url: '/apple-touch-icon.png',
-        sizes: '180x180',
-        type: 'image/png',
-      },
     ],
   },
+
 };
 
 export default function RootLayout({
