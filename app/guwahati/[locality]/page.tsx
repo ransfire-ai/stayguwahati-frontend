@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import PageShell from "../../components/layout/PageShell";
 
 const SITE_URL = "https://stayguwahati.in";
 const API_BASE_URL = (
@@ -151,7 +152,8 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
     </div>
   );
 
-  return <main className="sg-container sg-page">
+  return <PageShell>
+    <div className="sg-container sg-page">
     <Breadcrumbs neighbourhood={neighbourhood} />
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
@@ -248,5 +250,6 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
         {neighbourhood.faqs.map((faq) => <details key={faq.question} className="sg-card" style={{ padding: "18px 20px" }}><summary style={{ fontWeight: 750, cursor: "pointer" }}>{faq.question}</summary><p className="sg-muted" style={{ margin: "12px 0 0" }}>{faq.answer}</p></details>)}
       </div>
     </section>
-  </main>;
+    </div>
+  </PageShell>;
 }
