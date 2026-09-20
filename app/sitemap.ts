@@ -1,3 +1,4 @@
+import { NEIGHBOURHOODS } from "./guwahati/data";
 import type { MetadataRoute } from "next";
 
 const SITE_URL = "https://stayguwahati.in";
@@ -14,6 +15,9 @@ type Property = {
   slug?: string;
   title?: string;
   name?: string;
+  locality?: string;
+  location?: string;
+  area?: string;
   status?: string;
   isAvailable?: boolean;
   isActive?: boolean;
@@ -97,6 +101,10 @@ function getPropertyId(property: Property): string | null {
   }
 
   return String(id);
+}
+
+function normalizeLocality(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
 function isActiveProperty(property: Property): boolean {
@@ -192,6 +200,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   /*
+   * Neighbourhood landing pages
+   * Only include a neighbourhood when it currently has at least one
+   * active public property, so empty SEO pages are not submitted.
+   */
+  const neighbourhoodPages: MetadataRoute.Sitemap = NEIGHBOURHOODS
+    .filter((neighbourhood) => {
+      const needle = normalizeLocality(neighbourhood.name);
+      return properties.some((property) => {
+        if (!isActiveProperty(property)) return false;
+        const locality = normalizeLocality(String(property.locality || property.location || property.area || ""));
+        return locality.includes(needle) || needle.includes(locality);
+      });
+    })
+    .map((neighbourhood) => ({
+      url: `${SITE_URL}/guwahati/${neighbourhood.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
+  /*
    * Dynamic property pages
    *
    * IMPORTANT:
@@ -226,6 +255,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...staticPages,
+    ...neighbourhoodPages,
     ...propertyPages,
   ];
 }

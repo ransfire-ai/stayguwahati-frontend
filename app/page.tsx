@@ -152,17 +152,19 @@ export default function Home() {
                 "Uzan Bazar",
                 "Paltan Bazar",
                 "Ganeshguri",
+                "Maligaon",
+                "Chandmari",
+                "Panjabari",
+                "Six Mile",
               ].map((x, i) => (
                 <Link
                   key={x}
-                  href={`/explore?locality=${encodeURIComponent(
-                    x
-                  )}`}
+                  href={`/guwahati/${x.toLowerCase().replaceAll(" ", "-")}`}
                   className="sg-card"
                   style={{ padding: 24 }}
                 >
                   <div className="sg-kicker">
-                    Neighbourhood 0{i + 1}
+                    Neighbourhood {(i + 1).toString().padStart(2, "0")}
                   </div>
 
                   <h3
