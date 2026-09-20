@@ -179,8 +179,15 @@ export default function PageShell({
       <footer className="sg-footer">
         <div className="sg-container sg-footer-grid">
           <div className="sg-footer-brand">
-            <Link href="/" className="sg-footer-logo">
-              <span className="sg-footer-mark">⌂</span>
+            <Link href="/" className="sg-footer-logo" aria-label="StayGuwahati home">
+              <span className="sg-footer-mark" aria-hidden="true">
+                <img
+                  src="/favicon.ico"
+                  alt=""
+                  width={31}
+                  height={31}
+                />
+              </span>
               <span>
                 Stay<span>Guwahati</span>
               </span>
@@ -400,11 +407,20 @@ export default function PageShell({
         .sg-footer-mark {
           width: 31px;
           height: 31px;
+          flex: 0 0 31px;
           display: grid;
           place-items: center;
+          overflow: hidden;
           border: 1px solid rgba(255, 255, 255, 0.3);
           border-radius: 9px;
-          font-size: 17px;
+          background: #ffffff;
+        }
+
+        .sg-footer-mark img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
 
         .sg-footer p {
