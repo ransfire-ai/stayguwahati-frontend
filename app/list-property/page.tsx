@@ -64,7 +64,7 @@ const localities = [
   'Amingaon', 'Azara', 'Bamunimaidam', 'Basistha', 'Beltola',
   'Bhangagarh', 'Borjhar', 'Chandmari', 'Christian Basti', 'Dispur',
   'Ganeshguri', 'Geetanagar', 'GS Road', 'Jalukbari', 'Kahilipara',
-  'Kamakhya', 'Khanapara', 'Kharghuli', 'Lal Ganesh', 'Lokhra',
+  'Kamakhya', 'Khanapara', 'Hatigaon', 'Lal Ganesh', 'Lokhra',
   'Maligaon', 'Narengi', 'Paltan Bazar', 'Pan Bazar', 'Rehabari',
   'Rukminigaon', 'Silpukhuri', 'Six Mile', 'Supermarket', 'Ulubari',
   'Uzan Bazar', 'Zoo Road'
