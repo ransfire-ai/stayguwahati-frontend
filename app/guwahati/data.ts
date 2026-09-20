@@ -11,6 +11,8 @@ export type FAQItem = {
 export type Neighbourhood = {
   slug: string;
   name: string;
+  coordinates: { latitude: number; longitude: number };
+  placesRadiusMeters: number;
   intro: string;
   highlights: string[];
   bestFor: string;
@@ -26,6 +28,8 @@ export type Neighbourhood = {
 export const NEIGHBOURHOODS: Neighbourhood[] = [
   {
     slug: "uzan-bazar",
+    coordinates: { latitude: 26.1885, longitude: 91.7444 },
+    placesRadiusMeters: 1800,
     name: "Uzan Bazar",
     intro: "Stay in one of central Guwahati's established riverfront neighbourhoods, close to the Brahmaputra, cultural attractions, local markets and everyday city conveniences.",
     highlights: ["Brahmaputra riverfront access", "Culture, cafés and local food", "Central Guwahati location"],
@@ -63,6 +67,8 @@ export const NEIGHBOURHOODS: Neighbourhood[] = [
   },
   {
     slug: "paltan-bazar",
+    coordinates: { latitude: 26.1813, longitude: 91.756 },
+    placesRadiusMeters: 1800,
     name: "Paltan Bazar",
     intro: "Choose Paltan Bazar for a busy central location close to Guwahati Railway Station, intercity transport, markets, restaurants and many of the city's older commercial districts.",
     highlights: ["Railway station access", "Central transport links", "Restaurants, markets and shops"],
@@ -99,6 +105,8 @@ export const NEIGHBOURHOODS: Neighbourhood[] = [
   },
   {
     slug: "ganeshguri",
+    coordinates: { latitude: 26.1397, longitude: 91.7895 },
+    placesRadiusMeters: 1800,
     name: "Ganeshguri",
     intro: "Stay around Ganeshguri for a practical base near Dispur and GS Road, with strong road connectivity, shopping, restaurants, healthcare and access to eastern Guwahati.",
     highlights: ["Dispur and GS Road access", "Shopping and dining", "Strong city connections"],
@@ -134,6 +142,8 @@ export const NEIGHBOURHOODS: Neighbourhood[] = [
   },
   {
     slug: "maligaon",
+    coordinates: { latitude: 26.1608, longitude: 91.6879 },
+    placesRadiusMeters: 1800,
     name: "Maligaon",
     intro: "Maligaon is a useful western Guwahati base near the railway corridor, Adabari and roads leading towards Kamakhya, Jalukbari, Pandu and the airport side of the city.",
     highlights: ["Railway connectivity", "Kamakhya-side access", "Western Guwahati transport links"],
@@ -170,6 +180,8 @@ export const NEIGHBOURHOODS: Neighbourhood[] = [
   },
   {
     slug: "chandmari",
+    coordinates: { latitude: 26.1874, longitude: 91.7685 },
+    placesRadiusMeters: 1800,
     name: "Chandmari",
     intro: "Chandmari is an established central Guwahati neighbourhood with educational institutions, local food, markets and convenient access towards Zoo Road, Uzan Bazar and the eastern side of the city.",
     highlights: ["Established central locality", "Local food and markets", "Access to Zoo Road and Uzan Bazar"],
@@ -206,6 +218,8 @@ export const NEIGHBOURHOODS: Neighbourhood[] = [
   },
   {
     slug: "panjabari",
+    coordinates: { latitude: 26.1458, longitude: 91.826 },
+    placesRadiusMeters: 1800,
     name: "Panjabari",
     intro: "Panjabari offers a more residential base in eastern Guwahati, with access to cultural attractions, local services and the Six Mile–VIP Road side of the city.",
     highlights: ["Residential setting", "Cultural attractions nearby", "Access to Six Mile and eastern Guwahati"],
@@ -241,6 +255,8 @@ export const NEIGHBOURHOODS: Neighbourhood[] = [
   },
   {
     slug: "six-mile",
+    coordinates: { latitude: 26.1329, longitude: 91.806 },
+    placesRadiusMeters: 1800,
     name: "Six Mile",
     intro: "Six Mile is a well-connected eastern Guwahati locality near GS Road, with convenient links to Ganeshguri, Beltola, Panjabari, Khanapara, hospitals, restaurants and retail.",
     highlights: ["Major road connections", "Restaurants and retail", "Healthcare and eastern-city access"],

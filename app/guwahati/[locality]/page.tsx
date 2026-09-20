@@ -39,6 +39,7 @@ type ApiResponse = Property[] | { data?: Property[] | { properties?: Property[];
 
 import { NEIGHBOURHOODS, getNeighbourhood } from "../data";
 import type { Neighbourhood } from "../data";
+import { getNearbyFood, googleMapsSearchUrl } from "../googlePlaces";
 
 function isActiveProperty(property: Property) {
   if (property.isActive === false || property.active === false || property.isAvailable === false) return false;
@@ -73,6 +74,9 @@ async function getPropertiesForNeighbourhood(name: string) {
     return [];
   }
 }
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function generateStaticParams() {
   return NEIGHBOURHOODS.map(({ slug }) => ({ locality: slug }));
@@ -126,6 +130,7 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
   if (!neighbourhood) return null;
 
   const properties = await getPropertiesForNeighbourhood(neighbourhood.name);
+  const liveFood = await getNearbyFood(neighbourhood);
   const otherNeighbourhoods = NEIGHBOURHOODS.filter((item) => item.slug !== neighbourhood.slug).slice(0, 6);
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -182,8 +187,31 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
     </section>
 
     <section className="sg-section" id="food">
-      <span className="sg-kicker">Eat & drink</span><h2 className="sg-title-sm" style={{ marginTop: 12 }}>Cafés & restaurants around {neighbourhood.name}</h2>
-      <PlaceCards items={neighbourhood.food} />
+      <span className="sg-kicker">Eat & drink</span>
+      <h2 className="sg-title-sm" style={{ marginTop: 12 }}>Popular cafés & restaurants near {neighbourhood.name}</h2>
+      <p className="sg-muted" style={{ maxWidth: 820, marginTop: 10 }}>
+        Nearby food listings are fetched from Google Places when this page is requested, so names and ratings can reflect current local listings rather than a fixed hand-picked list.
+      </p>
+      {liveFood.length ? <div className="sg-grid sg-3" style={{ marginTop: 18 }}>
+        {liveFood.map((place, index) => {
+          const name = place.displayName?.text || "Local café or restaurant";
+          const address = place.shortFormattedAddress || place.formattedAddress;
+          const mapsUrl = googleMapsSearchUrl(place);
+          return <article key={place.id || `${name}-${index}`} className="sg-card" style={{ padding: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+              <h3 style={{ fontSize: 19, margin: 0 }}>{name}</h3>
+              {typeof place.rating === "number" && <span aria-label={`Google rating ${place.rating} out of 5`} style={{ fontWeight: 700, whiteSpace: "nowrap" }}>★ {place.rating.toFixed(1)}</span>}
+            </div>
+            {place.primaryType && <p className="sg-muted" style={{ margin: "8px 0 4px", textTransform: "capitalize" }}>{place.primaryType.replaceAll("_", " ")}</p>}
+            {address && <p className="sg-muted" style={{ margin: "4px 0 12px" }}>{address}</p>}
+            {typeof place.userRatingCount === "number" && <p className="sg-muted" style={{ margin: "0 0 12px", fontSize: 13 }}>{place.userRatingCount.toLocaleString("en-IN")} Google ratings</p>}
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700 }}>View on Google Maps →</a>
+          </article>;
+        })}
+      </div> : <div className="sg-card sg-empty" style={{ marginTop: 18 }}>
+        {process.env.GOOGLE_MAPS_API_KEY ? <p>Google Places did not return food listings for this search area. Try Google Maps for a wider search around {neighbourhood.name}.</p> : <><p>Live Google Places results are not configured yet. Configure the Render Places proxy and the matching <code>STAYGUWAHATI_PLACES_PROXY_SECRET</code> environment variables to populate this section automatically.</p><p className="sg-muted" style={{ marginBottom: 0 }}>The page can still be used normally while the Places API is being configured.</p></>}
+      </div>}
+      <p className="sg-muted" style={{ marginTop: 14, fontSize: 12 }}>Google Maps data and ratings are provided by Google Maps. Listings, ratings and availability can change; confirm details directly before visiting.</p>
     </section>
 
     <section className="sg-section" id="hospitals">
