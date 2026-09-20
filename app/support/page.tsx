@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import PageShell from "@/components/PageShell";
+import PageShell from "../components/layout/PageShell";
 import {
   HelpCircle,
   ChevronDown,
