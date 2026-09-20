@@ -16,6 +16,10 @@ export const metadata: Metadata = {
 
   applicationName: 'StayGuwahati',
 
+  alternates: {
+    canonical: SITE_URL,
+  },
+
   keywords: [
     'homestays in Guwahati',
     'Guwahati homestays',
@@ -31,9 +35,6 @@ export const metadata: Metadata = {
     'StayGuwahati',
   ],
 
-  alternates: {
-    canonical: SITE_URL,
-  },
 
   openGraph: {
     type: 'website',
@@ -43,14 +44,6 @@ export const metadata: Metadata = {
     description:
       'Discover handpicked homestays in Guwahati with trusted local hosts. Explore local neighbourhoods and find a comfortable stay in Guwahati.',
     locale: 'en_IN',
-    images: [
-      {
-        url: '/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'StayGuwahati - Homestays in Guwahati',
-      },
-    ],
   },
 
   twitter: {
@@ -58,7 +51,6 @@ export const metadata: Metadata = {
     title: 'Homestays in Guwahati | StayGuwahati',
     description:
       'Discover handpicked homestays in Guwahati with trusted local hosts.',
-    images: ['/og-image.jpg'],
   },
 
   robots: {

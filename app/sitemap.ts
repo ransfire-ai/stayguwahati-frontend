@@ -177,7 +177,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
 
     {
-      url: `${SITE_URL}/list-your-stay`,
+      url: `${SITE_URL}/privacy`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.7,
