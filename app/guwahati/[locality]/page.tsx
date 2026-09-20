@@ -163,7 +163,24 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
       <p className="sg-sub" style={{ maxWidth: 860 }}>{neighbourhood.intro}</p>
       <p className="sg-muted" style={{ marginTop: 12 }}><strong>Best for:</strong> {neighbourhood.bestFor}. <strong>Nearby:</strong> {neighbourhood.nearby}.</p>
       <div className="sg-grid sg-3" style={{ marginTop: 22 }}>
-        {neighbourhood.highlights.map((highlight) => <div key={highlight} className="sg-card" style={{ padding: 18 }}><strong>{highlight}</strong></div>)}
+        {neighbourhood.highlights.map((highlight) => (
+          <div
+            key={highlight}
+            className="sg-card"
+            style={{
+              padding: "18px 20px",
+              background: "#fffaf2",
+              color: "#123f39",
+              border: "1px solid #d6ded9",
+              borderRadius: 20,
+              boxShadow: "0 8px 24px rgba(18,63,57,0.08)",
+            }}
+          >
+            <strong style={{ color: "#123f39", display: "block", lineHeight: 1.35 }}>
+              {highlight}
+            </strong>
+          </div>
+        ))}
       </div>
     </section>
 
