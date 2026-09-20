@@ -499,18 +499,40 @@ export default function DashboardPage() {
     router.replace('/login');
   };
 
+  const getSessionToken = () => sessionStorage.getItem('token') || '';
+
+  const handleAuthFailure = (response: Response) => {
+    if (response.status === 401 || response.status === 403) {
+      handleLogOut();
+      return true;
+    }
+    return false;
+  };
+
   // Fetch traveler bookings
   const fetchTravelerBookings = async () => {
     setLoadingTraveler(true);
     try {
-      const userEmail = (currentUser.email || '').toLowerCase().trim();
-      const res = await fetch(`${BACKEND_URL}/api/bookings?email=${encodeURIComponent(userEmail)}`);
+      const token = getSessionToken();
+      if (!token) {
+        handleLogOut();
+        return;
+      }
+
+      const res = await fetch(`${BACKEND_URL}/api/bookings`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (handleAuthFailure(res)) return;
+
       let userBookings: Booking[] = [];
 
       if (res.ok) {
         const data = await res.json();
         const rawBookings: Booking[] = data.success && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
 
+        const userEmail = (currentUser.email || '').toLowerCase().trim();
         userBookings = rawBookings.filter((b) => {
           const bEmail = (b.email || b.guestEmail || b.userEmail || '').toLowerCase().trim();
           return bEmail === userEmail;
@@ -572,14 +594,18 @@ export default function DashboardPage() {
     setLoadingReservations(true);
 
     try {
-      const token =
-        sessionStorage.getItem('token') ||
-        localStorage.getItem('token') ||
-        '';
+      const token = getSessionToken();
+      if (!token) {
+        handleLogOut();
+        return;
+      }
 
       const res = await fetch(`${BACKEND_URL}/api/bookings`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (handleAuthFailure(res)) return;
 
       let allBookings: Booking[] = [];
 
@@ -674,14 +700,14 @@ export default function DashboardPage() {
 
     try {
       const hostEmail = normalizeEmail(currentUser.email);
-      const token =
-        sessionStorage.getItem('token') ||
-        localStorage.getItem('token') ||
-        '';
+      const token = getSessionToken();
 
-      const headers = token
-        ? { Authorization: `Bearer ${token}` }
-        : undefined;
+      if (!token) {
+        handleLogOut();
+        return;
+      }
+
+      const headers = { Authorization: `Bearer ${token}` };
 
       const statuses = ['approved', 'pending', 'rejected'];
 
@@ -693,6 +719,8 @@ export default function DashboardPage() {
           )
         )
       );
+
+      if (responses.some(handleAuthFailure)) return;
 
       const results = await Promise.all(
         responses.map(async (response) => {
@@ -863,7 +891,7 @@ export default function DashboardPage() {
       const updated = { ...currentUser, name: newName };
       setCurrentUser(updated);
       sessionStorage.setItem('userProfile', JSON.stringify(updated));
-      localStorage.setItem('userProfile', JSON.stringify(updated));
+      localStorage.removeItem('userProfile');
       alert('Profile updated successfully!');
     }
   };
@@ -872,11 +900,24 @@ export default function DashboardPage() {
   const fetchHostMessages = async () => {
     if (!activeChat.guestName || !activeChat.propTitle) return;
     try {
+      const token = getSessionToken();
+      if (!token) {
+        handleLogOut();
+        return;
+      }
+
       const response = await fetch(
         `${BACKEND_URL}/api/messages?propertyTitle=${encodeURIComponent(
           activeChat.propTitle
         )}&guestName=${encodeURIComponent(activeChat.guestName)}`
+        , {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        }
       );
+
+      if (handleAuthFailure(response)) return;
+
       if (response.ok) {
         const result = await response.json();
         if (result.success && Array.isArray(result.data)) {
@@ -930,8 +971,13 @@ export default function DashboardPage() {
     setChatInputText('');
 
     try {
-      const token = sessionStorage.getItem('token');
-      await fetch(`${BACKEND_URL}/api/messages`, {
+      const token = getSessionToken();
+      if (!token) {
+        handleLogOut();
+        return;
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -945,6 +991,13 @@ export default function DashboardPage() {
           message: messageText
         })
       });
+
+      if (handleAuthFailure(response)) return;
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        window.alert(result.message || result.error || 'Unable to send message.');
+        return;
+      }
 
       fetchHostMessages();
     } catch (err) {

@@ -129,12 +129,9 @@ if (typeof window !== "undefined") {
 
   sessionStorage.setItem("activeDashboardRole", activeRole);
 
-  // Keep compatibility with other existing pages
-  localStorage.setItem("token", token);
-  localStorage.setItem(
-    "userProfile",
-    JSON.stringify(user)
-  );
+  // Authentication is intentionally session-only.
+  // Do not persist the JWT or user profile in localStorage.
+  // sessionStorage is cleared when the browser session ends.
 }
 
 // Return the user to the page that originally required authentication.
