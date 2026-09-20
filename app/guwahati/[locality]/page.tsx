@@ -163,24 +163,64 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
       <p className="sg-sub" style={{ maxWidth: 860 }}>{neighbourhood.intro}</p>
       <p className="sg-muted" style={{ marginTop: 12 }}><strong>Best for:</strong> {neighbourhood.bestFor}. <strong>Nearby:</strong> {neighbourhood.nearby}.</p>
       <div className="sg-grid sg-3" style={{ marginTop: 22 }}>
-        {neighbourhood.highlights.map((highlight) => (
-          <div
-            key={highlight}
-            className="sg-card"
-            style={{
-              padding: "18px 20px",
-              background: "#fffaf2",
-              color: "#123f39",
-              border: "1px solid #d6ded9",
-              borderRadius: 20,
-              boxShadow: "0 8px 24px rgba(18,63,57,0.08)",
-            }}
-          >
-            <strong style={{ color: "#123f39", display: "block", lineHeight: 1.35 }}>
-              {highlight}
-            </strong>
-          </div>
-        ))}
+        {neighbourhood.highlights.map((highlight, index) => {
+          const title = String(highlight);
+          const normalized = title.toLowerCase();
+          const isFood = /restaurant|food|retail|shopping|cafe|cafes|dining|market/.test(normalized);
+          const isHealth = /health|hospital|medical|healthcare|emergency/.test(normalized);
+          const description = isFood
+            ? "Cafés, restaurants, supermarkets and shopping options are nearby for a convenient stay."
+            : isHealth
+              ? "Healthcare and everyday services are within practical reach, with convenient connections across the neighbourhood."
+              : "Convenient local road links make it easy to reach nearby neighbourhoods and key parts of Guwahati.";
+          return (
+            <div
+              key={title}
+              className="sg-card"
+              style={{
+                padding: "18px 20px",
+                background: "#fffaf2",
+                color: "#123f39",
+                border: "1px solid #d6ded9",
+                borderRadius: 20,
+                boxShadow: "0 8px 24px rgba(18,63,57,0.08)",
+                minHeight: 132,
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 14,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 42,
+                  height: 42,
+                  minWidth: 42,
+                  borderRadius: "999px",
+                  background: "#e3f1ed",
+                  color: "#28655c",
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                {isHealth ? (
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M12 9v6"/></svg>
+                ) : isFood ? (
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3v18M14 3v6a3 3 0 0 0 3 3"/></svg>
+                ) : (
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                )}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                  <strong style={{ color: "#123f39", display: "block", lineHeight: 1.35 }}>{title}</strong>
+                  <span aria-hidden="true" style={{ color: "#28655c", fontSize: 22, lineHeight: 1 }}>→</span>
+                </div>
+                <p style={{ margin: "8px 0 0", color: "#526d67", fontSize: 13, lineHeight: 1.55 }}>{description}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
 
