@@ -11,7 +11,6 @@ const dictionary = {
     lDesc: 'DESCRIPTION',
     lLocality: 'LOCALITY (NEIGHBORHOOD)',
     lPrice: 'PRICE PER NIGHT (₹)',
-    lBedrooms: 'NUMBER OF BEDROOMS',
     lBathrooms: 'BATHROOMS',
     lAmenities: 'AMENITIES (WHAT THIS PLACE OFFERS)',
     lImages: 'PROPERTY IMAGES (EXACTLY 4)',
@@ -29,7 +28,6 @@ const dictionary = {
     lDesc: 'বিৱৰণ',
     lLocality: 'এলাকা',
     lPrice: 'প্ৰতি ৰাতিৰ মূল্য (₹)',
-    lBedrooms: 'শোৱা কোঠা (Bedrooms)',
     lBathrooms: 'বাথৰুম',
     lAmenities: 'সুবিধাসমূহ (এই স্থানত কি কি পোৱা যায়)',
     lImages: 'সম্পত্তিৰ ছবি (ঠিক ৪ খন)',
@@ -47,7 +45,6 @@ const dictionary = {
     lDesc: 'विवरण',
     lLocality: 'स्थान',
     lPrice: 'प्रति रात्रि मूल्य (₹)',
-    lBedrooms: 'बेडरूम की संख्या',
     lBathrooms: 'बाथरूम',
     lAmenities: 'सुविधाएं (इस स्थान पर क्या उपलब्ध है)',
     lImages: 'संपत्ति छवियां (ठीक 4)',
@@ -96,7 +93,6 @@ export default function ListPropertyPage() {
   const [description, setDescription] = useState('');
   const [locality, setLocality] = useState('');
   const [price, setPrice] = useState('');
-  const [bedrooms, setBedrooms] = useState<number>(2);
 
   type RoomTypeDraft = {
     name: string;
@@ -665,7 +661,7 @@ export default function ListPropertyPage() {
         description: description.trim(),
         locality: locality,
         pricePerNight: parsedPrice,
-        bedrooms: roomInventoryTotal || bedrooms,
+        bedrooms: roomInventoryTotal,
         roomTypes: roomTypes.map((room) => ({
           name: room.name.trim(),
           units: Number(room.units),
@@ -866,36 +862,8 @@ export default function ListPropertyPage() {
               </div>
             </div>
 
-            {/* Bedroom + Bathroom Selectors */}
+            {/* Bathroom Selectors */}
             <div className="space-y-3">
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div>
-                  <label className="block text-gray-700 font-bold text-sm">{t.lBedrooms}</label>
-                  <p className="text-gray-400 text-xs">Select how many bedrooms are available for guests.</p>
-                </div>
-
-                <div className="flex items-center gap-3 bg-white p-1.5 border border-gray-200 rounded-xl shadow-sm">
-                  <button
-                    type="button"
-                    onClick={() => setBedrooms((prev) => Math.max(1, prev - 1))}
-                    className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold flex items-center justify-center text-sm transition"
-                  >
-                    −
-                  </button>
-                  <div className="text-center min-w-[3.5rem]">
-                    <span className="text-base font-extrabold text-gray-900">{bedrooms}</span>
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Bedrooms</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setBedrooms((prev) => Math.min(10, prev + 1))}
-                    className="w-8 h-8 rounded-lg bg-[#e7f0eb] hover:bg-[#dceae4] text-[#28655c] font-bold flex items-center justify-center text-sm transition"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
               <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                   <div>
@@ -959,7 +927,8 @@ export default function ListPropertyPage() {
                     </p>
                   </div>
                   <div className="rounded-xl bg-white border border-[#d6dfd9] px-3 py-2 text-xs font-bold text-[#28655c]">
-                    {roomInventoryTotal} total unit{roomInventoryTotal === 1 ? '' : 's'}
+                    <div>{roomInventoryTotal} total unit{roomInventoryTotal === 1 ? '' : 's'}</div>
+                    <div className="mt-0.5 text-[10px] font-semibold text-[#71817c]">Bedroom count: {roomInventoryTotal}</div>
                   </div>
                 </div>
               </div>
