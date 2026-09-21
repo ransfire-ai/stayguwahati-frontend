@@ -20,11 +20,10 @@ import {
   Send,
 } from 'lucide-react';
 
-const BACKEND_URL = (
+const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  'https://stayguwahati-backend.onrender.com'
-).replace(/\/$/, '');
+  'https://stayguwahati-backend.onrender.com';
 
 interface Homestay {
   _id: string;
@@ -32,6 +31,7 @@ interface Homestay {
   locality?: string;
   location?: string;
   pricePerNight: number;
+  roomTypes?: Array<{ _id?: string; id?: string; name: string; units: number; maxGuests: number; pricePerNight: number; kitchen?: 'none' | 'shared' | 'private'; description?: string }>;
   images?: string[];
   image?: string;
   cancellationPolicy?: string;
@@ -117,6 +117,8 @@ function BookingContent() {
   const params = useSearchParams();
   const router = useRouter();
 
+  const queryRoomTypeId = params.get('roomTypeId') || '';
+
   const queryId =
     params.get('id') ||
     params.get('propertyId') ||
@@ -127,6 +129,7 @@ function BookingContent() {
   const [storedBooking, setStoredBooking] =
     useState<PendingBooking | null>(null);
   const [property, setProperty] = useState<Homestay | null>(null);
+  const [selectedRoomTypeId, setSelectedRoomTypeId] = useState(queryRoomTypeId);
 
   const [checkIn, setCheckIn] = useState(
     params.get('checkIn') || today()
@@ -224,6 +227,7 @@ function BookingContent() {
           pricePerNight: Number(
             item.pricePerNight || item.price || item.rate || 0
           ),
+          roomTypes: Array.isArray(item.roomTypes) ? item.roomTypes : [],
           images:
             Array.isArray(item.images) && item.images.length
               ? item.images
@@ -236,6 +240,13 @@ function BookingContent() {
         };
 
         setProperty(normalized);
+        const rooms = normalized.roomTypes || [];
+        const initialRoomTypeId = queryRoomTypeId && rooms.some((room) => String(room._id || room.id || '') === queryRoomTypeId)
+          ? queryRoomTypeId
+          : rooms.length
+            ? String(rooms[0]._id || rooms[0].id || '')
+            : '';
+        setSelectedRoomTypeId(initialRoomTypeId);
 
         sessionStorage.setItem(
           'pendingBooking',
@@ -317,11 +328,10 @@ function BookingContent() {
     return parsed.toISOString().slice(0, 10);
   };
 
-  // Check availability through the dedicated public availability endpoint.
-  // This avoids downloading every booking and keeps the final POST overlap
-  // check on the server as the authoritative protection against race conditions.
+  // Check existing Requested/Confirmed bookings immediately when dates change.
+  // The POST endpoint still performs the final overlap check, preventing races.
   useEffect(() => {
-    if (!propertyId || !checkIn || !checkOut || checkOut <= checkIn) {
+    if (!propertyId || !checkIn || !checkOut || checkOut <= checkIn || (property?.roomTypes?.length && !selectedRoomTypeId)) {
       setDateAvailability('idle');
       setAvailabilityMessage('');
       setCheckingAvailability(false);
@@ -329,90 +339,80 @@ function BookingContent() {
     }
 
     const controller = new AbortController();
-    const query = new URLSearchParams({
-      propertyId: String(propertyId),
-      checkIn,
-      checkOut,
-    });
 
     async function checkAvailability() {
       setCheckingAvailability(true);
       setDateAvailability('checking');
-      setAvailabilityMessage('Checking date availability…');
-
-      let timedOut = false;
-      const timeoutId = window.setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, 15000);
-
+      setAvailabilityMessage('');
       try {
-        // Keep this request CORS-simple. In particular, do NOT send a custom
-        // Cache-Control request header from the browser; that header can trigger
-        // a preflight on a cross-origin GET and older API CORS configurations may
-        // reject it. The backend itself sends no-store on the response.
-        const response = await fetch(
-          `${BACKEND_URL}/api/bookings/availability?${query.toString()}`,
-          {
-            method: 'GET',
-            cache: 'no-store',
-            signal: controller.signal,
-            headers: {
-              Accept: 'application/json',
-            },
-          }
-        );
+        const baseUrl = BACKEND_URL.replace(/\/+$/, '');
+        const url =
+          `${baseUrl}/api/bookings/availability` +
+          `?propertyId=${encodeURIComponent(propertyId)}` +
+          `&checkIn=${encodeURIComponent(checkIn)}` +
+          `&checkOut=${encodeURIComponent(checkOut)}` +
+          (property?.roomTypes?.length ? `&roomTypeId=${encodeURIComponent(selectedRoomTypeId)}` : '');
 
-        const payload = await response.json().catch(() => ({}));
+        const response = await fetch(url, {
+          cache: 'no-store',
+          signal: controller.signal,
+          headers: {
+            Accept: 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+        });
 
-        if (!response.ok || payload?.success !== true) {
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || payload?.success === false) {
           throw new Error(
-            payload?.message || 'We could not verify these dates right now.'
+            payload?.message || `Availability check failed (${response.status}).`
           );
         }
 
-        if (payload.available === true) {
-          setDateAvailability('available');
-          setAvailabilityMessage('Great news — these dates are currently available.');
-        } else {
+        // Dedicated backend availability endpoint returns the final answer.
+        const conflict = payload?.available === false;
+        const availableUnits = Number(payload?.availableUnits);
+        if (conflict) {
           setDateAvailability('unavailable');
-          setAvailabilityMessage(
-            payload?.message ||
-              'These dates are unavailable because this stay is already requested or booked.'
-          );
+          setAvailabilityMessage(property?.roomTypes?.length ? 'This room type has no units available for these dates.' : 'These dates are unavailable because this stay is already requested or booked.');
+        } else {
+          setDateAvailability('available');
+          setAvailabilityMessage(property?.roomTypes?.length && Number.isFinite(availableUnits) ? `${availableUnits} unit${availableUnits === 1 ? '' : 's'} available for these dates.` : 'Great news — these dates are currently available.');
         }
       } catch (err: unknown) {
-        // Abort caused by the effect cleanup means the customer changed the
-        // dates; the next effect run will perform the new check.
-        if (err instanceof Error && err.name === 'AbortError' && !timedOut) {
-          return;
-        }
+        if (err instanceof Error && err.name === 'AbortError') return;
 
-        console.error('Availability check failed:', err);
+        // Do not block the customer forever if the public availability request
+        // is temporarily unavailable. The POST /api/bookings route still performs
+        // the authoritative overlap check immediately before creating a booking.
         setDateAvailability('error');
         setAvailabilityMessage(
-          timedOut
-            ? 'The availability check timed out. Please try again.'
-            : err instanceof Error && err.message
-              ? err.message
-              : 'We could not verify these dates right now. Please try again.'
+          'Date availability is temporarily unavailable. You may still submit your request; the server will verify availability before creating the booking.'
         );
       } finally {
-        window.clearTimeout(timeoutId);
-        if (!controller.signal.aborted || timedOut) {
-          setCheckingAvailability(false);
-        }
+        if (!controller.signal.aborted) setCheckingAvailability(false);
       }
     }
 
-    // Small debounce prevents a request for every intermediate date change.
-    const timer = window.setTimeout(checkAvailability, 250);
+    const timeout = window.setTimeout(checkAvailability, 250);
+    return () => { window.clearTimeout(timeout); controller.abort(); };
+  }, [propertyId, checkIn, checkOut, selectedRoomTypeId, property?.roomTypes?.length]);
 
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [propertyId, checkIn, checkOut]);
+  const selectedRoomType = useMemo(() => {
+    if (!property?.roomTypes?.length) return null;
+    return property.roomTypes.find((room) => String(room._id || room.id || '') === selectedRoomTypeId) || property.roomTypes[0] || null;
+  }, [property, selectedRoomTypeId]);
+
+  useEffect(() => {
+    if (selectedRoomType && guests > Number(selectedRoomType.maxGuests)) {
+      setGuests(Math.max(1, Number(selectedRoomType.maxGuests) || 1));
+    }
+  }, [selectedRoomType, guests]);
+
+  const selectedNightlyRate = selectedRoomType
+    ? Number(selectedRoomType.pricePerNight)
+    : Number(property?.pricePerNight || 0);
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
@@ -426,9 +426,7 @@ function BookingContent() {
     return diff > 0 ? diff : 0;
   }, [checkIn, checkOut]);
 
-  const total = property
-    ? property.pricePerNight * nights
-    : 0;
+  const total = selectedNightlyRate * nights;
 
   const updateCheckIn = (value: string) => {
     setCheckIn(value);
@@ -456,6 +454,16 @@ function BookingContent() {
       return;
     }
 
+    if (property.roomTypes?.length && !selectedRoomType) {
+      setError('Please select a room type.');
+      return;
+    }
+
+    if (selectedRoomType && guests > Number(selectedRoomType.maxGuests)) {
+      setError(`This room type allows up to ${Number(selectedRoomType.maxGuests)} guest${Number(selectedRoomType.maxGuests) === 1 ? '' : 's'}.`);
+      return;
+    }
+
     if (!checkIn || !checkOut || nights < 1) {
       setError('Please select valid check-in and check-out dates.');
       return;
@@ -474,15 +482,6 @@ function BookingContent() {
       setError('These dates are unavailable. Please choose different dates.');
       return;
     }
-    if (dateAvailability === 'error') {
-      setError('We could not verify these dates. Please try again.');
-      return;
-    }
-    if (dateAvailability !== 'available') {
-      setError('Please wait until the selected dates are confirmed as available.');
-      return;
-    }
-
     if (!fullName.trim() || !email.trim() || !phone.trim()) {
       setError(
         'Please complete your name, email and phone number.'
@@ -514,6 +513,7 @@ function BookingContent() {
             email: email.trim(),
             phone: phone.trim(),
             specialRequests: specialRequests.trim(),
+            roomTypeId: selectedRoomType ? String(selectedRoomType._id || selectedRoomType.id || '') : null,
             userId:
               currentProfile?._id ||
               currentProfile?.id ||
@@ -690,7 +690,7 @@ function BookingContent() {
                     </span>
                   </div>
                   <p className="mt-3 text-sm font-black text-[#173c3a]">
-                    {money(property.pricePerNight)}
+                    {money(selectedNightlyRate)}
                     <span className="font-medium text-[#7a8987]">
                       {' '} / night
                     </span>
@@ -698,6 +698,40 @@ function BookingContent() {
                 </div>
               </div>
             </section>
+
+            {property.roomTypes && property.roomTypes.length > 0 && (
+              <section className="rounded-[24px] border border-[#d9e7e5] bg-white p-5 shadow-[0_14px_40px_rgba(18,63,61,0.06)] sm:p-6">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#1b7772]">
+                  Step 1 · Choose your room
+                </p>
+                <h2 className="mt-1 text-xl font-black">Room type & price</h2>
+                <p className="mt-2 text-sm leading-6 text-[#657674]">Choose the exact room category you want to reserve.</p>
+                <div className="mt-4 grid gap-3">
+                  {property.roomTypes.map((room) => {
+                    const roomId = String(room._id || room.id || '');
+                    const active = roomId === String(selectedRoomType?._id || selectedRoomType?.id || '');
+                    return (
+                      <button key={roomId || room.name} type="button" onClick={() => { setSelectedRoomTypeId(roomId); setDateAvailability('idle'); setAvailabilityMessage(''); }} className={`w-full rounded-2xl border p-4 text-left transition ${active ? 'border-[#1b7772] bg-[#eef7f4] ring-2 ring-[#1b7772]/10' : 'border-[#d6e4e2] bg-[#fbfcfb] hover:border-[#9abdb6]'}`}>
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-black text-[#173c3a]">{room.name}</span>
+                              {active && <span className="rounded-full bg-[#123f3d] px-2 py-1 text-[10px] font-black text-white">Selected</span>}
+                            </div>
+                            <p className="mt-1 text-xs text-[#70807e]">Up to {room.maxGuests} guest{room.maxGuests === 1 ? '' : 's'} · {room.units} unit{room.units === 1 ? '' : 's'}</p>
+                            {room.kitchen && room.kitchen !== 'none' && <p className="mt-1 text-[11px] font-semibold text-[#1b7772]">{room.kitchen === 'private' ? 'Private kitchen' : 'Shared kitchen'}</p>}
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <div className="text-lg font-black text-[#173c3a]">{money(Number(room.pricePerNight))}</div>
+                            <div className="text-[10px] font-semibold text-[#7a8987]">/ night</div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
             <section className="rounded-[24px] border border-[#d9e7e5] bg-white p-5 shadow-[0_14px_40px_rgba(18,63,61,0.06)] sm:p-6">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#1b7772]">
@@ -760,7 +794,7 @@ function BookingContent() {
                   }
                   className="mt-2 w-full bg-transparent text-sm font-black text-[#173c3a] outline-none"
                 >
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(
+                  {Array.from({ length: Math.min(20, Math.max(1, Number(selectedRoomType?.maxGuests || 8))) }, (_, index) => index + 1).map(
                     (count) => (
                       <option key={count} value={count}>
                         {count}{' '}
@@ -882,7 +916,7 @@ function BookingContent() {
 
             <button
               type="submit"
-              disabled={submitting || !property.isAvailable || checkingAvailability || dateAvailability !== 'available'}
+              disabled={submitting || !property.isAvailable || checkingAvailability || dateAvailability === 'unavailable'}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#123f3d] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[#123f3d]/15 transition hover:-translate-y-0.5 hover:bg-[#0d3432] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? (
@@ -918,7 +952,7 @@ function BookingContent() {
                     <span className="text-[#70807e]">
                       Price per night
                     </span>
-                    <b>{money(property.pricePerNight)}</b>
+                    <b>{money(selectedNightlyRate)}</b>
                   </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-[#70807e]">
