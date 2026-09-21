@@ -58,7 +58,7 @@ const dictionary = {
 };
 
 const localities = [
-  'Amingaon', 'Azara', 'Bamunimaidam', 'Basistha', 'Beltola',
+  'Amingaon', 'Azara', 'Bamunimaidam', 'Basistha', 'Beltola', 'Bhetapara',
   'Bhangagarh', 'Borjhar', 'Chandmari', 'Christian Basti', 'Dispur',
   'Ganeshguri', 'Geetanagar', 'GS Road', 'Jalukbari', 'Kahilipara',
   'Kamakhya', 'Khanapara', 'Kharghuli', 'Lal Ganesh', 'Lokhra',
