@@ -102,33 +102,84 @@ export default function PageShell({
       prevButton.setAttribute("aria-label", "Previous neighbourhoods");
       prevButton.textContent = "‹";
 
+      const track = document.createElement("div");
+      track.className = "sg-home-carousel-track";
+      track.setAttribute("role", "scrollbar");
+      track.setAttribute("aria-label", "Neighbourhood carousel scroll position");
+      track.setAttribute("aria-valuemin", "0");
+      track.setAttribute("aria-valuemax", "100");
+      track.setAttribute("aria-valuenow", "0");
+
+      const thumb = document.createElement("button");
+      thumb.type = "button";
+      thumb.className = "sg-home-carousel-thumb";
+      thumb.setAttribute("aria-label", "Drag to scroll neighbourhoods");
+      thumb.tabIndex = 0;
+      track.appendChild(thumb);
+
       const nextButton = document.createElement("button");
       nextButton.type = "button";
       nextButton.className = "sg-home-carousel-arrow sg-home-carousel-next";
       nextButton.setAttribute("aria-label", "Next neighbourhoods");
       nextButton.textContent = "›";
 
-      controls.append(prevButton, nextButton);
+      controls.append(prevButton, track, nextButton);
       section.appendChild(controls);
 
-      const dots = document.createElement("div");
-      dots.className = "sg-home-carousel-dots";
-      dots.setAttribute("aria-label", "Neighbourhood carousel position");
-      cards.forEach((_, index) => {
-        const dot = document.createElement("span");
-        dot.className = `sg-home-carousel-dot${index === 0 ? " is-active" : ""}`;
-        dot.setAttribute("aria-hidden", "true");
-        dots.appendChild(dot);
+      // These nodes are created after React renders, so styled-jsx scoped CSS
+      // cannot target them. Give the interactive controls their layout/styles
+      // inline so they are guaranteed to be visible and clickable.
+      controls.style.cssText = [
+        "display:flex",
+        "align-items:center",
+        "gap:12px",
+        "width:100%",
+        "margin-top:14px",
+      ].join(";");
+      [prevButton, nextButton].forEach((button) => {
+        button.style.cssText = [
+          "width:44px",
+          "height:44px",
+          "flex:0 0 44px",
+          "border:1px solid #b9cec8",
+          "border-radius:12px",
+          "background:#ffffff",
+          "color:#0c4a45",
+          "display:grid",
+          "place-items:center",
+          "font-size:27px",
+          "line-height:1",
+          "font-weight:800",
+          "cursor:pointer",
+          "box-shadow:0 4px 12px rgba(12,52,49,.08)",
+          "padding:0",
+        ].join(";");
       });
-      section.appendChild(dots);
-
-      const progress = document.createElement("div");
-      progress.className = "sg-home-carousel-progress";
-      progress.setAttribute("aria-hidden", "true");
-      const progressThumb = document.createElement("div");
-      progressThumb.className = "sg-home-carousel-progress-thumb";
-      progress.appendChild(progressThumb);
-      section.appendChild(progress);
+      track.style.cssText = [
+        "position:relative",
+        "height:16px",
+        "flex:1 1 auto",
+        "min-width:120px",
+        "border-radius:999px",
+        "background:#d9e4e0",
+        "border:1px solid #c6d7d2",
+        "cursor:pointer",
+        "overflow:hidden",
+      ].join(";");
+      thumb.style.cssText = [
+        "position:absolute",
+        "top:2px",
+        "left:0",
+        "height:10px",
+        "min-width:72px",
+        "border:0",
+        "border-radius:999px",
+        "background:#0c4a45",
+        "cursor:grab",
+        "padding:0",
+        "touch-action:none",
+        "display:block",
+      ].join(";");
 
       const getStep = () => {
         const step = cards[0]?.getBoundingClientRect().width || 1;
@@ -136,22 +187,17 @@ export default function PageShell({
         return Math.max(1, step + gap);
       };
 
-      const updateDots = () => {
-        const index = Math.min(
-          cards.length - 1,
-          Math.max(0, Math.round(grid.scrollLeft / getStep()))
-        );
-        Array.from(dots.children).forEach((dot, dotIndex) => {
-          dot.classList.toggle("is-active", dotIndex === index);
-        });
-
-        const maxScroll = Math.max(1, grid.scrollWidth - grid.clientWidth);
-        const visibleRatio = Math.min(1, grid.clientWidth / Math.max(grid.scrollWidth, 1));
-        const thumbWidth = Math.max(22, visibleRatio * 100);
-        const travel = 100 - thumbWidth;
-        const position = Math.min(1, Math.max(0, grid.scrollLeft / maxScroll));
-        progressThumb.style.width = `${thumbWidth}%`;
-        progressThumb.style.transform = `translateX(${position * travel}%)`;
+      const updateScrollbar = () => {
+        const maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
+        const ratio = maxScroll > 0 ? grid.clientWidth / grid.scrollWidth : 1;
+        const thumbWidth = Math.max(72, Math.min(100, ratio * 100));
+        const travel = Math.max(0, track.clientWidth - (track.clientWidth * thumbWidth) / 100);
+        const progress = maxScroll > 0 ? grid.scrollLeft / maxScroll : 0;
+        thumb.style.width = `${thumbWidth}%`;
+        thumb.style.transform = `translateX(${travel * progress}px)`;
+        track.setAttribute("aria-valuenow", String(Math.round(progress * 100)));
+        prevButton.disabled = grid.scrollLeft <= 2;
+        nextButton.disabled = grid.scrollLeft >= maxScroll - 2;
       };
 
       const scrollByCard = (direction: number) => {
@@ -163,41 +209,61 @@ export default function PageShell({
       prevButton.addEventListener("click", onPrev);
       nextButton.addEventListener("click", onNext);
 
-      let dragging = false;
-      let dragStartX = 0;
-      let dragStartScroll = 0;
-      const onPointerDown = (event: PointerEvent) => {
-        if (window.innerWidth <= 800) return;
-        dragging = true;
-        dragStartX = event.clientX;
-        dragStartScroll = grid.scrollLeft;
-        grid.setPointerCapture?.(event.pointerId);
-        grid.style.setProperty("cursor", "grabbing", "important");
-        grid.style.setProperty("scroll-snap-type", "none", "important");
+      const onTrackClick = (event: MouseEvent) => {
+        if (event.target === thumb) return;
+        const rect = track.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+        const maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
+        grid.scrollTo({ left: ratio * maxScroll, behavior: "smooth" });
       };
-      const onPointerMove = (event: PointerEvent) => {
-        if (!dragging) return;
-        event.preventDefault();
-        grid.scrollLeft = dragStartScroll - (event.clientX - dragStartX);
-      };
-      const endDrag = () => {
-        if (!dragging) return;
-        dragging = false;
-        grid.style.setProperty("cursor", "grab", "important");
-        grid.style.setProperty("scroll-snap-type", "x mandatory", "important");
-      };
+      track.addEventListener("click", onTrackClick);
 
-      grid.addEventListener("pointerdown", onPointerDown);
-      grid.addEventListener("pointermove", onPointerMove);
-      grid.addEventListener("pointerup", endDrag);
-      grid.addEventListener("pointercancel", endDrag);
-      grid.addEventListener("pointerleave", endDrag);
+      let draggingThumb = false;
+      let thumbPointerStart = 0;
+      let thumbLeftStart = 0;
+      const onThumbPointerDown = (event: PointerEvent) => {
+        draggingThumb = true;
+        thumbPointerStart = event.clientX;
+        thumbLeftStart = thumb.offsetLeft;
+        thumb.setPointerCapture?.(event.pointerId);
+        event.preventDefault();
+      };
+      const onThumbPointerMove = (event: PointerEvent) => {
+        if (!draggingThumb) return;
+        const trackWidth = track.clientWidth;
+        const thumbWidth = thumb.getBoundingClientRect().width;
+        const maxThumbLeft = Math.max(0, trackWidth - thumbWidth);
+        const nextLeft = Math.max(0, Math.min(maxThumbLeft, thumbLeftStart + event.clientX - thumbPointerStart));
+        const progress = maxThumbLeft > 0 ? nextLeft / maxThumbLeft : 0;
+        const maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
+        grid.scrollLeft = progress * maxScroll;
+        updateScrollbar();
+      };
+      const endThumbDrag = () => {
+        draggingThumb = false;
+      };
+      thumb.addEventListener("pointerdown", onThumbPointerDown);
+      thumb.addEventListener("pointermove", onThumbPointerMove);
+      thumb.addEventListener("pointerup", endThumbDrag);
+      thumb.addEventListener("pointercancel", endThumbDrag);
 
       // The homepage grid already has its own grid CSS. Because this effect
       // runs after React renders, force the carousel layout inline so it wins
       // over that grid at every viewport size.
       const applyCarouselLayout = () => {
         const mobile = window.innerWidth <= 800;
+        controls.style.gap = mobile ? "8px" : "12px";
+        controls.style.marginTop = mobile ? "10px" : "14px";
+        [prevButton, nextButton].forEach((button) => {
+          button.style.width = mobile ? "38px" : "44px";
+          button.style.height = mobile ? "38px" : "44px";
+          button.style.flexBasis = mobile ? "38px" : "44px";
+          button.style.fontSize = mobile ? "24px" : "27px";
+        });
+        track.style.height = mobile ? "12px" : "16px";
+        thumb.style.height = mobile ? "8px" : "10px";
+        thumb.style.minWidth = mobile ? "56px" : "72px";
+        thumb.style.top = mobile ? "1px" : "2px";
         grid.style.setProperty("display", "flex", "important");
         grid.style.setProperty("flex-wrap", "nowrap", "important");
         grid.style.setProperty("overflow-x", "auto", "important");
@@ -218,27 +284,25 @@ export default function PageShell({
           card.style.setProperty("min-width", width, "important");
           card.style.setProperty("scroll-snap-align", "start", "important");
         });
-        updateDots();
+        updateScrollbar();
       };
 
-      grid.addEventListener("scroll", updateDots, { passive: true });
+      grid.addEventListener("scroll", updateScrollbar, { passive: true });
       window.addEventListener("resize", applyCarouselLayout);
       applyCarouselLayout();
 
       cleanup = () => {
-        grid.removeEventListener("scroll", updateDots);
+        grid.removeEventListener("scroll", updateScrollbar);
         window.removeEventListener("resize", applyCarouselLayout);
         prevButton.removeEventListener("click", onPrev);
         nextButton.removeEventListener("click", onNext);
-        grid.removeEventListener("pointerdown", onPointerDown);
-        grid.removeEventListener("pointermove", onPointerMove);
-        grid.removeEventListener("pointerup", endDrag);
-        grid.removeEventListener("pointercancel", endDrag);
-        grid.removeEventListener("pointerleave", endDrag);
+        track.removeEventListener("click", onTrackClick);
+        thumb.removeEventListener("pointerdown", onThumbPointerDown);
+        thumb.removeEventListener("pointermove", onThumbPointerMove);
+        thumb.removeEventListener("pointerup", endThumbDrag);
+        thumb.removeEventListener("pointercancel", endThumbDrag);
         controls.remove();
         hint.remove();
-        dots.remove();
-        progress.remove();
         section.dataset.sgCarouselReady = "false";
         section.classList.remove("sg-home-neighbourhood-section");
         grid.classList.remove("sg-home-neighbourhood-carousel");
@@ -253,7 +317,6 @@ export default function PageShell({
         grid.style.removeProperty("scroll-behavior");
         grid.style.removeProperty("-webkit-overflow-scrolling");
         grid.style.removeProperty("scrollbar-width");
-        grid.style.removeProperty("cursor");
         cards.forEach((card) => {
           card.style.removeProperty("flex");
           card.style.removeProperty("width");
@@ -707,46 +770,71 @@ export default function PageShell({
           scroll-snap-align: start;
         }
 
-        .sg-home-carousel-dots {
+        .sg-home-carousel-controls {
           display: flex;
-          justify-content: center;
           align-items: center;
-          gap: 6px;
-          margin-top: 5px;
-        }
-
-        .sg-home-carousel-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 999px;
-          background: #c9d8d3;
-          transition: width 0.2s ease, background 0.2s ease;
-        }
-
-        .sg-home-carousel-dot.is-active {
-          width: 18px;
-          background: #0c4a45;
-        }
-
-        .sg-home-carousel-progress {
-          position: relative;
+          gap: 12px;
           width: 100%;
-          height: 6px;
-          margin-top: 12px;
+          margin-top: 14px;
+        }
+
+        .sg-home-carousel-arrow {
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
+          border: 1px solid #b9cec8;
+          border-radius: 12px;
+          background: #ffffff;
+          color: #0c4a45;
+          display: grid;
+          place-items: center;
+          font-size: 25px;
+          line-height: 1;
+          font-weight: 800;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(12, 52, 49, 0.08);
+        }
+
+        .sg-home-carousel-arrow:hover:not(:disabled) {
+          background: #eaf3ef;
+          border-color: #8fb8ae;
+        }
+
+        .sg-home-carousel-arrow:disabled {
+          opacity: 0.35;
+          cursor: default;
+        }
+
+        .sg-home-carousel-track {
+          position: relative;
+          height: 14px;
+          flex: 1 1 auto;
+          min-width: 120px;
           border-radius: 999px;
-          background: #dfe8e4;
+          background: #d9e4e0;
+          border: 1px solid #c6d7d2;
+          cursor: pointer;
           overflow: hidden;
         }
 
-        .sg-home-carousel-progress-thumb {
+        .sg-home-carousel-thumb {
           position: absolute;
+          top: 1px;
           left: 0;
-          top: 0;
-          height: 100%;
-          min-width: 22%;
+          height: 10px;
+          min-width: 72px;
+          border: 0;
           border-radius: 999px;
           background: #0c4a45;
-          transition: transform 0.15s ease, width 0.15s ease;
+          cursor: grab;
+          padding: 0;
+          touch-action: none;
+          transition: background 0.15s ease;
+        }
+
+        .sg-home-carousel-thumb:hover,
+        .sg-home-carousel-thumb:active {
+          background: #083b37;
         }
 
         @media (max-width: 800px) {
@@ -950,13 +1038,25 @@ export default function PageShell({
             scroll-snap-align: start;
           }
 
-          .sg-home-carousel-dots {
-            margin-top: 2px;
+          .sg-home-carousel-controls {
+            margin-top: 10px;
+            gap: 8px;
           }
 
-          .sg-home-carousel-progress {
-            margin-top: 8px;
-            height: 5px;
+          .sg-home-carousel-arrow {
+            width: 38px;
+            height: 38px;
+            flex-basis: 38px;
+          }
+
+          .sg-home-carousel-track {
+            height: 12px;
+          }
+
+          .sg-home-carousel-thumb {
+            height: 8px;
+            top: 1px;
+            min-width: 56px;
           }
 
           .sg-footer {
