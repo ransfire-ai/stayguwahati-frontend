@@ -123,7 +123,6 @@ export default function PageShell({
       cleanup = () => {
         grid.removeEventListener("scroll", updateDots);
         window.removeEventListener("resize", updateDots);
-        window.removeEventListener("resize", applyCarouselLayout);
         hint.remove();
         dots.remove();
         section.dataset.sgCarouselReady = "false";
