@@ -32,6 +32,26 @@ export default function AdminDashboardPage() {
   const [actionBusyId, setActionBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [settlements, setSettlements] = useState<any[]>([]);
+  const [settlementSummary, setSettlementSummary] = useState({ bookingValue: 0, commission: 0, tax: 0, totalDue: 0, paid: 0, outstanding: 0 });
+  const [settlementConfig, setSettlementConfig] = useState<any>({});
+  const [settlementLoading, setSettlementLoading] = useState(false);
+  const [settlementError, setSettlementError] = useState('');
+  const [settlementHost, setSettlementHost] = useState('all');
+  const [settlementStatus, setSettlementStatus] = useState('all');
+  const [settlementFrom, setSettlementFrom] = useState('');
+  const [settlementTo, setSettlementTo] = useState('');
+  const [paymentTarget, setPaymentTarget] = useState<any | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [hostAgreements, setHostAgreements] = useState<any[]>([]);
+  const [hostAgreementConfig, setHostAgreementConfig] = useState<any>({});
+  const [hostAgreementsLoading, setHostAgreementsLoading] = useState(false);
+  const [hostAgreementsError, setHostAgreementsError] = useState('');
+  const [hostAgreementStatus, setHostAgreementStatus] = useState('all');
 
   // In this moderation workflow, an approved listing is the verified public listing.
   const isListingVerified = (stay: any) =>
@@ -89,46 +109,94 @@ export default function AdminDashboardPage() {
       const headers = { Authorization: `Bearer ${token}` };
 
       if (filter === 'all') {
-        const responses = await Promise.all([
-          fetch(`${BACKEND_URL}/api/admin/homestays?status=pending`, { headers }),
-          fetch(`${BACKEND_URL}/api/admin/homestays?status=approved`, { headers }),
-          fetch(`${BACKEND_URL}/api/admin/homestays?status=rejected`, { headers }),
+        const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+          fetch(`${BACKEND_URL}/api/homestays?status=pending`, { headers }).then((r) => r.json()),
+          fetch(`${BACKEND_URL}/api/homestays?status=approved`, { headers }).then((r) => r.json()),
+          fetch(`${BACKEND_URL}/api/homestays?status=rejected`, { headers }).then((r) => r.json()),
         ]);
 
-        const payloads = await Promise.all(responses.map(async (response) => {
-          const payload = await response.json().catch(() => ({}));
-          if (!response.ok) {
-            throw new Error(payload?.message || `Admin property request failed (${response.status})`);
-          }
-          return payload;
-        }));
-
-        dataList = payloads.flatMap((payload) => Array.isArray(payload?.data) ? payload.data : []);
+        dataList = [
+          ...(pendingRes.data || []),
+          ...(approvedRes.data || []),
+          ...(rejectedRes.data || []),
+        ];
       } else {
-        const response = await fetch(`${BACKEND_URL}/api/admin/homestays?status=${encodeURIComponent(filter)}`, { headers });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(result?.message || `Admin property request failed (${response.status})`);
-        }
-        dataList = Array.isArray(result?.data) ? result.data : [];
+        const response = await fetch(`${BACKEND_URL}/api/homestays?status=${filter}`, { headers });
+        const result = await response.json();
+        dataList = result.data || result;
       }
 
       setListings(Array.isArray(dataList) ? dataList : []);
     } catch (err) {
       console.error('Failed to load admin property pipeline:', err);
-      setListings([]);
       setFetchError(true);
     } finally {
       setLoading(false);
     }
   }, [filter, checkAdminAccess]);
 
+  const fetchSettlements = useCallback(async () => {
+    if (!checkAdminAccess()) return;
+    setSettlementLoading(true);
+    setSettlementError('');
+    try {
+      const token = getAuthData('token') || getAuthData('authToken');
+      const params = new URLSearchParams();
+      if (settlementHost !== 'all') params.set('host', settlementHost);
+      if (settlementStatus !== 'all') params.set('status', settlementStatus);
+      if (settlementFrom) params.set('from', settlementFrom);
+      if (settlementTo) params.set('to', settlementTo);
+      const response = await fetch(`${BACKEND_URL}/api/admin/settlements?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load settlement statements.');
+      setSettlements(Array.isArray(result.data) ? result.data : []);
+      setSettlementSummary(result.summary || { bookingValue: 0, commission: 0, tax: 0, totalDue: 0, paid: 0, outstanding: 0 });
+      setSettlementConfig(result.config || {});
+    } catch (error: any) {
+      console.error('Failed to load host settlements:', error);
+      setSettlementError(error?.message || 'Unable to load host settlement statements.');
+      setSettlements([]);
+    } finally {
+      setSettlementLoading(false);
+    }
+  }, [checkAdminAccess, settlementHost, settlementStatus, settlementFrom, settlementTo]);
+
+  const fetchHostAgreements = useCallback(async () => {
+    if (!checkAdminAccess()) return;
+    setHostAgreementsLoading(true);
+    setHostAgreementsError('');
+    try {
+      const token = getAuthData('token') || getAuthData('authToken');
+      const params = new URLSearchParams();
+      if (hostAgreementStatus !== 'all') params.set('status', hostAgreementStatus);
+      const response = await fetch(`${BACKEND_URL}/api/admin/host-agreements?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load host agreements.');
+      setHostAgreements(Array.isArray(result.data) ? result.data : []);
+      setHostAgreementConfig(result.config || {});
+    } catch (error: any) {
+      console.error('Failed to load host partnership agreements:', error);
+      setHostAgreementsError(error?.message || 'Unable to load host partnership agreements.');
+      setHostAgreements([]);
+    } finally {
+      setHostAgreementsLoading(false);
+    }
+  }, [checkAdminAccess, hostAgreementStatus]);
+
   useEffect(() => {
     if (checkAdminAccess()) {
       setIsAuthorized(true);
       fetchAdminHomestays();
+      fetchSettlements();
+      fetchHostAgreements();
     }
-  }, [fetchAdminHomestays, checkAdminAccess]);
+  }, [fetchAdminHomestays, fetchSettlements, fetchHostAgreements, checkAdminAccess]);
 
   const updateStatus = async (id: string, newStatus: string, reason = '') => {
     if (!checkAdminAccess()) return;
@@ -180,7 +248,7 @@ export default function AdminDashboardPage() {
   const refreshListings = async () => {
     setRefreshing(true);
     try {
-      await fetchAdminHomestays();
+      await Promise.all([fetchAdminHomestays(), fetchSettlements(), fetchHostAgreements()]);
     } finally {
       setRefreshing(false);
     }
@@ -511,6 +579,181 @@ export default function AdminDashboardPage() {
             })
           )}
         </div>
+      {/* HOST PARTNERSHIP AGREEMENTS */}
+      <section className="mt-8 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-slate-100 px-4 py-5 sm:px-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-teal-50 text-teal-700">
+                  <i className="fa-solid fa-file-signature"></i>
+                </span>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Host Partnership Agreements</h2>
+                  <p className="mt-0.5 text-xs sm:text-sm text-slate-500">Track electronic “I Agree &amp; Accept” acceptance records and each host’s recorded commission rate.</p>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black">
+                <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-teal-700">Version: {hostAgreementConfig.version || 'SG-2026-01'}</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600">Accepted: {hostAgreementConfig.acceptedCount ?? 0}</span>
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700">Founding slots used: {hostAgreementConfig.foundingAcceptedCount ?? 0}/{hostAgreementConfig.foundingHostLimit ?? 30}</span>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select value={hostAgreementStatus} onChange={(e) => setHostAgreementStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-teal-500">
+                <option value="all">All agreements</option>
+                <option value="accepted">Accepted</option>
+                <option value="pending">Pending</option>
+              </select>
+              <button type="button" onClick={fetchHostAgreements} className="rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-black text-white hover:bg-slate-800">Refresh</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-6">
+          {hostAgreementsError && <div className="mb-4 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">{hostAgreementsError}</div>}
+          {hostAgreementsLoading ? (
+            <div className="rounded-2xl bg-slate-50 p-8 text-center text-xs text-slate-400">Loading host agreements...</div>
+          ) : hostAgreements.length === 0 ? (
+            <div className="rounded-2xl bg-slate-50 p-8 text-center text-xs text-slate-400">No host agreement records found.</div>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+              <table className="w-full min-w-[820px] text-left text-xs">
+                <thead className="bg-slate-50 text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3 font-black">Host</th>
+                    <th className="px-4 py-3 font-black">Status</th>
+                    <th className="px-4 py-3 font-black">Commission</th>
+                    <th className="px-4 py-3 font-black">Version</th>
+                    <th className="px-4 py-3 font-black">Accepted / Updated</th>
+                    <th className="px-4 py-3 font-black">Acceptance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {hostAgreements.map((agreement) => {
+                    const accepted = agreement.status === 'accepted';
+                    return (
+                      <tr key={agreement._id} className="hover:bg-slate-50/70">
+                        <td className="px-4 py-4">
+                          <p className="font-black text-slate-900">{agreement.hostName || 'Host'}</p>
+                          <p className="mt-1 break-all text-[11px] text-slate-500">{agreement.hostEmail || 'No email'}</p>
+                        </td>
+                        <td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${accepted ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{accepted ? '✓ Accepted' : 'Pending'}</span></td>
+                        <td className="px-4 py-4 font-black text-slate-900">{agreement.commissionRate != null ? `${agreement.commissionRate}%` : 'Not assigned'}</td>
+                        <td className="px-4 py-4 font-bold text-slate-600">{agreement.version || '—'}</td>
+                        <td className="px-4 py-4 text-slate-500">{agreement.acceptedAt ? new Date(agreement.acceptedAt).toLocaleString('en-IN') : agreement.updatedAt ? new Date(agreement.updatedAt).toLocaleString('en-IN') : '—'}</td>
+                        <td className="px-4 py-4">
+                          <p className="font-bold text-slate-700">{agreement.acceptanceMethod === 'i_agree_accept' ? 'I Agree & Accept' : agreement.acceptanceMethod || '—'}</p>
+                          {accepted && agreement.ipAddress && <p className="mt-1 text-[10px] text-slate-400">IP: {agreement.ipAddress}</p>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* HOST COMMISSION & SETTLEMENTS */}
+      <section className="mt-8 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-slate-100 px-4 py-5 sm:px-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-teal-50 text-teal-700">
+                  <i className="fa-solid fa-file-invoice-dollar"></i>
+                </span>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Host Commission &amp; Settlements</h2>
+                  <p className="mt-0.5 text-xs sm:text-sm text-slate-500">Guest accommodation payments are made directly to hosts. This section tracks StayGuwahati commission due from hosts.</p>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black">
+                <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-teal-700">Founding Hosts: {settlementConfig.foundingHostCommissionRate ?? 8}%</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600">Standard: {settlementConfig.standardCommissionRate ?? 10}%</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600">Commission tax: {settlementConfig.commissionTaxRate ?? 18}%</span>
+              </div>
+            </div>
+            <button type="button" onClick={fetchSettlements} disabled={settlementLoading} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 hover:border-teal-400 disabled:opacity-50">
+              <i className={`fa-solid fa-rotate-right mr-2 ${settlementLoading ? 'animate-spin' : ''}`}></i>Refresh Statements
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 border-b border-slate-100 bg-slate-50/70 p-4 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            ['Booking Value', settlementSummary.bookingValue, 'text-slate-900'],
+            ['Commission', settlementSummary.commission, 'text-teal-700'],
+            ['Tax', settlementSummary.tax, 'text-slate-700'],
+            ['Total Due', settlementSummary.totalDue, 'text-amber-700'],
+            ['Paid', settlementSummary.paid, 'text-emerald-700'],
+            ['Outstanding', settlementSummary.outstanding, 'text-rose-700'],
+          ].map(([label, value, color]) => (
+            <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+              <p className={`mt-1 text-base sm:text-lg font-black ${color}`}>₹{Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-3 border-b border-slate-100 p-4 sm:grid-cols-2 lg:grid-cols-5">
+          <select value={settlementHost} onChange={(e) => setSettlementHost(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold outline-none focus:border-teal-500 lg:col-span-1">
+            <option value="all">All Hosts</option>
+            {Array.from(new Set(settlements.map((r) => String(r.hostEmail || '').trim().toLowerCase()).filter(Boolean))).map((email) => <option key={email} value={email}>{email}</option>)}
+          </select>
+          <select value={settlementStatus} onChange={(e) => setSettlementStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold outline-none focus:border-teal-500">
+            <option value="all">All Settlement Status</option>
+            <option value="pending">Pending</option>
+            <option value="partially_paid">Partially Paid</option>
+            <option value="paid">Paid</option>
+            <option value="not_due">Not Due</option>
+            <option value="disputed">Disputed</option>
+          </select>
+          <input type="date" value={settlementFrom} onChange={(e) => setSettlementFrom(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold outline-none focus:border-teal-500" aria-label="From date" />
+          <input type="date" value={settlementTo} onChange={(e) => setSettlementTo(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold outline-none focus:border-teal-500" aria-label="To date" />
+          <button type="button" onClick={() => {
+            const rows = settlements.map((r) => {
+              const s = r.settlement || {};
+              return [r.propertyName || '', r.hostEmail || '', r.email || '', r.dates || '', Number(s.bookingValue || 0), Number(s.commissionRate || 0), Number(s.commissionAmount || 0), Number(s.commissionTaxAmount || 0), Number(s.commissionTotal || 0), Number(s.paidAmount || 0), Number(s.outstandingAmount || 0), s.status || ''].map((v) => `"${String(v).replaceAll('"', '""')}"`).join(',');
+            });
+            const csv = ['Property,Host,Guest,Dates,Booking Value,Commission Rate,Commission,Tax,Total Due,Paid,Outstanding,Settlement Status', ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `stayguwahati-host-settlements-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+          }} className="rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-black text-white hover:bg-slate-800"><i className="fa-solid fa-download mr-2"></i>Export CSV</button>
+        </div>
+
+        {settlementError && <div className="m-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">{settlementError}</div>}
+
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full min-w-[1180px] text-left border-collapse">
+            <thead><tr className="bg-white text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-200">
+              <th className="px-5 py-4">Booking / Host</th><th className="px-5 py-4">Guest / Dates</th><th className="px-5 py-4">Booking Value</th><th className="px-5 py-4">Commission</th><th className="px-5 py-4">Tax</th><th className="px-5 py-4">Total Due</th><th className="px-5 py-4">Outstanding</th><th className="px-5 py-4">Status</th><th className="px-5 py-4 text-right">Action</th>
+            </tr></thead>
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {settlementLoading ? <tr><td colSpan={9} className="py-12 text-center text-slate-400">Loading host settlement statements...</td></tr> : settlements.length === 0 ? <tr><td colSpan={9} className="py-12 text-center text-slate-400">No settlement records found.</td></tr> : settlements.map((r) => {
+                const s = r.settlement || {}; const status = String(s.status || 'pending').toLowerCase(); const hostName = r.homestayId?.host?.name || r.hostName || r.hostEmail || 'Host';
+                return <tr key={r._id} className="hover:bg-slate-50/70">
+                  <td className="px-5 py-4"><div className="font-black text-slate-900">{r.propertyName || 'Property'}</div><div className="mt-1 text-[10px] text-slate-500">{hostName}</div><div className="mt-0.5 break-all text-[10px] text-slate-400">{r.hostEmail || 'No host email'}</div><div className="mt-0.5 font-mono text-[9px] text-slate-400">{r._id}</div></td>
+                  <td className="px-5 py-4"><div className="font-bold text-slate-800">{r.firstName || ''} {r.lastName || ''}</div><div className="mt-1 text-slate-500">{r.dates || 'N/A'}</div></td>
+                  <td className="px-5 py-4 font-black text-slate-900">₹{Number(s.bookingValue || 0).toLocaleString('en-IN')}</td>
+                  <td className="px-5 py-4"><div className="font-black text-teal-700">₹{Number(s.commissionAmount || 0).toLocaleString('en-IN', {maximumFractionDigits:2})}</div><div className="text-[10px] text-slate-400">{Number(s.commissionRate || 0)}%</div></td>
+                  <td className="px-5 py-4 text-slate-700">₹{Number(s.commissionTaxAmount || 0).toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                  <td className="px-5 py-4 font-black text-amber-700">₹{Number(s.commissionTotal || 0).toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                  <td className="px-5 py-4 font-black text-rose-700">₹{Number(s.outstandingAmount || 0).toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                  <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-[9px] font-black ${status === 'paid' ? 'bg-emerald-50 text-emerald-700' : status === 'partially_paid' ? 'bg-sky-50 text-sky-700' : status === 'not_due' ? 'bg-slate-100 text-slate-500' : 'bg-amber-50 text-amber-700'}`}>{status.replaceAll('_',' ')}</span></td>
+                  <td className="px-5 py-4 text-right">{Number(s.outstandingAmount || 0) > 0 && <button type="button" onClick={() => { setPaymentTarget(r); setPaymentAmount(String(Number(s.outstandingAmount || 0))); setPaymentReference(''); setPaymentNotes(''); }} className="rounded-lg bg-teal-700 px-3 py-2 text-[10px] font-black text-white hover:bg-teal-800">Record Payment</button>}</td>
+                </tr>;
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="md:hidden space-y-3 p-4">
+          {settlementLoading ? <div className="rounded-2xl bg-slate-50 p-8 text-center text-xs text-slate-400">Loading host settlement statements...</div> : settlements.length === 0 ? <div className="rounded-2xl bg-slate-50 p-8 text-center text-xs text-slate-400">No settlement records found.</div> : settlements.map((r) => { const s=r.settlement||{}; const status=String(s.status||'pending').toLowerCase(); return <article key={r._id} className="rounded-2xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-black text-slate-900">{r.propertyName || 'Property'}</h3><p className="mt-1 text-[10px] text-slate-500">{r.hostEmail || 'Host'}</p><p className="mt-1 text-xs font-bold text-slate-700">{r.firstName || ''} {r.lastName || ''} · {r.dates || 'N/A'}</p></div><span className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-black capitalize text-slate-600">{status.replaceAll('_',' ')}</span></div><div className="mt-4 grid grid-cols-2 gap-2 text-xs"><div className="rounded-xl bg-slate-50 p-3"><p className="text-[9px] text-slate-400">Booking</p><p className="mt-1 font-black">₹{Number(s.bookingValue||0).toLocaleString('en-IN')}</p></div><div className="rounded-xl bg-teal-50 p-3"><p className="text-[9px] text-teal-600">Commission</p><p className="mt-1 font-black text-teal-700">₹{Number(s.commissionAmount||0).toLocaleString('en-IN',{maximumFractionDigits:2})} ({Number(s.commissionRate||0)}%)</p></div><div className="rounded-xl bg-amber-50 p-3"><p className="text-[9px] text-amber-600">Total Due</p><p className="mt-1 font-black text-amber-700">₹{Number(s.commissionTotal||0).toLocaleString('en-IN',{maximumFractionDigits:2})}</p></div><div className="rounded-xl bg-rose-50 p-3"><p className="text-[9px] text-rose-600">Outstanding</p><p className="mt-1 font-black text-rose-700">₹{Number(s.outstandingAmount||0).toLocaleString('en-IN',{maximumFractionDigits:2})}</p></div></div>{Number(s.outstandingAmount||0)>0 && <button type="button" onClick={()=>{setPaymentTarget(r);setPaymentAmount(String(Number(s.outstandingAmount||0)));setPaymentReference('');setPaymentNotes('');}} className="mt-3 w-full rounded-xl bg-teal-700 px-3 py-2.5 text-xs font-black text-white">Record Payment</button>}</article>; })}
+        </div>
+      </section>
       </main>
 
       {/* Full Listing Review Modal */}
@@ -684,6 +927,24 @@ export default function AdminDashboardPage() {
                 {actionBusyId === rejectTarget._id ? 'Updating...' : 'Confirm Rejection'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settlement Payment Modal */}
+      {paymentTarget && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div><p className="text-[10px] font-black uppercase tracking-widest text-teal-600">Host settlement</p><h2 className="mt-1 text-xl font-black text-slate-900">Record Commission Payment</h2><p className="mt-1 text-xs text-slate-500">{paymentTarget.propertyName || 'Property'} · {paymentTarget.hostEmail || 'Host'}</p></div>
+              <button type="button" onClick={()=>setPaymentTarget(null)} className="text-slate-400 hover:text-slate-700"><i className="fa-solid fa-xmark"></i></button>
+            </div>
+            <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-xs"><div className="flex justify-between"><span className="text-slate-500">Outstanding</span><strong>₹{Number(paymentTarget.settlement?.outstandingAmount||0).toLocaleString('en-IN',{maximumFractionDigits:2})}</strong></div><div className="mt-2 flex justify-between"><span className="text-slate-500">Payment to record</span><strong className="text-teal-700">₹{Number(paymentAmount||0).toLocaleString('en-IN',{maximumFractionDigits:2})}</strong></div></div>
+            <label className="mt-4 block text-xs font-bold text-slate-700">Amount<input value={paymentAmount} onChange={e=>setPaymentAmount(e.target.value)} type="number" min="0.01" step="0.01" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold outline-none focus:border-teal-500" /></label>
+            <label className="mt-3 block text-xs font-bold text-slate-700">Payment method<select value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold outline-none focus:border-teal-500"><option value="bank_transfer">Bank Transfer</option><option value="upi">UPI</option><option value="cash">Cash</option><option value="other">Other</option></select></label>
+            <label className="mt-3 block text-xs font-bold text-slate-700">UTR / Transaction reference<input value={paymentReference} onChange={e=>setPaymentReference(e.target.value)} placeholder="Optional" className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-500" /></label>
+            <label className="mt-3 block text-xs font-bold text-slate-700">Notes<textarea value={paymentNotes} onChange={e=>setPaymentNotes(e.target.value)} rows={3} placeholder="Optional settlement note" className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-500" /></label>
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" onClick={()=>setPaymentTarget(null)} className="rounded-xl border border-slate-200 px-5 py-3 text-xs font-bold text-slate-700">Cancel</button><button type="button" disabled={paymentBusy} onClick={async()=>{ const token=getAuthData('token')||getAuthData('authToken'); const amount=Number(paymentAmount); if(!Number.isFinite(amount)||amount<=0){alert('Enter a valid payment amount.');return;} setPaymentBusy(true); try{const res=await fetch(`${BACKEND_URL}/api/admin/settlements/${paymentTarget._id}/payment`,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({amount,paymentMethod,transactionReference:paymentReference,notes:paymentNotes})}); const data=await res.json().catch(()=>({})); if(!res.ok||!data.success){alert(data.message||'Unable to record payment.');return;} setPaymentTarget(null); await fetchSettlements(); }catch(e){console.error(e);alert('Server communication error while recording payment.');}finally{setPaymentBusy(false);} }} className="rounded-xl bg-teal-700 px-5 py-3 text-xs font-black text-white hover:bg-teal-800 disabled:opacity-50">{paymentBusy?'Saving...':'Save Payment'}</button></div>
           </div>
         </div>
       )}
