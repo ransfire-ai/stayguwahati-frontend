@@ -156,6 +156,7 @@ export default function ListPropertyPage() {
   // Property Image Handling State
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const previewsRef = useRef<string[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -183,7 +184,11 @@ export default function ListPropertyPage() {
     setCurrentLang(savedLang);
 
     try {
-      const currentUser = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      const currentUser = JSON.parse(
+        sessionStorage.getItem('userProfile') ||
+        localStorage.getItem('userProfile') ||
+        '{}'
+      );
       if (currentUser.name) setHostName(currentUser.name);
       if (currentUser.email) setUserEmail(currentUser.email);
       if (currentUser.avatar || currentUser.photo || currentUser.image) {
@@ -195,12 +200,20 @@ export default function ListPropertyPage() {
     }
   }, [API_BASE_URL]);
 
-  // Cleanup Object URLs to prevent memory leaks
+  // Keep the latest preview URLs available for unmount cleanup.
+  useEffect(() => {
+    previewsRef.current = previews;
+  }, [previews]);
+
+  // Revoke object URLs only when the component is actually unmounted.
+  // Revoking them on every previews-state update makes the remaining image
+  // previews invalid and causes ERR_FILE_NOT_FOUND in the browser.
   useEffect(() => {
     return () => {
-      previews.forEach((preview) => URL.revokeObjectURL(preview));
+      previewsRef.current.forEach((preview) => URL.revokeObjectURL(preview));
+      if (hostPhoto?.startsWith('blob:')) URL.revokeObjectURL(hostPhoto);
     };
-  }, [previews]);
+  }, []);
 
   const handleLangChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value as 'en' | 'as' | 'hi';
@@ -699,13 +712,20 @@ export default function ListPropertyPage() {
       }
 
       // 5. Post Listing JSON to backend API
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token =
+        typeof window !== 'undefined'
+          ? sessionStorage.getItem('token') || ''
+          : '';
+
+      if (!token) {
+        throw new Error('Your login session has expired. Please sign in again.');
+      }
 
       const response = await fetch(`${API_BASE_URL}/api/homestays`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(newProperty)
       });
