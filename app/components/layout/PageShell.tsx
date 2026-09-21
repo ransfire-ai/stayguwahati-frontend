@@ -122,6 +122,14 @@ export default function PageShell({
       });
       section.appendChild(dots);
 
+      const progress = document.createElement("div");
+      progress.className = "sg-home-carousel-progress";
+      progress.setAttribute("aria-hidden", "true");
+      const progressThumb = document.createElement("div");
+      progressThumb.className = "sg-home-carousel-progress-thumb";
+      progress.appendChild(progressThumb);
+      section.appendChild(progress);
+
       const getStep = () => {
         const step = cards[0]?.getBoundingClientRect().width || 1;
         const gap = Number.parseFloat(getComputedStyle(grid).columnGap || getComputedStyle(grid).gap || "0") || 0;
@@ -136,6 +144,14 @@ export default function PageShell({
         Array.from(dots.children).forEach((dot, dotIndex) => {
           dot.classList.toggle("is-active", dotIndex === index);
         });
+
+        const maxScroll = Math.max(1, grid.scrollWidth - grid.clientWidth);
+        const visibleRatio = Math.min(1, grid.clientWidth / Math.max(grid.scrollWidth, 1));
+        const thumbWidth = Math.max(22, visibleRatio * 100);
+        const travel = 100 - thumbWidth;
+        const position = Math.min(1, Math.max(0, grid.scrollLeft / maxScroll));
+        progressThumb.style.width = `${thumbWidth}%`;
+        progressThumb.style.transform = `translateX(${position * travel}%)`;
       };
 
       const scrollByCard = (direction: number) => {
@@ -222,6 +238,7 @@ export default function PageShell({
         controls.remove();
         hint.remove();
         dots.remove();
+        progress.remove();
         section.dataset.sgCarouselReady = "false";
         section.classList.remove("sg-home-neighbourhood-section");
         grid.classList.remove("sg-home-neighbourhood-carousel");
@@ -711,6 +728,27 @@ export default function PageShell({
           background: #0c4a45;
         }
 
+        .sg-home-carousel-progress {
+          position: relative;
+          width: 100%;
+          height: 6px;
+          margin-top: 12px;
+          border-radius: 999px;
+          background: #dfe8e4;
+          overflow: hidden;
+        }
+
+        .sg-home-carousel-progress-thumb {
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 100%;
+          min-width: 22%;
+          border-radius: 999px;
+          background: #0c4a45;
+          transition: transform 0.15s ease, width 0.15s ease;
+        }
+
         @media (max-width: 800px) {
           .sg-container {
             width: min(100% - 32px, 680px);
@@ -914,6 +952,11 @@ export default function PageShell({
 
           .sg-home-carousel-dots {
             margin-top: 2px;
+          }
+
+          .sg-home-carousel-progress {
+            margin-top: 8px;
+            height: 5px;
           }
 
           .sg-footer {
