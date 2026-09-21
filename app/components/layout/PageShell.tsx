@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 export default function PageShell({
@@ -10,6 +11,7 @@ export default function PageShell({
 }) {
   const [signedIn, setSignedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -45,6 +47,102 @@ export default function PageShell({
   const accountLabel = signedIn ? "My account" : "Sign in";
 
   const closeMenu = () => setMenuOpen(false);
+
+  // The homepage content is supplied as children to PageShell. On the home
+  // route, turn the neighbourhood-card section into a horizontal, touch-
+  // friendly carousel without changing the existing card markup or links.
+  useEffect(() => {
+    if (pathname !== "/") return;
+
+    let observer: MutationObserver | null = null;
+    let cleanup: (() => void) | null = null;
+
+    const enhanceNeighbourhoodSection = () => {
+      const sections = Array.from(
+        document.querySelectorAll<HTMLElement>(".sg-main .sg-section")
+      );
+
+      const section = sections.find((candidate) => {
+        const heading = candidate.querySelector("h2");
+        const text = heading?.textContent?.trim().toLowerCase() || "";
+        return (
+          text.includes("choose your side of guwahati") ||
+          text.includes("popular neighborhoods") ||
+          text.includes("popular neighbourhoods")
+        );
+      });
+
+      if (!section || section.dataset.sgCarouselReady === "true") return;
+
+      const grid = section.querySelector<HTMLElement>(".sg-grid");
+      if (!grid) return;
+
+      const cards = Array.from(grid.children).filter(
+        (node): node is HTMLElement => node instanceof HTMLElement
+      );
+      if (!cards.length) return;
+
+      section.dataset.sgCarouselReady = "true";
+      section.classList.add("sg-home-neighbourhood-section");
+      grid.classList.add("sg-home-neighbourhood-carousel");
+      grid.setAttribute("aria-label", "Guwahati neighbourhoods");
+
+      const hint = document.createElement("span");
+      hint.className = "sg-home-carousel-hint";
+      hint.textContent = "Swipe to explore →";
+      hint.setAttribute("aria-hidden", "true");
+      section.insertBefore(hint, grid);
+
+      const dots = document.createElement("div");
+      dots.className = "sg-home-carousel-dots";
+      dots.setAttribute("aria-label", "Neighbourhood carousel position");
+      cards.forEach((_, index) => {
+        const dot = document.createElement("span");
+        dot.className = `sg-home-carousel-dot${index === 0 ? " is-active" : ""}`;
+        dot.setAttribute("aria-hidden", "true");
+        dots.appendChild(dot);
+      });
+      section.appendChild(dots);
+
+      const updateDots = () => {
+        const step = Math.max(1, cards[0]?.getBoundingClientRect().width || 1);
+        const gap = Number.parseFloat(getComputedStyle(grid).columnGap || "0") || 0;
+        const index = Math.min(
+          cards.length - 1,
+          Math.max(0, Math.round(grid.scrollLeft / (step + gap)))
+        );
+        Array.from(dots.children).forEach((dot, dotIndex) => {
+          dot.classList.toggle("is-active", dotIndex === index);
+        });
+      };
+
+      grid.addEventListener("scroll", updateDots, { passive: true });
+      window.addEventListener("resize", updateDots);
+      updateDots();
+
+      cleanup = () => {
+        grid.removeEventListener("scroll", updateDots);
+        window.removeEventListener("resize", updateDots);
+        hint.remove();
+        dots.remove();
+        section.dataset.sgCarouselReady = "false";
+        section.classList.remove("sg-home-neighbourhood-section");
+        grid.classList.remove("sg-home-neighbourhood-carousel");
+      };
+    };
+
+    enhanceNeighbourhoodSection();
+    observer = new MutationObserver(enhanceNeighbourhoodSection);
+    observer.observe(document.querySelector(".sg-main") || document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      observer?.disconnect();
+      cleanup?.();
+    };
+  }, [pathname]);
 
   return (
     <div className="sg-shell">
@@ -449,6 +547,55 @@ export default function PageShell({
           color: #ffffff;
         }
 
+        /* Homepage neighbourhood carousel. The existing cards stay intact;
+           this only changes their layout and adds native touch/trackpad scroll. */
+        .sg-home-neighbourhood-section .sg-home-carousel-hint {
+          display: none;
+        }
+
+        .sg-home-neighbourhood-carousel {
+          display: flex !important;
+          flex-wrap: nowrap !important;
+          gap: 18px !important;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 2px 2px 12px !important;
+          scroll-snap-type: x mandatory;
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .sg-home-neighbourhood-carousel::-webkit-scrollbar {
+          display: none;
+        }
+
+        .sg-home-neighbourhood-carousel > * {
+          flex: 0 0 min(360px, 31vw);
+          scroll-snap-align: start;
+        }
+
+        .sg-home-carousel-dots {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 6px;
+          margin-top: 5px;
+        }
+
+        .sg-home-carousel-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 999px;
+          background: #c9d8d3;
+          transition: width 0.2s ease, background 0.2s ease;
+        }
+
+        .sg-home-carousel-dot.is-active {
+          width: 18px;
+          background: #0c4a45;
+        }
+
         @media (max-width: 800px) {
           .sg-container {
             width: min(100% - 32px, 680px);
@@ -624,6 +771,34 @@ export default function PageShell({
             font-size: 12px;
             font-weight: 800;
             text-decoration: none;
+          }
+
+          .sg-home-neighbourhood-section .sg-home-carousel-hint {
+            display: block;
+            margin: 8px 0 10px;
+            color: #7b918c;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-align: right;
+          }
+
+          .sg-home-neighbourhood-carousel {
+            gap: 14px !important;
+            margin-right: -16px !important;
+            padding-right: 16px !important;
+            padding-bottom: 8px !important;
+          }
+
+          .sg-home-neighbourhood-carousel > * {
+            flex: 0 0 86vw;
+            max-width: 520px;
+            scroll-snap-align: start;
+          }
+
+          .sg-home-carousel-dots {
+            margin-top: 2px;
           }
 
           .sg-footer {
