@@ -102,39 +102,84 @@ export default function AdminDashboardPage() {
 
     setLoading(true);
     setFetchError(false);
-    const token = getAuthData('token') || getAuthData('authToken');
+
+    const token =
+      sessionStorage.getItem('token') ||
+      sessionStorage.getItem('authToken') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('authToken');
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
     try {
-      let dataList = [];
-      const headers = { Authorization: `Bearer ${token}` };
+      // Always load all three moderation states from the dedicated admin
+      // endpoint. This keeps the summary counters accurate even when the
+      // currently selected tab is Pending/Approved/Rejected.
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Cache-Control': 'no-cache',
+      };
 
-      if (filter === 'all') {
-        const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
-          fetch(`${BACKEND_URL}/api/homestays?status=pending`, { headers }).then((r) => r.json()),
-          fetch(`${BACKEND_URL}/api/homestays?status=approved`, { headers }).then((r) => r.json()),
-          fetch(`${BACKEND_URL}/api/homestays?status=rejected`, { headers }).then((r) => r.json()),
-        ]);
+      const statuses = ['pending', 'approved', 'rejected'] as const;
 
-        dataList = [
-          ...(pendingRes.data || []),
-          ...(approvedRes.data || []),
-          ...(rejectedRes.data || []),
-        ];
-      } else {
-        const response = await fetch(`${BACKEND_URL}/api/homestays?status=${filter}`, { headers });
-        const result = await response.json();
-        dataList = result.data || result;
-      }
+      const responses = await Promise.all(
+        statuses.map(async (status) => {
+          const response = await fetch(
+            `${BACKEND_URL}/api/admin/homestays?status=${status}`,
+            {
+              method: 'GET',
+              headers,
+              cache: 'no-store',
+            }
+          );
 
-      setListings(Array.isArray(dataList) ? dataList : []);
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || result?.success === false) {
+            throw new Error(
+              result?.message ||
+                `Unable to load ${status} properties (HTTP ${response.status}).`
+            );
+          }
+
+          const rows = Array.isArray(result?.data)
+            ? result.data
+            : Array.isArray(result)
+              ? result
+              : [];
+
+          return rows.map((row: any) => ({
+            ...row,
+            status: String(row?.status || status).toLowerCase(),
+          }));
+        })
+      );
+
+      // De-duplicate by MongoDB _id in case the backend ever returns the
+      // same record in more than one status response.
+      const merged = Array.from(
+        new Map(
+          responses
+            .flat()
+            .filter((row: any) => row?._id)
+            .map((row: any) => [String(row._id), row])
+        ).values()
+      );
+
+      // Keep every moderation record in state. The selected tab is applied
+      // in filteredListings below so the summary counters remain accurate.
+      setListings(merged);
     } catch (err) {
       console.error('Failed to load admin property pipeline:', err);
+      setListings([]);
       setFetchError(true);
     } finally {
       setLoading(false);
     }
   }, [filter, checkAdminAccess]);
-
   const fetchSettlements = useCallback(async () => {
     if (!checkAdminAccess()) return;
     setSettlementLoading(true);
@@ -255,6 +300,9 @@ export default function AdminDashboardPage() {
   };
 
   const filteredListings = listings.filter((stay) => {
+    const statusVal = String(stay?.status || '').toLowerCase();
+    if (filter !== 'all' && statusVal !== filter) return false;
+
     const q = search.trim().toLowerCase();
     if (!q) return true;
 
