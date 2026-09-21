@@ -702,15 +702,6 @@ export default function ListPropertyPage() {
         status: 'pending'
       };
 
-      // 4. LocalStorage Backup
-      try {
-        const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
-        localProps.push(newProperty);
-        localStorage.setItem('userProperties', JSON.stringify(localProps));
-      } catch (storageError) {
-        console.warn('LocalStorage backup skipped:', storageError);
-      }
-
       // 5. Post Listing JSON to backend API
       const token =
         typeof window !== 'undefined'
@@ -730,17 +721,26 @@ export default function ListPropertyPage() {
         body: JSON.stringify(newProperty)
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok || responseData.success !== true) {
+        const errorData = responseData;
         let detailMsg = errorData.message || errorData.error || `Server responded with status ${response.status}`;
-        
-        if (Array.isArray(errorData.errors)) {
-          detailMsg += `: ${errorData.errors.map((e: any) => e.message || e.msg || JSON.stringify(e)).join(', ')}`;
-        } else if (typeof errorData.errors === 'object' && errorData.errors !== null) {
-          detailMsg += `: ${JSON.stringify(errorData.errors)}`;
+        if (Array.isArray(errorData.errors) && errorData.errors.length) {
+          detailMsg += `: ${errorData.errors.map((e: any) => typeof e === 'string' ? e : (e?.message || e?.msg || JSON.stringify(e))).join(', ')}`;
+        } else if (errorData.errors && typeof errorData.errors === 'object') {
+          detailMsg += `: ${Object.values(errorData.errors).map((e: any) => e?.message || e?.msg || JSON.stringify(e)).join(', ')}`;
         }
-        
         throw new Error(detailMsg);
+      }
+
+      // Keep a local copy only after the server has accepted the listing.
+      try {
+        const localProps = JSON.parse(localStorage.getItem('userProperties') || '[]');
+        localProps.push(responseData?.data || newProperty);
+        localStorage.setItem('userProperties', JSON.stringify(localProps));
+      } catch (storageError) {
+        console.warn('LocalStorage backup skipped:', storageError);
       }
 
       alert(t.success);
@@ -768,6 +768,9 @@ export default function ListPropertyPage() {
 
           <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
             <select
+              id="listing-language"
+              name="listingLanguage"
+              aria-label="Language"
               value={currentLang}
               onChange={handleLangChange}
               className="bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-700 rounded-xl p-1.5 focus:outline-none focus:border-teal-500 cursor-pointer transition"
@@ -830,8 +833,10 @@ export default function ListPropertyPage() {
               <div className="p-5 sm:p-7"><form onSubmit={handleSubmit} className="space-y-5 text-xs">
             {step === 1 && <div className="space-y-5">
             <div>
-              <label className="block text-gray-400 font-medium mb-1">{t.lTitle}</label>
+              <label htmlFor="listing-title" className="block text-gray-400 font-medium mb-1">{t.lTitle}</label>
               <input
+                id="listing-title"
+                name="title"
                 type="text"
                 required
                 placeholder="e.g., Cozy Riverside Orchid Villa"
@@ -842,8 +847,10 @@ export default function ListPropertyPage() {
             </div>
 
             <div>
-              <label className="block text-gray-400 font-medium mb-1">{t.lDesc}</label>
+              <label htmlFor="listing-description" className="block text-gray-400 font-medium mb-1">{t.lDesc}</label>
               <textarea
+                id="listing-description"
+                name="description"
                 rows={3}
                 required
                 placeholder="Describe the ambiance, amenities, and unique features..."
@@ -855,8 +862,10 @@ export default function ListPropertyPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-gray-400 font-medium mb-1">{t.lLocality}</label>
+                <label htmlFor="listing-locality" className="block text-gray-400 font-medium mb-1">{t.lLocality}</label>
                 <select
+                  id="listing-locality"
+                  name="locality"
                   required
                   value={locality}
                   onChange={(e) => setLocality(e.target.value)}
@@ -870,8 +879,10 @@ export default function ListPropertyPage() {
               </div>
 
               <div>
-                <label className="block text-gray-400 font-medium mb-1">{t.lPrice.replace('PRICE PER NIGHT (₹)', 'STARTING PRICE PER NIGHT (₹)')}</label>
+                <label htmlFor="listing-starting-price" className="block text-gray-400 font-medium mb-1">{t.lPrice.replace('PRICE PER NIGHT (₹)', 'STARTING PRICE PER NIGHT (₹)')}</label>
                 <input
+                  id="listing-starting-price"
+                  name="pricePerNight"
                   type="number"
                   placeholder="2500"
                   value={price}
@@ -974,28 +985,28 @@ export default function ListPropertyPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">ROOM TYPE NAME</label>
-                        <input required value={room.name} onChange={(e) => updateRoomType(index, 'name', e.target.value)} placeholder="e.g. Deluxe Room – Shared Kitchen" className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
+                        <label htmlFor={`room-type-name-${index}`} className="block text-[11px] font-bold text-gray-500 mb-1">ROOM TYPE NAME</label>
+                        <input id={`room-type-name-${index}`} name={`roomTypeName-${index}`} required value={room.name} onChange={(e) => updateRoomType(index, 'name', e.target.value)} placeholder="e.g. Deluxe Room – Shared Kitchen" className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">NUMBER OF UNITS</label>
-                        <input required type="number" min="1" max="100" value={room.units} onChange={(e) => updateRoomType(index, 'units', Math.max(1, Number(e.target.value) || 1))} className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
+                        <label htmlFor={`room-type-units-${index}`} className="block text-[11px] font-bold text-gray-500 mb-1">NUMBER OF UNITS</label>
+                        <input id={`room-type-units-${index}`} name={`roomTypeUnits-${index}`} required type="number" min="1" max="100" value={room.units} onChange={(e) => updateRoomType(index, 'units', Math.max(1, Number(e.target.value) || 1))} className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">MAX GUESTS / UNIT</label>
-                        <input required type="number" min="1" max="20" value={room.maxGuests} onChange={(e) => updateRoomType(index, 'maxGuests', Math.max(1, Number(e.target.value) || 1))} className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
+                        <label htmlFor={`room-type-guests-${index}`} className="block text-[11px] font-bold text-gray-500 mb-1">MAX GUESTS / UNIT</label>
+                        <input id={`room-type-guests-${index}`} name={`roomTypeGuests-${index}`} required type="number" min="1" max="20" value={room.maxGuests} onChange={(e) => updateRoomType(index, 'maxGuests', Math.max(1, Number(e.target.value) || 1))} className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">PRICE / NIGHT (₹)</label>
-                        <input required type="number" min="1" step="1" value={room.pricePerNight} onChange={(e) => updateRoomType(index, 'pricePerNight', e.target.value)} placeholder="999" className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
+                        <label htmlFor={`room-type-price-${index}`} className="block text-[11px] font-bold text-gray-500 mb-1">PRICE / NIGHT (₹)</label>
+                        <input id={`room-type-price-${index}`} name={`roomTypePrice-${index}`} required type="number" min="1" step="1" value={room.pricePerNight} onChange={(e) => updateRoomType(index, 'pricePerNight', e.target.value)} placeholder="999" className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">KITCHEN ACCESS</label>
-                        <select value={room.kitchen} onChange={(e) => updateRoomType(index, 'kitchen', e.target.value as RoomTypeDraft['kitchen'])} className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]">
+                        <label htmlFor={`room-type-kitchen-${index}`} className="block text-[11px] font-bold text-gray-500 mb-1">KITCHEN ACCESS</label>
+                        <select id={`room-type-kitchen-${index}`} name={`roomTypeKitchen-${index}`} value={room.kitchen} onChange={(e) => updateRoomType(index, 'kitchen', e.target.value as RoomTypeDraft['kitchen'])} className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]">
                           <option value="none">No kitchen</option>
                           <option value="shared">Shared kitchen</option>
                           <option value="private">Private kitchen</option>
@@ -1003,8 +1014,8 @@ export default function ListPropertyPage() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">ROOM DESCRIPTION / FACILITIES</label>
-                        <textarea rows={2} value={room.description} onChange={(e) => updateRoomType(index, 'description', e.target.value)} placeholder="King-size bed, attached bathroom, AC, TV, Wi-Fi, geyser..." className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
+                        <label htmlFor={`room-type-description-${index}`} className="block text-[11px] font-bold text-gray-500 mb-1">ROOM DESCRIPTION / FACILITIES</label>
+                        <textarea id={`room-type-description-${index}`} name={`roomTypeDescription-${index}`} rows={2} value={room.description} onChange={(e) => updateRoomType(index, 'description', e.target.value)} placeholder="King-size bed, attached bathroom, AC, TV, Wi-Fi, geyser..." className="w-full border border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2d756b]/20 focus:border-[#2d756b]" />
                       </div>
                     </div>
                   </div>
@@ -1045,6 +1056,9 @@ export default function ListPropertyPage() {
                       <span className="text-sm">{item.icon}</span>
                       <span className="text-xs truncate">{item.label}</span>
                       <input
+                        id={`amenity-${item.id}`}
+                        name={`amenity-${item.id}`}
+                        aria-label={item.label}
                         type="checkbox"
                         checked={isChecked}
                         readOnly
@@ -1077,6 +1091,9 @@ export default function ListPropertyPage() {
                 </button>
 
                 <input
+                  id="property-images"
+                  name="propertyImages"
+                  aria-label="Property images"
                   ref={propertyFileInputRef}
                   type="file"
                   multiple
@@ -1185,10 +1202,12 @@ export default function ListPropertyPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <label className="block text-gray-400 font-medium mb-1">
+                  <label htmlFor="property-latitude" className="block text-gray-400 font-medium mb-1">
                     LATITUDE COORDINATE
                   </label>
                   <input
+                    id="property-latitude"
+                    name="latitude"
                     type="number"
                     inputMode="decimal"
                     step="0.000001"
@@ -1203,10 +1222,12 @@ export default function ListPropertyPage() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-400 font-medium mb-1">
+                  <label htmlFor="property-longitude" className="block text-gray-400 font-medium mb-1">
                     LONGITUDE COORDINATE
                   </label>
                   <input
+                    id="property-longitude"
+                    name="longitude"
                     type="number"
                     inputMode="decimal"
                     step="0.000001"
@@ -1262,6 +1283,9 @@ export default function ListPropertyPage() {
                   </button>
 
                   <input
+                    id="host-photo"
+                    name="hostPhoto"
+                    aria-label="Host profile photo"
                     ref={hostFileInputRef}
                     type="file"
                     accept="image/png, image/jpeg, image/webp"
@@ -1273,8 +1297,10 @@ export default function ListPropertyPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-gray-400 font-medium mb-1">{t.lHostName}</label>
+                  <label htmlFor="host-name" className="block text-gray-400 font-medium mb-1">{t.lHostName}</label>
                   <input
+                    id="host-name"
+                    name="hostName"
                     type="text"
                     required
                     value={hostName}
@@ -1283,9 +1309,11 @@ export default function ListPropertyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-400 font-medium mb-1">{t.lHostPhone}</label>
+                  <label htmlFor="host-phone" className="block text-gray-400 font-medium mb-1">{t.lHostPhone}</label>
                   <input
-                    type="text"
+                    id="host-phone"
+                    name="hostPhone"
+                    type="tel"
                     required
                     placeholder="10-digit mobile number"
                     value={hostPhone}
