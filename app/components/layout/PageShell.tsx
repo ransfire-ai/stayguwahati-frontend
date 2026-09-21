@@ -123,11 +123,29 @@ export default function PageShell({
       cleanup = () => {
         grid.removeEventListener("scroll", updateDots);
         window.removeEventListener("resize", updateDots);
+        window.removeEventListener("resize", applyCarouselLayout);
         hint.remove();
         dots.remove();
         section.dataset.sgCarouselReady = "false";
         section.classList.remove("sg-home-neighbourhood-section");
         grid.classList.remove("sg-home-neighbourhood-carousel");
+        grid.style.removeProperty("display");
+        grid.style.removeProperty("flex-wrap");
+        grid.style.removeProperty("overflow-x");
+        grid.style.removeProperty("overflow-y");
+        grid.style.removeProperty("gap");
+        grid.style.removeProperty("padding");
+        grid.style.removeProperty("margin-right");
+        grid.style.removeProperty("scroll-snap-type");
+        grid.style.removeProperty("scroll-behavior");
+        grid.style.removeProperty("-webkit-overflow-scrolling");
+        grid.style.removeProperty("scrollbar-width");
+        cards.forEach((card) => {
+          card.style.removeProperty("flex");
+          card.style.removeProperty("width");
+          card.style.removeProperty("min-width");
+          card.style.removeProperty("scroll-snap-align");
+        });
       };
     };
 
