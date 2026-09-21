@@ -1179,7 +1179,7 @@ export default function DashboardPage() {
             <div className="w-full sm:w-auto">
               <Link
                 href="/list-property"
-                className="w-full sm:w-auto bg-[#173f3a] hover:bg-[#28655c] text-white px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
+                className="w-full sm:w-auto bg-white hover:bg-[#f3f7f5] text-[#123f39] border border-white/80 px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.listProp}</span>

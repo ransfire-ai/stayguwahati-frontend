@@ -1304,7 +1304,7 @@ export default function ListPropertyPage() {
                 ← Back
               </button>
               {step < 5 ? (
-                <button type="button" onClick={() => setStep((value) => Math.min(4, value + 1))}
+                <button type="button" onClick={() => setStep((value) => Math.min(5, value + 1))}
                   className="rounded-xl bg-[#173f3a] px-6 py-3 text-sm font-bold text-white hover:bg-[#28655c]">
                   Continue →
                 </button>
