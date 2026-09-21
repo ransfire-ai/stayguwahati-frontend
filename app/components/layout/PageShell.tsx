@@ -106,7 +106,7 @@ export default function PageShell({
 
       const updateDots = () => {
         const step = Math.max(1, cards[0]?.getBoundingClientRect().width || 1);
-        const gap = Number.parseFloat(getComputedStyle(grid).columnGap || "0") || 0;
+        const gap = Number.parseFloat(getComputedStyle(grid).columnGap || getComputedStyle(grid).gap || "0") || 0;
         const index = Math.min(
           cards.length - 1,
           Math.max(0, Math.round(grid.scrollLeft / (step + gap)))
@@ -116,13 +116,40 @@ export default function PageShell({
         });
       };
 
+      // The homepage grid already has its own grid CSS. Because this effect
+      // runs after React renders, force the carousel layout inline so it wins
+      // over that grid at every viewport size.
+      const applyCarouselLayout = () => {
+        const mobile = window.innerWidth <= 800;
+        grid.style.setProperty("display", "flex", "important");
+        grid.style.setProperty("flex-wrap", "nowrap", "important");
+        grid.style.setProperty("overflow-x", "auto", "important");
+        grid.style.setProperty("overflow-y", "hidden", "important");
+        grid.style.setProperty("gap", mobile ? "14px" : "18px", "important");
+        grid.style.setProperty("padding", mobile ? "2px 16px 8px 2px" : "2px 2px 12px", "important");
+        grid.style.setProperty("margin-right", mobile ? "-16px" : "0", "important");
+        grid.style.setProperty("scroll-snap-type", "x mandatory", "important");
+        grid.style.setProperty("scroll-behavior", "smooth", "important");
+        grid.style.setProperty("-webkit-overflow-scrolling", "touch", "important");
+        grid.style.setProperty("scrollbar-width", "none", "important");
+
+        cards.forEach((card) => {
+          const width = mobile ? "86vw" : "min(360px, 31vw)";
+          card.style.setProperty("flex", `0 0 ${width}`, "important");
+          card.style.setProperty("width", width, "important");
+          card.style.setProperty("min-width", width, "important");
+          card.style.setProperty("scroll-snap-align", "start", "important");
+        });
+        updateDots();
+      };
+
       grid.addEventListener("scroll", updateDots, { passive: true });
-      window.addEventListener("resize", updateDots);
-      updateDots();
+      window.addEventListener("resize", applyCarouselLayout);
+      applyCarouselLayout();
 
       cleanup = () => {
         grid.removeEventListener("scroll", updateDots);
-        window.removeEventListener("resize", updateDots);
+        window.removeEventListener("resize", applyCarouselLayout);
         hint.remove();
         dots.remove();
         section.dataset.sgCarouselReady = "false";
