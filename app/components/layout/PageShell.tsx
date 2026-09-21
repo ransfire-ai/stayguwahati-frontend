@@ -93,6 +93,24 @@ export default function PageShell({
       hint.setAttribute("aria-hidden", "true");
       section.insertBefore(hint, grid);
 
+      const controls = document.createElement("div");
+      controls.className = "sg-home-carousel-controls";
+
+      const prevButton = document.createElement("button");
+      prevButton.type = "button";
+      prevButton.className = "sg-home-carousel-arrow sg-home-carousel-prev";
+      prevButton.setAttribute("aria-label", "Previous neighbourhoods");
+      prevButton.textContent = "‹";
+
+      const nextButton = document.createElement("button");
+      nextButton.type = "button";
+      nextButton.className = "sg-home-carousel-arrow sg-home-carousel-next";
+      nextButton.setAttribute("aria-label", "Next neighbourhoods");
+      nextButton.textContent = "›";
+
+      controls.append(prevButton, nextButton);
+      section.appendChild(controls);
+
       const dots = document.createElement("div");
       dots.className = "sg-home-carousel-dots";
       dots.setAttribute("aria-label", "Neighbourhood carousel position");
@@ -104,17 +122,60 @@ export default function PageShell({
       });
       section.appendChild(dots);
 
-      const updateDots = () => {
-        const step = Math.max(1, cards[0]?.getBoundingClientRect().width || 1);
+      const getStep = () => {
+        const step = cards[0]?.getBoundingClientRect().width || 1;
         const gap = Number.parseFloat(getComputedStyle(grid).columnGap || getComputedStyle(grid).gap || "0") || 0;
+        return Math.max(1, step + gap);
+      };
+
+      const updateDots = () => {
         const index = Math.min(
           cards.length - 1,
-          Math.max(0, Math.round(grid.scrollLeft / (step + gap)))
+          Math.max(0, Math.round(grid.scrollLeft / getStep()))
         );
         Array.from(dots.children).forEach((dot, dotIndex) => {
           dot.classList.toggle("is-active", dotIndex === index);
         });
       };
+
+      const scrollByCard = (direction: number) => {
+        grid.scrollBy({ left: direction * getStep(), behavior: "smooth" });
+      };
+
+      const onPrev = () => scrollByCard(-1);
+      const onNext = () => scrollByCard(1);
+      prevButton.addEventListener("click", onPrev);
+      nextButton.addEventListener("click", onNext);
+
+      let dragging = false;
+      let dragStartX = 0;
+      let dragStartScroll = 0;
+      const onPointerDown = (event: PointerEvent) => {
+        if (window.innerWidth <= 800) return;
+        dragging = true;
+        dragStartX = event.clientX;
+        dragStartScroll = grid.scrollLeft;
+        grid.setPointerCapture?.(event.pointerId);
+        grid.style.setProperty("cursor", "grabbing", "important");
+        grid.style.setProperty("scroll-snap-type", "none", "important");
+      };
+      const onPointerMove = (event: PointerEvent) => {
+        if (!dragging) return;
+        event.preventDefault();
+        grid.scrollLeft = dragStartScroll - (event.clientX - dragStartX);
+      };
+      const endDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        grid.style.setProperty("cursor", "grab", "important");
+        grid.style.setProperty("scroll-snap-type", "x mandatory", "important");
+      };
+
+      grid.addEventListener("pointerdown", onPointerDown);
+      grid.addEventListener("pointermove", onPointerMove);
+      grid.addEventListener("pointerup", endDrag);
+      grid.addEventListener("pointercancel", endDrag);
+      grid.addEventListener("pointerleave", endDrag);
 
       // The homepage grid already has its own grid CSS. Because this effect
       // runs after React renders, force the carousel layout inline so it wins
@@ -132,6 +193,7 @@ export default function PageShell({
         grid.style.setProperty("scroll-behavior", "smooth", "important");
         grid.style.setProperty("-webkit-overflow-scrolling", "touch", "important");
         grid.style.setProperty("scrollbar-width", "none", "important");
+        grid.style.setProperty("cursor", mobile ? "auto" : "grab", "important");
 
         cards.forEach((card) => {
           const width = mobile ? "86vw" : "min(360px, 31vw)";
@@ -150,6 +212,14 @@ export default function PageShell({
       cleanup = () => {
         grid.removeEventListener("scroll", updateDots);
         window.removeEventListener("resize", applyCarouselLayout);
+        prevButton.removeEventListener("click", onPrev);
+        nextButton.removeEventListener("click", onNext);
+        grid.removeEventListener("pointerdown", onPointerDown);
+        grid.removeEventListener("pointermove", onPointerMove);
+        grid.removeEventListener("pointerup", endDrag);
+        grid.removeEventListener("pointercancel", endDrag);
+        grid.removeEventListener("pointerleave", endDrag);
+        controls.remove();
         hint.remove();
         dots.remove();
         section.dataset.sgCarouselReady = "false";
@@ -166,6 +236,7 @@ export default function PageShell({
         grid.style.removeProperty("scroll-behavior");
         grid.style.removeProperty("-webkit-overflow-scrolling");
         grid.style.removeProperty("scrollbar-width");
+        grid.style.removeProperty("cursor");
         cards.forEach((card) => {
           card.style.removeProperty("flex");
           card.style.removeProperty("width");
