@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import PageShell from "../../components/layout/PageShell";
 
 const SITE_URL = "https://stayguwahati.in";
 const API_BASE_URL = (
@@ -152,8 +151,7 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
     </div>
   );
 
-  return <PageShell>
-    <div className="sg-container sg-page">
+  return <main className="sg-container sg-page">
     <Breadcrumbs neighbourhood={neighbourhood} />
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
@@ -163,64 +161,7 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
       <p className="sg-sub" style={{ maxWidth: 860 }}>{neighbourhood.intro}</p>
       <p className="sg-muted" style={{ marginTop: 12 }}><strong>Best for:</strong> {neighbourhood.bestFor}. <strong>Nearby:</strong> {neighbourhood.nearby}.</p>
       <div className="sg-grid sg-3" style={{ marginTop: 22 }}>
-        {neighbourhood.highlights.map((highlight, index) => {
-          const title = String(highlight);
-          const normalized = title.toLowerCase();
-          const isFood = /restaurant|food|retail|shopping|cafe|cafes|dining|market/.test(normalized);
-          const isHealth = /health|hospital|medical|healthcare|emergency/.test(normalized);
-          const description = isFood
-            ? "Cafés, restaurants, supermarkets and shopping options are nearby for a convenient stay."
-            : isHealth
-              ? "Healthcare and everyday services are within practical reach, with convenient connections across the neighbourhood."
-              : "Convenient local road links make it easy to reach nearby neighbourhoods and key parts of Guwahati.";
-          return (
-            <div
-              key={title}
-              className="sg-card"
-              style={{
-                padding: "18px 20px",
-                background: "#fffaf2",
-                color: "#123f39",
-                border: "1px solid #d6ded9",
-                borderRadius: 20,
-                boxShadow: "0 8px 24px rgba(18,63,57,0.08)",
-                minHeight: 132,
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 14,
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 42,
-                  height: 42,
-                  minWidth: 42,
-                  borderRadius: "999px",
-                  background: "#e3f1ed",
-                  color: "#28655c",
-                  display: "grid",
-                  placeItems: "center",
-                }}
-              >
-                {isHealth ? (
-                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M12 9v6"/></svg>
-                ) : isFood ? (
-                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3v18M14 3v6a3 3 0 0 0 3 3"/></svg>
-                ) : (
-                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-                )}
-              </span>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                  <strong style={{ color: "#123f39", display: "block", lineHeight: 1.35 }}>{title}</strong>
-                  <span aria-hidden="true" style={{ color: "#28655c", fontSize: 22, lineHeight: 1 }}>→</span>
-                </div>
-                <p style={{ margin: "8px 0 0", color: "#526d67", fontSize: 13, lineHeight: 1.55 }}>{description}</p>
-              </div>
-            </div>
-          );
-        })}
+        {neighbourhood.highlights.map((highlight) => <div key={highlight} className="sg-card" style={{ padding: 18 }}><strong>{highlight}</strong></div>)}
       </div>
     </section>
 
@@ -251,23 +192,28 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
       <p className="sg-muted" style={{ maxWidth: 820, marginTop: 10 }}>
         Nearby food listings are fetched from Google Places when this page is requested, so names and ratings can reflect current local listings rather than a fixed hand-picked list.
       </p>
-      {liveFood.length ? <div className="sg-grid sg-3" style={{ marginTop: 18 }}>
-        {liveFood.map((place, index) => {
+      {liveFood.length ? <>
+        <p className="sg-muted" style={{ margin: "10px 0 0", fontSize: 13 }}>
+          Showing 6 popular nearby places. More places are available on Google Maps.
+        </p>
+        <div className="sg-grid sg-3" style={{ marginTop: 16 }}>
+        {liveFood.slice(0, 6).map((place, index) => {
           const name = place.displayName?.text || "Local café or restaurant";
           const address = place.shortFormattedAddress || place.formattedAddress;
           const mapsUrl = googleMapsSearchUrl(place);
-          return <article key={place.id || `${name}-${index}`} className="sg-card" style={{ padding: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-              <h3 style={{ fontSize: 19, margin: 0 }}>{name}</h3>
+          return <article key={place.id || `${name}-${index}`} className="sg-card" style={{ padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+              <h3 style={{ fontSize: 16, lineHeight: 1.3, margin: 0 }}>{name}</h3>
               {typeof place.rating === "number" && <span aria-label={`Google rating ${place.rating} out of 5`} style={{ fontWeight: 700, whiteSpace: "nowrap" }}>★ {place.rating.toFixed(1)}</span>}
             </div>
-            {place.primaryType && <p className="sg-muted" style={{ margin: "8px 0 4px", textTransform: "capitalize" }}>{place.primaryType.replaceAll("_", " ")}</p>}
-            {address && <p className="sg-muted" style={{ margin: "4px 0 12px" }}>{address}</p>}
-            {typeof place.userRatingCount === "number" && <p className="sg-muted" style={{ margin: "0 0 12px", fontSize: 13 }}>{place.userRatingCount.toLocaleString("en-IN")} Google ratings</p>}
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700 }}>View on Google Maps →</a>
+            {place.primaryType && <p className="sg-muted" style={{ margin: "6px 0 3px", fontSize: 12, textTransform: "capitalize" }}>{place.primaryType.replaceAll("_", " ")}</p>}
+            {address && <p className="sg-muted" style={{ margin: "3px 0 8px", fontSize: 12, lineHeight: 1.45 }}>{address}</p>}
+            {typeof place.userRatingCount === "number" && <p className="sg-muted" style={{ margin: "0 0 8px", fontSize: 11 }}>{place.userRatingCount.toLocaleString("en-IN")} Google ratings</p>}
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, fontSize: 12 }}>View on Google Maps →</a>
           </article>;
         })}
-      </div> : <div className="sg-card sg-empty" style={{ marginTop: 18 }}>
+        </div>
+      </> : <div className="sg-card sg-empty" style={{ marginTop: 18 }}>
         {process.env.GOOGLE_MAPS_API_KEY ? <p>Google Places did not return food listings for this search area. Try Google Maps for a wider search around {neighbourhood.name}.</p> : <><p>Live Google Places results are not configured yet. Configure the Render Places proxy and the matching <code>STAYGUWAHATI_PLACES_PROXY_SECRET</code> environment variables to populate this section automatically.</p><p className="sg-muted" style={{ marginBottom: 0 }}>The page can still be used normally while the Places API is being configured.</p></>}
       </div>}
       <p className="sg-muted" style={{ marginTop: 14, fontSize: 12 }}>Google Maps data and ratings are provided by Google Maps. Listings, ratings and availability can change; confirm details directly before visiting.</p>
@@ -307,6 +253,5 @@ export default async function NeighbourhoodPage({ params }: { params: Promise<{ 
         {neighbourhood.faqs.map((faq) => <details key={faq.question} className="sg-card" style={{ padding: "18px 20px" }}><summary style={{ fontWeight: 750, cursor: "pointer" }}>{faq.question}</summary><p className="sg-muted" style={{ margin: "12px 0 0" }}>{faq.answer}</p></details>)}
       </div>
     </section>
-    </div>
-  </PageShell>;
+  </main>;
 }
