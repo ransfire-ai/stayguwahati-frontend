@@ -19,7 +19,6 @@ type Host = {
 type Property = {
   id?: string; _id?: string; title?: string; name?: string;
   pricePerNight?: number | string; price?: number | string;
-  roomTypes?: Array<{ _id?: string; id?: string; name: string; units: number; maxGuests: number; pricePerNight: number; kitchen?: 'none' | 'shared' | 'private'; description?: string }>;
   locality?: string; city?: string; address?: string; description?: string;
   images?: string[]; features?: string[]; amenities?: string[];
   bedrooms?: number | string; guests?: number | string; maxGuests?: number | string;
@@ -76,7 +75,6 @@ function PropertyDetailsContent() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [selectedRoomTypeId, setSelectedRoomTypeId] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -147,13 +145,7 @@ function PropertyDetailsContent() {
         .map(cleanImage);
 
       prop.images = rawImages.length ? rawImages : FALLBACK_IMAGES;
-      if (alive) {
-        setProperty(prop);
-        setSelected(0);
-        const rooms = Array.isArray((prop as Property).roomTypes) ? (prop as Property).roomTypes! : [];
-        setSelectedRoomTypeId(rooms.length ? String(rooms[0]._id || rooms[0].id || '') : '');
-        setLoading(false);
-      }
+      if (alive) { setProperty(prop); setSelected(0); setLoading(false); }
     }
     load();
     return () => { alive = false; };
@@ -194,16 +186,13 @@ function PropertyDetailsContent() {
       countOf(bathObj.privateAttached) + countOf(bathObj.attached) + countOf(bathObj.dedicated) + countOf(bathObj.shared);
     const guests = countOf(property.maxGuests ?? property.guests) || 2;
     const price = Number(property.pricePerNight ?? property.price ?? 1500) || 1500;
-    const roomTypes = Array.isArray(property.roomTypes) ? property.roomTypes : [];
-    const selectedRoom = roomTypes.find((room) => String(room._id || room.id || '') === selectedRoomTypeId) || roomTypes[0] || null;
-    const selectedRoomPrice = selectedRoom ? Number(selectedRoom.pricePerNight) : price;
-    const amenities= Array.from(new Set((property.features || property.amenities || ['Free Wi-Fi', 'Comfortable stay', 'Local host']).filter(Boolean)));
+    const amenities = Array.from(new Set((property.features || property.amenities || ['Free Wi-Fi', 'Comfortable stay', 'Local host']).filter(Boolean)));
     const host = typeof property.host === 'string' ? { name: property.host } : (property.host || {});
     const hostName = host.name || 'StayGuwahati Host';
     const avatar = cleanImage(host.avatar || host.photo || host.image || host.profileImage || host.profilePicture || '') ||
       `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName)}&background=173f3a&color=fff&size=128`;
-    return { b, bath, guests, price, roomTypes, selectedRoom, selectedRoomPrice, amenities, host, hostName, avatar, policy: cancellation(property.cancellationPolicy) };
-  }, [property, selectedRoomTypeId]);
+    return { b, bath, guests, price, amenities, host, hostName, avatar, policy: cancellation(property.cancellationPolicy) };
+  }, [property]);
 
   function toggleSave() {
     if (!propertyId) { setSaved(v => !v); return; }
@@ -229,10 +218,9 @@ function PropertyDetailsContent() {
     if (!property || !derived) return;
     const id = String(property._id || property.id || propertyId || '');
     if (!id) { alert('This property is missing its booking ID. Please return to Explore and open it again.'); return; }
-    const roomTypeId = derived.selectedRoom ? String(derived.selectedRoom._id || derived.selectedRoom.id || '') : '';
-    const data = { id, title: property.title || property.name || 'Stay', price: derived.selectedRoomPrice, locality: property.locality || property.city || 'Guwahati', image: property.images?.[selected] || property.images?.[0] || '', roomTypeId };
+    const data = { id, title: property.title || property.name || 'Stay', price: derived.price, locality: property.locality || property.city || 'Guwahati', image: property.images?.[selected] || property.images?.[0] || '' };
     sessionStorage.setItem('pendingBooking', JSON.stringify(data));
-    router.push(`/book-stay?id=${encodeURIComponent(id)}${roomTypeId ? `&roomTypeId=${encodeURIComponent(roomTypeId)}` : ''}`);
+    router.push(`/book-stay?id=${encodeURIComponent(id)}`);
   }
 
   if (loading) return <main className="min-h-[70vh] grid place-items-center bg-[#f5f1e9]"><div className="text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#d6e0da] border-t-[#28655c]" /><p className="mt-4 text-sm font-semibold text-[#62736e]">Loading your stay…</p></div></main>;
@@ -421,38 +409,6 @@ function PropertyDetailsContent() {
             </section>
 
             <section className="grid gap-5 lg:grid-cols-2">
-            {derived.roomTypes.length > 0 && (
-              <section className="rounded-[28px] border border-[#d9e0db] bg-white p-6 sm:p-8">
-                <p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">Choose your room</p>
-                <h2 className="mt-2 text-2xl font-black">Room types & pricing</h2>
-                <p className="mt-2 text-sm leading-6 text-[#71827d]">Select the room category you want to reserve. Each booking reserves one available unit.</p>
-                <div className="mt-6 grid gap-3">
-                  {derived.roomTypes.map((room) => {
-                    const roomId = String(room._id || room.id || '');
-                    const active = roomId === String(derived.selectedRoom?._id || derived.selectedRoom?.id || '');
-                    return (
-                      <button key={roomId || room.name} type="button" onClick={() => setSelectedRoomTypeId(roomId)} className={`w-full rounded-2xl border p-4 text-left transition ${active ? 'border-[#28655c] bg-[#edf5f1] ring-2 ring-[#28655c]/10' : 'border-[#d9e0db] bg-white hover:border-[#9dbab0] hover:bg-[#f8faf8]'}`}>
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="font-black text-[#173f3a]">{room.name}</h3>
-                              {active && <span className="rounded-full bg-[#173f3a] px-2 py-1 text-[10px] font-black text-white">Selected</span>}
-                            </div>
-                            <p className="mt-1 text-xs text-[#71827d]">Up to {room.maxGuests} guest{room.maxGuests === 1 ? '' : 's'} · {room.units} unit{room.units === 1 ? '' : 's'} · {room.kitchen === 'private' ? 'Private kitchen' : room.kitchen === 'shared' ? 'Shared kitchen' : 'No kitchen'}</p>
-                            {room.description && <p className="mt-2 text-xs leading-5 text-[#71827d]">{room.description}</p>}
-                          </div>
-                          <div className="shrink-0 text-left sm:text-right">
-                            <div className="text-xl font-black text-[#173f3a]">₹{Number(room.pricePerNight).toLocaleString('en-IN')}</div>
-                            <div className="text-[11px] font-semibold text-[#71827d]">per night</div>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
               <div className="rounded-[28px] border border-[#d9e0db] bg-white p-6"><p className="text-xs font-black uppercase tracking-[.18em] text-[#28655c]">Location</p><h2 className="mt-2 text-2xl font-black">Explore the area</h2><p className="mt-3 text-sm leading-6 text-[#71827d]">{property.address || `${property.locality || property.city || 'Guwahati'}, Assam`}</p><a href={mapHref} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-xl border border-[#b9cec4] px-4 py-3 text-sm font-black text-[#28655c] hover:bg-[#e8f1ec]"><MapPin className="h-4 w-4"/> Open in Maps</a></div>
               <div className="rounded-[28px] bg-[#173f3a] p-6 text-white"><p className="text-xs font-black uppercase tracking-[.18em] text-[#b7d4c8]">Stay rules</p><h2 className="mt-2 text-2xl font-black">Good to know</h2><ul className="mt-4 space-y-3 text-sm leading-6 text-[#d2e0da]"><li className="flex gap-2"><Check className="mt-1 h-4 w-4 text-[#e9bf52]"/>Follow the host’s check-in instructions.</li><li className="flex gap-2"><Check className="mt-1 h-4 w-4 text-[#e9bf52]"/>Respect the property and local neighbourhood.</li><li className="flex gap-2"><Check className="mt-1 h-4 w-4 text-[#e9bf52]"/>{derived.policy.text}</li></ul></div>
             </section>
@@ -460,7 +416,7 @@ function PropertyDetailsContent() {
 
           <aside className="xl:sticky xl:top-24">
             <div className="overflow-hidden rounded-[32px] border border-[#c9d9d0] bg-white shadow-[0_25px_70px_rgba(23,63,58,.14)]">
-              <div className="bg-[#173f3a] p-6 text-white"><p className="text-xs font-black uppercase tracking-[.16em] text-[#b7d4c8]">Reserve this stay</p><div className="mt-3 flex items-end justify-between"><div><span className="text-4xl font-black">₹{derived.selectedRoomPrice.toLocaleString('en-IN')}</span><span className="ml-1 text-sm text-[#b7d4c8]">/ night</span></div><span className="rounded-full bg-[#e9bf52] px-3 py-1.5 text-[10px] font-black text-[#173f3a]">Verified local stay</span></div></div>
+              <div className="bg-[#173f3a] p-6 text-white"><p className="text-xs font-black uppercase tracking-[.16em] text-[#b7d4c8]">Reserve this stay</p><div className="mt-3 flex items-end justify-between"><div><span className="text-4xl font-black">₹{derived.price.toLocaleString('en-IN')}</span><span className="ml-1 text-sm text-[#b7d4c8]">/ night</span></div><span className="rounded-full bg-[#e9bf52] px-3 py-1.5 text-[10px] font-black text-[#173f3a]">Verified local stay</span></div></div>
               <div className="p-5 sm:p-6">
                 <div className="rounded-2xl bg-[#f4f7f4] p-4">
                   <p className="text-sm font-bold text-[#173f3a]">Ready to reserve?</p>
