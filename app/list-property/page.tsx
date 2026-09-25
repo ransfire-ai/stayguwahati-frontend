@@ -695,7 +695,7 @@ export default function ListPropertyPage() {
         features: selectedAmenities,
         host: {
           name: hostName.trim(),
-          email: userEmail.trim() || 'user@example.com',
+          email: userEmail.trim(),
           phone: hostPhone.trim(),
           avatar: uploadedHostAvatarUrl,
         },
