@@ -45,6 +45,11 @@ function cleanImage(src: string) {
   return `${API}${src.startsWith('/') ? '' : '/'}${src}`;
 }
 
+function imagesForSchema(images?: string[]) {
+  const list = Array.isArray(images) ? images.filter(Boolean) : [];
+  return list.slice(0, 20);
+}
+
 function countOf(v: unknown) {
   const n = Number(v);
   return Number.isFinite(n) && n >= 0 ? n : 0;
@@ -232,6 +237,60 @@ function PropertyDetailsContent() {
   const mapHref = property.mapUrl || property.googleMapsLink || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
   const rating = Number(property.rating || (reviews.length ? reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / reviews.length : 0));
 
+  // Structured data for Google Search. Only facts already available on this page are marked up.
+  const propertyUrl = `https://www.stayguwahati.in/properties/${encodeURIComponent(propertyId)}`;
+  const propertyName = property.title || property.name || 'StayGuwahati Home';
+  const propertyDescription = property.description || 'A comfortable stay in Guwahati, Assam.';
+  const propertyImages = imagesForSchema(property.images);
+  const locality = property.locality || property.city || 'Guwahati';
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.stayguwahati.in/' },
+      { '@type': 'ListItem', position: 2, name: 'Explore stays', item: 'https://www.stayguwahati.in/explore' },
+      { '@type': 'ListItem', position: 3, name: propertyName, item: propertyUrl },
+    ],
+  };
+
+  const lodgingSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'LodgingBusiness',
+    '@id': `${propertyUrl}#lodging`,
+    name: propertyName,
+    url: propertyUrl,
+    description: propertyDescription,
+    image: propertyImages,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: locality,
+      addressRegion: 'Assam',
+      addressCountry: 'IN',
+      ...(property.address ? { streetAddress: property.address } : {}),
+    },
+    amenityFeature: derived.amenities.map((name) => ({
+      '@type': 'LocationFeatureSpecification',
+      name,
+      value: true,
+    })),
+    ...(rating > 0 && reviews.length > 0 ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: Number(rating.toFixed(1)),
+        reviewCount: reviews.length,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : {}),
+    offers: {
+      '@type': 'Offer',
+      url: propertyUrl,
+      priceCurrency: 'INR',
+      price: derived.price,
+    },
+  };
+
   // Public host profile URLs use the host's User/ObjectId, never email.
   const hostProfileHref = (() => {
     const host = typeof property.host === 'object' && property.host !== null
@@ -247,6 +306,14 @@ function PropertyDetailsContent() {
 
   return (
     <main className="bg-[#f5f1e9] text-[#173f3a]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(lodgingSchema) }}
+      />
       <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8">
         <div className="mb-5 flex items-center justify-between gap-4">
           <button
@@ -266,6 +333,16 @@ function PropertyDetailsContent() {
             <button onClick={toggleSave} className={`rounded-full border p-2.5 ${saved ? 'border-[#cba848] bg-[#fff4c7] text-[#8a6510]' : 'border-[#d5ddd8] bg-white'}`} aria-label="Save"><Heart className={`h-4 w-4 ${saved ? 'fill-current' : ''}`}/></button>
           </div>
         </div>
+
+        <nav aria-label="Breadcrumb" className="mb-4 text-sm">
+          <ol className="flex flex-wrap items-center gap-2 text-[#71827d]">
+            <li><Link href="/" className="hover:text-[#173f3a] hover:underline">Home</Link></li>
+            <li aria-hidden="true">/</li>
+            <li><Link href="/explore" className="hover:text-[#173f3a] hover:underline">Explore stays</Link></li>
+            <li aria-hidden="true">/</li>
+            <li className="font-semibold text-[#173f3a]">{propertyName}</li>
+          </ol>
+        </nav>
 
         <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
